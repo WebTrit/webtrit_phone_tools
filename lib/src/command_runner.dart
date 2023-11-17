@@ -2,9 +2,10 @@ import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:pub_updater/pub_updater.dart';
+
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
-import 'package:pub_updater/pub_updater.dart';
 
 const executableName = 'webtrit_phone_tools';
 const packageName = 'webtrit_phone_tools';

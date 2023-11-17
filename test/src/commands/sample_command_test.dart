@@ -1,7 +1,8 @@
 import 'package:mason_logger/mason_logger.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:webtrit_phone_tools/src/command_runner.dart';
 import 'package:test/test.dart';
+
+import 'package:webtrit_phone_tools/src/command_runner.dart';
 
 class _MockLogger extends Mock implements Logger {}
 
@@ -41,8 +42,7 @@ void main() {
 
       expect(exitCode, ExitCode.usage.code);
 
-      verify(() => logger.err('Could not find an option or flag "-p".'))
-          .called(1);
+      verify(() => logger.err('Could not find an option or flag "-p".')).called(1);
       verify(
         () => logger.info(
           '''

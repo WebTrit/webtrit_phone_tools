@@ -4,10 +4,11 @@ import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:webtrit_phone_tools/src/command_runner.dart';
-import 'package:webtrit_phone_tools/src/version.dart';
 import 'package:pub_updater/pub_updater.dart';
 import 'package:test/test.dart';
+
+import 'package:webtrit_phone_tools/src/command_runner.dart';
+import 'package:webtrit_phone_tools/src/version.dart';
 
 class _MockLogger extends Mock implements Logger {}
 
@@ -98,8 +99,7 @@ void main() {
       verifyNever(() => logger.info(updatePrompt));
     });
 
-    test('can be instantiated without an explicit analytics/logger instance',
-        () {
+    test('can be instantiated without an explicit analytics/logger instance', () {
       final commandRunner = WebtritPhoneToolsCommandRunner();
       expect(commandRunner, isNotNull);
       expect(commandRunner, isA<CompletionCommandRunner<int>>());
