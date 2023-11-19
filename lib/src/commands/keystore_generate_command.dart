@@ -5,6 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
+import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
 
 const _bundleIdOptionName = 'bundleId';
@@ -12,9 +13,6 @@ const _createParentDirectoriesFlagName = 'createParentDirectories';
 const _createApplicationDirectoryFlagName = 'createApplicationDirectory';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
-
-const _parameterIndent = '  ';
-const _parameterDelimiter = ' - ';
 
 const _storeFileName = 'upload-keystore.jks';
 const _keytoolLogFileName = 'keytool.log';
@@ -48,13 +46,15 @@ class KeystoreGenerateCommand extends Command<int> {
   @override
   String get description {
     final buffer = StringBuffer()
-      ..writeln('Generate a keystore and associated metadata files for signing the WebTrit Phone Android application.')
-      ..write(_parameterIndent)
+      ..writeln(
+        'Generate a keystore and associated metadata files for signing the WebTrit Phone Android application.',
+      )
+      ..write(parameterIndent)
       ..write(_directoryParameterDescriptionName)
-      ..write(_parameterDelimiter)
+      ..write(parameterDelimiter)
       ..writeln('Specify the directory for creating keystore and metadata files.')
-      ..write(' ' * (_parameterIndent.length + _directoryParameterDescriptionName.length + _parameterDelimiter.length))
-      ..writeln('Defaults to the current working directory if not provided.');
+      ..write(' ' * (parameterIndent.length + _directoryParameterDescriptionName.length + parameterDelimiter.length))
+      ..write('Defaults to the current working directory if not provided.');
     return buffer.toString();
   }
 
@@ -158,7 +158,7 @@ class KeystoreMetadata {
       keyPassword: password,
       storeFile: _storeFileName,
       storePassword: password,
-      dname: 'CN=KeystoreGenerator, O=WebTrit, C=UA',
+      dname: 'CN=$commonName, O=WebTrit, C=UA',
     );
   }
 
