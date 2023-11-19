@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/webtrit_phone_tools.yaml"
+      - "bin/**"
       - "lib/**"
       - "test/**"
       - "pubspec.yaml"
@@ -16,6 +17,7 @@ on:
       - main
     paths:
       - ".github/workflows/webtrit_phone_tools.yaml"
+      - "bin/**"
       - "lib/**"
       - "test/**"
       - "pubspec.yaml"
