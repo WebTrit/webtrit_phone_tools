@@ -10,7 +10,7 @@ import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
 
 const _bundleIdOptionName = 'bundleId';
 const _createParentDirectoriesFlagName = 'createParentDirectories';
-const _createApplicationDirectoryFlagName = 'createApplicationDirectory';
+const _appendDirectoryFlagName = 'appendDirectory';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
@@ -34,8 +34,8 @@ class KeystoreGenerateCommand extends Command<int> {
         negatable: false,
       )
       ..addFlag(
-        _createApplicationDirectoryFlagName,
-        help: 'Create application directory with bundle ID name.',
+        _appendDirectoryFlagName,
+        help: 'Append the $_directoryParameterName with the "$_bundleIdOptionName".',
         negatable: false,
       );
   }
@@ -72,7 +72,7 @@ class KeystoreGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
     final createParentDirectories = commandArgResults[_createParentDirectoriesFlagName] as bool;
-    final createApplicationDirectory = commandArgResults[_createApplicationDirectoryFlagName] as bool;
+    final appendDirectory = commandArgResults[_appendDirectoryFlagName] as bool;
 
     String workingDirectoryPath;
     if (commandArgResults.rest.isEmpty) {
@@ -83,7 +83,7 @@ class KeystoreGenerateCommand extends Command<int> {
       _logger.err('Only one "$_directoryParameterName" parameter can be passed.');
       return ExitCode.usage.code;
     }
-    if (createApplicationDirectory) {
+    if (appendDirectory) {
       workingDirectoryPath = path.join(workingDirectoryPath, bundleId);
     }
 
