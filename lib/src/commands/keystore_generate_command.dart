@@ -133,7 +133,7 @@ class KeystoreGenerateCommand extends Command<int> {
 
     _logger.info('Writing conventional keystore metadata to: $_keystoreMetadataFileName');
     final keystoreMetadataPath = path.join(workingDirectoryPath, _keystoreMetadataFileName);
-    final metadataJsonString = const JsonEncoder.withIndent('  ').convert(keystoreMetadata.toJson());
+    final metadataJsonString = keystoreMetadata.toJsonString();
     File(keystoreMetadataPath).writeAsStringSync(metadataJsonString, flush: true);
 
     return ExitCode.success.code;
@@ -169,13 +169,14 @@ class KeystoreMetadata {
   String storePassword;
   String dname;
 
-  Map<String, dynamic> toJson() {
-    return {
+  String toJsonString() {
+    final metadataJson = {
       'bundleId': bundleId,
       'keyAlias': keyAlias,
       'keyPassword': keyPassword,
       'storeFile': storeFile,
       'storePassword': storePassword,
     };
+    return (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(metadataJson))).toString();
   }
 }
