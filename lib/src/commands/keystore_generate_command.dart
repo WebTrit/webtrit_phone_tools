@@ -151,7 +151,10 @@ class KeystoreMetadata {
   });
 
   factory KeystoreMetadata.conventional(String bundleId) {
-    final password = PasswordGenerator.random();
+    final password = PasswordGenerator.random(
+      uppercase: true,
+      numbers: true,
+    );
     return KeystoreMetadata(
       bundleId: bundleId,
       keyAlias: 'upload',
