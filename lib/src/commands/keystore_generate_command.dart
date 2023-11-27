@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -6,7 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
-import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_metadata.dart';
 
 const _bundleIdOptionName = 'bundleId';
 const _createParentDirectoriesFlagName = 'createParentDirectories';
@@ -91,7 +90,7 @@ class KeystoreGenerateCommand extends Command<int> {
     Directory(workingDirectoryPath).createSync(recursive: createParentDirectories);
 
     _logger.info('Initializing conventional keystore metadata');
-    final keystoreMetadata = KeystoreMetadata.conventional(bundleId);
+    final keystoreMetadata = KeystoreMetadata.conventional(bundleId, _storeFileName);
 
     _logger.info('Generating key pair using keytool to: ${keystoreMetadata.storeFile}');
     final process = Process.runSync(
@@ -137,49 +136,5 @@ class KeystoreGenerateCommand extends Command<int> {
     File(keystoreMetadataPath).writeAsStringSync(metadataJsonString, flush: true);
 
     return ExitCode.success.code;
-  }
-}
-
-class KeystoreMetadata {
-  KeystoreMetadata({
-    required this.bundleId,
-    required this.keyAlias,
-    required this.keyPassword,
-    required this.storeFile,
-    required this.storePassword,
-    required this.dname,
-  });
-
-  factory KeystoreMetadata.conventional(String bundleId) {
-    final password = PasswordGenerator.random(
-      uppercase: true,
-      numbers: true,
-    );
-    return KeystoreMetadata(
-      bundleId: bundleId,
-      keyAlias: 'upload',
-      keyPassword: password,
-      storeFile: _storeFileName,
-      storePassword: password,
-      dname: 'CN=$commonName, O=WebTrit, C=UA',
-    );
-  }
-
-  String bundleId;
-  String keyAlias;
-  String keyPassword;
-  String storeFile;
-  String storePassword;
-  String dname;
-
-  String toJsonString() {
-    final metadataJson = {
-      'bundleId': bundleId,
-      'keyAlias': keyAlias,
-      'keyPassword': keyPassword,
-      'storeFile': storeFile,
-      'storePassword': storePassword,
-    };
-    return (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(metadataJson))).toString();
   }
 }
