@@ -59,6 +59,19 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..err(nativeSplashProcess.stderr.toString())
       ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
 
+    final packageInstallProcess = await Process.run(
+      'dart',
+      [
+        'pub',
+        'add',
+        'package_rename',
+      ],
+    );
+    _logger
+      ..info(packageInstallProcess.stdout.toString())
+      ..err(packageInstallProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageInstallProcess.exitCode}');
+
     final packageRenameProcess = await Process.run(
       'dart',
       [
