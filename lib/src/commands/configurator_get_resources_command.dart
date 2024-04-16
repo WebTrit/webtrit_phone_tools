@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -243,27 +242,25 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'APP_ANDROID_KEYSTORE': keystoreFolder,
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
-
-    final dartDefineStringJson = await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath);
-    final dartDefineMap = jsonDecode(dartDefineStringJson) as Map;
+    final dartDefine = (await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath)).toMap();
 
     if (publisherAppDemoFlag) {
       _logger.warn('Use force demo flow');
-      dartDefineMap.remove('WEBTRIT_APP_CORE_URL');
+      dartDefine.remove('WEBTRIT_APP_CORE_URL');
     } else if (publisherAppClassicFlag) {
       _logger.warn('Use force classic flow');
-      dartDefineMap.remove('WEBTRIT_APP_DEMO_CORE_URL');
+      dartDefine.remove('WEBTRIT_APP_DEMO_CORE_URL');
     } else if (application.demo) {
       _logger.warn('Use config demo flow');
-      dartDefineMap.remove('WEBTRIT_APP_CORE_URL');
+      dartDefine.remove('WEBTRIT_APP_CORE_URL');
     } else {
       _logger.warn('Use config classic flow');
-      dartDefineMap.remove('WEBTRIT_APP_DEMO_CORE_URL');
+      dartDefine.remove('WEBTRIT_APP_DEMO_CORE_URL');
     }
 
     _writeData(
       path: _workingDirectory(configureDartDefinePath),
-      data: (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(dartDefineMap))).toString(),
+      data: dartDefine.toJson(),
     );
 
     return ExitCode.success.code;
