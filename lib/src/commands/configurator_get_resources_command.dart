@@ -10,7 +10,7 @@ import 'package:simple_mustache/simple_mustache.dart';
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
-const _publisherApplicationId = 'applicationId';
+const _applicationId = 'applicationId';
 
 const _publisherAppDemoFlag = 'demo';
 const _publisherAppClassicFlag = 'classic';
@@ -24,8 +24,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   }) : _logger = logger {
     argParser
       ..addOption(
-        _publisherApplicationId,
-        help: 'Publisher application id',
+        _applicationId,
+        help: 'Configurator application id.',
         mandatory: true,
       )
       ..addFlag(
@@ -78,9 +78,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final publisherApplicationId = commandArgResults[_publisherApplicationId] as String;
-    if (publisherApplicationId.isEmpty) {
-      _logger.err('Option "$_publisherApplicationId" can not be empty.');
+    final applicationId = commandArgResults[_applicationId] as String;
+    if (applicationId.isEmpty) {
+      _logger.err('Option "$_applicationId" can not be empty.');
       return ExitCode.usage.code;
     }
 
@@ -91,7 +91,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     late ThemeDTO theme;
 
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$publisherApplicationId';
+      final url = '$configuratorApiUrl/api/v1/applications/$applicationId';
       application = await _loadData(url, ApplicationDTO.fromJsonString);
     } catch (e) {
       _logger.err(e.toString());
@@ -99,12 +99,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     if (application.theme == null) {
-      _logger.err('Application $publisherApplicationId do not have default theme');
+      _logger.err('Application $applicationId do not have default theme');
       return ExitCode.usage.code;
     }
 
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$publisherApplicationId/themes/${application.theme}';
+      final url = '$configuratorApiUrl/api/v1/applications/$applicationId/themes/${application.theme}';
       theme = await _loadData(url, ThemeDTO.fromJsonString);
     } catch (e) {
       _logger.err(e.toString());
