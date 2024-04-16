@@ -64,9 +64,20 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
   final Logger _logger;
 
+  late String workingDirectoryPath;
+
   @override
   Future<int> run() async {
     final commandArgResults = argResults!;
+
+    if (commandArgResults.rest.isEmpty) {
+      workingDirectoryPath = Directory.current.path;
+    } else if (commandArgResults.rest.length == 1) {
+      workingDirectoryPath = commandArgResults.rest[0];
+    } else {
+      _logger.err('Only one "$_directoryParameterName" parameter can be passed.');
+      return ExitCode.usage.code;
+    }
 
     final publisherApplicationId = commandArgResults[_publisherApplicationId] as String;
     if (publisherApplicationId.isEmpty) {
@@ -259,7 +270,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   }
 
   String _workingDirectory(String relativePath) {
-    return path.join(Directory.current.path, relativePath);
+    return path.join(workingDirectoryPath, relativePath);
   }
 
   Future<T> _loadData<T>(String url, T Function(String) fromBody) async {
