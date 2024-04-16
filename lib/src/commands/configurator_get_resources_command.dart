@@ -11,6 +11,7 @@ import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _applicationId = 'applicationId';
+const _keystorePath = 'keystore-path';
 
 const _publisherAppDemoFlag = 'demo';
 const _publisherAppClassicFlag = 'classic';
@@ -26,6 +27,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..addOption(
         _applicationId,
         help: 'Configurator application id.',
+        mandatory: true,
+      )
+      ..addOption(
+        _keystorePath,
+        help: "Path to the project's keystore folder.",
         mandatory: true,
       )
       ..addFlag(
@@ -78,6 +84,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    final keystorePath = (commandArgResults[_keystorePath] as String?) ?? '';
+    if (keystorePath.isEmpty) {
+      _logger.err('Option "$_keystorePath" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
@@ -111,12 +123,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final currentDirectory = Directory.current;
-    final previousDirectory = path.dirname(currentDirectory.path);
-
     final platformIdentifier = application.platformIdentifier;
 
-    final keystoreFolder = path.join(previousDirectory, 'webtrit_phone_keystores', platformIdentifier);
+    final keystoreFolder = path.join(keystorePath, platformIdentifier);
 
     final adaptiveIconBackground = await _loadFile(theme.images?.adaptiveIconBackground);
     _writeData(
