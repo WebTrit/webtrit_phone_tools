@@ -110,36 +110,36 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final keystoreFolder = path.join(previousDirectory, 'webtrit_phone_keystores', platformIdentifier);
 
     final adaptiveIconBackground = await _loadFile(theme.images?.adaptiveIconBackground);
-    _writeData(assetSplashIcon, adaptiveIconBackground);
+    _writeData(assetSplashIconPath, adaptiveIconBackground);
 
     final adaptiveIconForeground = await _loadFile(theme.images?.adaptiveIconForeground);
-    _writeData(assetLauncherIconAdaptiveForeground, adaptiveIconForeground);
+    _writeData(assetLauncherIconAdaptiveForegroundPath, adaptiveIconForeground);
 
     final webLauncherIcon = await _loadFile(theme.images?.webLauncherIcon);
-    _writeData(assetLauncherWebIcon, webLauncherIcon);
+    _writeData(assetLauncherWebIconPath, webLauncherIcon);
 
     final androidLauncherIcon = await _loadFile(theme.images?.androidLauncherIcon);
-    _writeData(assetLauncherAndroidIcon, androidLauncherIcon);
+    _writeData(assetLauncherAndroidIconPath, androidLauncherIcon);
 
     final iosLauncherIcon = await _loadFile(theme.images?.iosLauncherIcon);
-    _writeData(assetLauncherIosIcon, iosLauncherIcon);
+    _writeData(assetLauncherIosIconPath, iosLauncherIcon);
 
     final notificationLogo = await _loadFile(theme.images?.notificationLogo);
-    _writeData(assetIconIosNotificationTemplateImage, notificationLogo);
+    _writeData(assetIconIosNotificationTemplateImagePath, notificationLogo);
 
     final primaryOnboardingLogo = await _loadFile(theme.images?.primaryOnboardingLogo);
-    _writeData(assetImagePrimaryOnboardingLogo, primaryOnboardingLogo);
+    _writeData(assetImagePrimaryOnboardingLogoPath, primaryOnboardingLogo);
 
     final secondaryOnboardingLogo = await _loadFile(theme.images?.secondaryOnboardingLogo);
-    _writeData(assetImageSecondaryOnboardingLogo, secondaryOnboardingLogo);
+    _writeData(assetImageSecondaryOnboardingLogoPath, secondaryOnboardingLogo);
 
     _writeData(assetThemePath, theme.toThemeSettingJsonString());
 
     final androidGoogleServices = await _loadFile(application.googleServices?.androidUrl);
-    _writeData(googleServicesDestinationAndroid, androidGoogleServices);
+    _writeData(googleServicesDestinationAndroidPath, androidGoogleServices);
 
     final iosGoogleServices = await _loadFile(application.googleServices?.iosUrl);
-    _writeData(googleServiceDestinationIos, iosGoogleServices);
+    _writeData(googleServiceDestinationIosPath, iosGoogleServices);
 
     if (theme.colors?.launch?.adaptiveIconBackground != null && theme.colors?.launch?.adaptiveIconBackground != null) {
       _logger.info('- Prepare config for flutter_launcher_icons_template');
@@ -148,8 +148,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'theme_color': theme.colors?.launch?.adaptiveIconBackground
       };
       final flutterLauncherIconsTemplate = Mustache(map: flutterLauncherIconsMapValues);
-      final flutterLauncherIcons = await flutterLauncherIconsTemplate.convertFromFile(configPathLaunchTemplate);
-      _writeData(configPathLaunch, flutterLauncherIcons);
+      final flutterLauncherIcons = await flutterLauncherIconsTemplate.convertFromFile(configPathLaunchTemplatePath);
+      _writeData(configPathLaunchPath, flutterLauncherIcons);
     }
 
     if (theme.colors?.launch?.splashBackground != null) {
@@ -159,8 +159,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', '')
       };
       final flutterNativeSplashTemplate = Mustache(map: flutterNativeSplashMapValues);
-      final flutterNativeSplash = await flutterNativeSplashTemplate.convertFromFile(configPathSplashTemplate);
-      _writeData(configPathSplash, flutterNativeSplash);
+      final flutterNativeSplash = await flutterNativeSplashTemplate.convertFromFile(configPathSplashTemplatePath);
+      _writeData(configPathSplashPath, flutterNativeSplash);
     }
 
     _logger.info('- Prepare config for package_rename_config_template');
@@ -171,8 +171,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'description': ''
     };
     final packageNameConfigTemplate = Mustache(map: packageNameConfigMapValues);
-    final packageNameConfig = await packageNameConfigTemplate.convertFromFile(configPathPackageTemplate);
-    _writeData(configPathPackage, packageNameConfig);
+    final packageNameConfig = await packageNameConfigTemplate.convertFromFile(configPathPackageTemplatePath);
+    _writeData(configPathPackagePath, packageNameConfig);
 
     // Configure dart define
 
