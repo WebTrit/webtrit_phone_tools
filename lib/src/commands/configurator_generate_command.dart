@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:path/path.dart' as path;
+
+const _directoryParameterName = '<directory>';
 
 class ConfiguratorGenerateCommand extends Command<int> {
   ConfiguratorGenerateCommand({
@@ -22,12 +25,26 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
   final Logger _logger;
 
+  late String workingDirectoryPath;
+
   @override
   Future<int> run() async {
+    final commandArgResults = argResults!;
+
+    if (commandArgResults.rest.isEmpty) {
+      workingDirectoryPath = Directory.current.path;
+    } else if (commandArgResults.rest.length == 1) {
+      workingDirectoryPath = commandArgResults.rest[0];
+    } else {
+      _logger.err('Only one "$_directoryParameterName" parameter can be passed.');
+      return ExitCode.usage.code;
+    }
+
     _logger.info('Flutter gen start');
     final flutterGenProcess = await Process.run(
       'fluttergen',
       [],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(flutterGenProcess.stdout.toString())
@@ -41,6 +58,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'flutter_launcher_icons',
       ],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(flutterIconsProcess.stdout.toString())
@@ -53,6 +71,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'flutter_native_splash:create',
       ],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(nativeSplashProcess.stdout.toString())
@@ -66,6 +85,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'add',
         'package_rename',
       ],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(packageInstallProcess.stdout.toString())
@@ -78,6 +98,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'package_rename',
       ],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(packageRenameProcess.stdout.toString())
@@ -93,6 +114,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'build',
         '--delete-conflicting-outputs',
       ],
+      workingDirectory: _workingDirectory(),
     );
     _logger
       ..info(buildRunnerProcess.stdout.toString())
@@ -100,5 +122,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('Build runner finished with: ${buildRunnerProcess.exitCode}');
 
     return ExitCode.success.code;
+  }
+
+  String _workingDirectory({String relativePath = ''}) {
+    return path.join(workingDirectoryPath, relativePath);
   }
 }
