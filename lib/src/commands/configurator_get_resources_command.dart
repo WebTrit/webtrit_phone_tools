@@ -82,10 +82,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     late ThemeDTO theme;
 
     try {
-      final dartDefineTemplate = Mustache(map: {});
-
-      final dartDefineStringJson = await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath);
-
       final url = '$configuratorApiUrl/api/v1/applications/$publisherApplicationId';
       application = await _loadData(url, ApplicationDTO.fromJsonString);
     } catch (e) {
