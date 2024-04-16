@@ -39,7 +39,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         help: 'Force-enable the classic app flow, disregarding the configuration value.',
         negatable: false,
       );
-    ;
   }
 
   @override
@@ -110,57 +109,96 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final keystoreFolder = path.join(previousDirectory, 'webtrit_phone_keystores', platformIdentifier);
 
     final adaptiveIconBackground = await _loadFile(theme.images?.adaptiveIconBackground);
-    _writeData(assetSplashIconPath, adaptiveIconBackground);
+    _writeData(
+      path: _workingDirectory(assetSplashIconPath),
+      data: adaptiveIconBackground,
+    );
 
     final adaptiveIconForeground = await _loadFile(theme.images?.adaptiveIconForeground);
-    _writeData(assetLauncherIconAdaptiveForegroundPath, adaptiveIconForeground);
+    _writeData(
+      path: _workingDirectory(assetLauncherIconAdaptiveForegroundPath),
+      data: adaptiveIconForeground,
+    );
 
     final webLauncherIcon = await _loadFile(theme.images?.webLauncherIcon);
-    _writeData(assetLauncherWebIconPath, webLauncherIcon);
+    _writeData(
+      path: _workingDirectory(assetLauncherWebIconPath),
+      data: webLauncherIcon,
+    );
 
     final androidLauncherIcon = await _loadFile(theme.images?.androidLauncherIcon);
-    _writeData(assetLauncherAndroidIconPath, androidLauncherIcon);
+    _writeData(
+      path: _workingDirectory(assetLauncherAndroidIconPath),
+      data: androidLauncherIcon,
+    );
 
     final iosLauncherIcon = await _loadFile(theme.images?.iosLauncherIcon);
-    _writeData(assetLauncherIosIconPath, iosLauncherIcon);
+    _writeData(
+      path: _workingDirectory(assetLauncherIosIconPath),
+      data: iosLauncherIcon,
+    );
 
     final notificationLogo = await _loadFile(theme.images?.notificationLogo);
-    _writeData(assetIconIosNotificationTemplateImagePath, notificationLogo);
+    _writeData(
+      path: _workingDirectory(assetIconIosNotificationTemplateImagePath),
+      data: notificationLogo,
+    );
 
     final primaryOnboardingLogo = await _loadFile(theme.images?.primaryOnboardingLogo);
-    _writeData(assetImagePrimaryOnboardingLogoPath, primaryOnboardingLogo);
+    _writeData(
+      path: _workingDirectory(assetImagePrimaryOnboardingLogoPath),
+      data: primaryOnboardingLogo,
+    );
 
     final secondaryOnboardingLogo = await _loadFile(theme.images?.secondaryOnboardingLogo);
-    _writeData(assetImageSecondaryOnboardingLogoPath, secondaryOnboardingLogo);
+    _writeData(
+      path: _workingDirectory(assetImageSecondaryOnboardingLogoPath),
+      data: secondaryOnboardingLogo,
+    );
 
-    _writeData(assetThemePath, theme.toThemeSettingJsonString());
+    _writeData(
+      path: _workingDirectory(assetThemePath),
+      data: theme.toThemeSettingJsonString(),
+    );
 
     final androidGoogleServices = await _loadFile(application.googleServices?.androidUrl);
-    _writeData(googleServicesDestinationAndroidPath, androidGoogleServices);
+    _writeData(
+      path: _workingDirectory(googleServicesDestinationAndroidPath),
+      data: androidGoogleServices,
+    );
 
     final iosGoogleServices = await _loadFile(application.googleServices?.iosUrl);
-    _writeData(googleServiceDestinationIosPath, iosGoogleServices);
+    _writeData(
+      path: _workingDirectory(googleServiceDestinationIosPath),
+      data: iosGoogleServices,
+    );
 
     if (theme.colors?.launch?.adaptiveIconBackground != null && theme.colors?.launch?.adaptiveIconBackground != null) {
       _logger.info('- Prepare config for flutter_launcher_icons_template');
       final flutterLauncherIconsMapValues = {
         'adaptive_icon_background': theme.colors?.launch?.adaptiveIconBackground,
-        'theme_color': theme.colors?.launch?.adaptiveIconBackground
+        'theme_color': theme.colors?.launch?.adaptiveIconBackground,
       };
       final flutterLauncherIconsTemplate = Mustache(map: flutterLauncherIconsMapValues);
       final flutterLauncherIcons = await flutterLauncherIconsTemplate.convertFromFile(configPathLaunchTemplatePath);
-      _writeData(configPathLaunchPath, flutterLauncherIcons);
+      _writeData(
+        path: _workingDirectory(configPathLaunchPath),
+        data: flutterLauncherIcons,
+      );
     }
 
     if (theme.colors?.launch?.splashBackground != null) {
       _logger.info('- Prepare config for flutter_native_splash_template');
 
       final flutterNativeSplashMapValues = {
-        'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', '')
+        'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', ''),
       };
       final flutterNativeSplashTemplate = Mustache(map: flutterNativeSplashMapValues);
       final flutterNativeSplash = await flutterNativeSplashTemplate.convertFromFile(configPathSplashTemplatePath);
-      _writeData(configPathSplashPath, flutterNativeSplash);
+      _writeData(
+        path: _workingDirectory(configPathSplashPath),
+        data: flutterNativeSplash,
+      );
     }
 
     _logger.info('- Prepare config for package_rename_config_template');
@@ -168,11 +206,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'app_name': application.name!,
       'package_name': application.platformIdentifier!,
       'override_old_package': 'com.webtrit.app',
-      'description': ''
+      'description': '',
     };
     final packageNameConfigTemplate = Mustache(map: packageNameConfigMapValues);
     final packageNameConfig = await packageNameConfigTemplate.convertFromFile(configPathPackageTemplatePath);
-    _writeData(configPathPackagePath, packageNameConfig);
+    _writeData(
+      path: _workingDirectory(configPathPackagePath),
+      data: packageNameConfig,
+    );
 
     // Configure dart define
 
@@ -209,10 +250,16 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       dartDefineMap.remove('WEBTRIT_APP_DEMO_CORE_URL');
     }
 
-    _writeData(configureDartDefinePath,
-        (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(dartDefineMap))).toString());
+    _writeData(
+      path: _workingDirectory(configureDartDefinePath),
+      data: (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(dartDefineMap))).toString(),
+    );
 
     return ExitCode.success.code;
+  }
+
+  String _workingDirectory(String relativePath) {
+    return path.join(Directory.current.path, relativePath);
   }
 
   Future<T> _loadData<T>(String url, T Function(String) fromBody) async {
@@ -233,12 +280,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
   }
 
-  void _writeData(String path, dynamic data) {
+  void _writeData({
+    required String path,
+    required dynamic data,
+  }) {
     if (data != null) {
       if (data is String) {
-        File(Directory.current.path + path).writeAsStringSync(data);
+        File(path).writeAsStringSync(data);
       } else if (data is Uint8List) {
-        File(Directory.current.path + path).writeAsBytesSync(data);
+        File(path).writeAsBytesSync(data);
       }
       _logger.success('✓ Written successfully to $path');
     } else {
