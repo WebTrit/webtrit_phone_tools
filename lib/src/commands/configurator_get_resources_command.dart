@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:simple_mustache/simple_mustache.dart';
+
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
@@ -127,6 +128,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     final keystoreFolder = path.join(keystorePath, platformIdentifier);
 
+    // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
+    // This ensures a continuous flow of execution for multiple commands.
+    final buildConfig = {
+      bundleIdField: application.platformIdentifier,
+      keystorePathField: keystoreFolder,
+    };
+
+    _writeData(
+      path: _workingDirectory(buildConfigFile),
+      data: buildConfig.toJson(),
+    );
+
     final adaptiveIconBackground = await _loadFile(theme.images?.adaptiveIconBackground);
     _writeData(
       path: _workingDirectory(assetSplashIconPath),
@@ -180,12 +193,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       data: theme.toThemeSettingJsonString(),
     );
 
+    // TODO(ConfiguratorGetResourcesCommand): This method is deprecated and will be available for some time to finish migrating the entire project to the Firebase service account approach.
     final androidGoogleServices = await _loadFile(application.googleServices?.androidUrl);
     _writeData(
       path: _workingDirectory(googleServicesDestinationAndroidPath),
       data: androidGoogleServices,
     );
 
+    // TODO(ConfiguratorGetResourcesCommand): This method is deprecated and will be available for some time to finish migrating the entire project to the Firebase service account approach.
     final iosGoogleServices = await _loadFile(application.googleServices?.iosUrl);
     _writeData(
       path: _workingDirectory(googleServiceDestinationIosPath),
