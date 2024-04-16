@@ -23,10 +23,6 @@ const assetLauncherAndroidIconPath = 'assets/launcher_icons/android.png';
 const assetLauncherIosIconPath = 'assets/launcher_icons/ios.png';
 const assetLauncherWebIconPath = 'assets/launcher_icons/web.png';
 
-// Google services
-const googleServicesDestinationAndroidPath = 'android/app/google-services.json';
-const googleServiceDestinationIosPath = 'ios/Runner/GoogleService-Info.plist';
-
 // Config for external plugins
 const configPathSplashTemplatePath = 'assets/flutter_native_splash_template.yaml';
 const configPathSplashPath = 'flutter_native_splash.yaml';

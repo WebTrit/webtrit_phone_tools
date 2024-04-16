@@ -193,20 +193,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       data: theme.toThemeSettingJsonString(),
     );
 
-    // TODO(ConfiguratorGetResourcesCommand): This method is deprecated and will be available for some time to finish migrating the entire project to the Firebase service account approach.
-    final androidGoogleServices = await _loadFile(application.googleServices?.androidUrl);
-    _writeData(
-      path: _workingDirectory(googleServicesDestinationAndroidPath),
-      data: androidGoogleServices,
-    );
-
-    // TODO(ConfiguratorGetResourcesCommand): This method is deprecated and will be available for some time to finish migrating the entire project to the Firebase service account approach.
-    final iosGoogleServices = await _loadFile(application.googleServices?.iosUrl);
-    _writeData(
-      path: _workingDirectory(googleServiceDestinationIosPath),
-      data: iosGoogleServices,
-    );
-
     if (theme.colors?.launch?.adaptiveIconBackground != null && theme.colors?.launch?.adaptiveIconBackground != null) {
       _logger.info('- Prepare config for flutter_launcher_icons_template');
       final flutterLauncherIconsMapValues = {
