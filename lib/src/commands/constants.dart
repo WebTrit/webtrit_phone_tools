@@ -36,3 +36,11 @@ const configPathPackagePath = 'package_rename_config.yaml';
 
 const configPathLaunchTemplatePath = 'assets/flutter_launcher_icons_template.yaml';
 const configPathLaunchPath = 'flutter_launcher_icons.yaml';
+
+// Build config
+const bundleIdField = 'bundleId';
+const keystorePathField = 'keystore_path';
+const buildConfigFile = 'build_config.json';
+
+// Firebase service account
+const projectIdField = 'project_id';
