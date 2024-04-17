@@ -126,13 +126,17 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     final platformIdentifier = application.platformIdentifier;
 
-    final keystoreFolder = path.join(keystorePath, platformIdentifier);
+    final keystoreDirectoryPath = _workingDirectory(keystorePath);
+    _logger.info('- Keystore directory path: $keystoreDirectoryPath');
+
+    final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, platformIdentifier);
+    _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
 
     // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
     // This ensures a continuous flow of execution for multiple commands.
     final buildConfig = {
       bundleIdField: application.platformIdentifier,
-      keystorePathField: keystoreFolder,
+      keystorePathField: projectKeystoreDirectoryPath,
     };
 
     _writeData(
@@ -249,7 +253,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'APP_GREETING': theme.texts?.greeting ?? application.name,
       'APP_DESCRIPTION': theme.texts?.greeting ?? '',
       'APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
-      'APP_ANDROID_KEYSTORE': keystoreFolder,
+      'APP_ANDROID_KEYSTORE': projectKeystoreDirectoryPath,
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = (await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath)).toMap();
