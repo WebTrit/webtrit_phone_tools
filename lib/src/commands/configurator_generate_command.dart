@@ -183,7 +183,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
   }
 
   String _workingDirectory({String relativePath = ''}) {
-    return path.join(workingDirectoryPath, relativePath);
+    return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
 
   String _readData(String path) {

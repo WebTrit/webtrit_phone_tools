@@ -277,7 +277,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   }
 
   String _workingDirectory(String relativePath) {
-    return path.join(workingDirectoryPath, relativePath);
+    return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
 
   Future<T> _loadData<T>(String url, T Function(String) fromBody) async {
