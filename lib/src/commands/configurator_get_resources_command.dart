@@ -132,6 +132,41 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, platformIdentifier);
     _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
 
+    final projectKeystoreSSlCertificateDirectoryPath = path.join(projectKeystoreDirectoryPath, 'ssl_certificates');
+    _logger.info('- Project ssl certificate directory path: $projectKeystoreSSlCertificateDirectoryPath');
+
+    final projectSSlCertificatesDirectoryPath = path.join(projectKeystoreDirectoryPath, kSSLCertificatePath);
+    final directorySSlCertificates = Directory(projectSSlCertificatesDirectoryPath);
+
+    if (directorySSlCertificates.existsSync()) {
+      _logger.info('- Project ssl certificates directory path: $projectSSlCertificatesDirectoryPath');
+
+      await for (final entity in directorySSlCertificates.list()) {
+        if (entity is File) {
+          _logger.info('--- ${entity.path}');
+          final certFile = File(entity.path);
+          final directory = _workingDirectory(assetSSLCertificate);
+
+          final newFilePath = path.join(directory, path.basename(certFile.path));
+          await certFile.copy(newFilePath);
+
+          final sslCertificatesCredentialsPath = path.join(projectKeystoreDirectoryPath, kSSLCertificateCredentialPath);
+          final sslCertificatesCredentials = File(sslCertificatesCredentialsPath);
+
+          if (sslCertificatesCredentials.existsSync()) {
+            _logger.info('- Project ssl certificates directory credentials path exists');
+
+            final newSSLCertificatesCredentials = path.join(directory, assetSSLCertificateCredentials);
+            await sslCertificatesCredentials.copy(newSSLCertificatesCredentials);
+          } else {
+            _logger.info('- Project ssl certificates directory credentials path not exists');
+          }
+        }
+      }
+    } else {
+      _logger.warn('- Project ssl certificates directory path not exists');
+    }
+
     // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
     // This ensures a continuous flow of execution for multiple commands.
     final buildConfig = {

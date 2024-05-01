@@ -23,6 +23,10 @@ const assetLauncherAndroidIconPath = 'assets/launcher_icons/android.png';
 const assetLauncherIosIconPath = 'assets/launcher_icons/ios.png';
 const assetLauncherWebIconPath = 'assets/launcher_icons/web.png';
 
+// SSL certificate
+const assetSSLCertificate = 'assets/certificates';
+const assetSSLCertificateCredentials = 'credentials.json';
+
 // Config for external plugins
 const configPathSplashTemplatePath = 'assets/flutter_native_splash_template.yaml';
 const configPathSplashPath = 'flutter_native_splash.yaml';
@@ -40,3 +44,7 @@ const buildConfigFile = 'build_config.json';
 
 // Firebase service account
 const projectIdField = 'project_id';
+
+// Keystore paths
+const kSSLCertificatePath = 'ssl_certificates';
+const kSSLCertificateCredentialPath = 'ssl-credentials.json';
