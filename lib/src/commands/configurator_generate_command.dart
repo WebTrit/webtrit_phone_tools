@@ -96,6 +96,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final workingDirectory = _workingDirectory();
 
     _logger
+      ..info('- Platform identifier: $bundleId')
       ..info('- Scripts working directory: $workingDirectory')
       ..info('- Service account path: $firebaseServiceAccountPath')
       ..info('Configure $firebaseAccountId google services');
