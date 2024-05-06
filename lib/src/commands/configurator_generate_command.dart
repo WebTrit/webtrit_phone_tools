@@ -93,6 +93,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         '--platforms',
         'android,web,ios',
       ],
+      workingDirectory: _workingDirectory(),
     );
 
     _logger
