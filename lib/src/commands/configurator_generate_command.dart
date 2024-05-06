@@ -110,6 +110,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         '--ios-bundle-id=$bundleId',
         '--macos-bundle-id=$bundleId',
         '--web-app-id=$bundleId',
+        '--windows-app-id=$bundleId',
         '--service-account=$firebaseServiceAccountPath',
         '--platforms',
         'android,ios',
