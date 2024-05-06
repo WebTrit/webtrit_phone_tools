@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
+const _bundleId = 'bundleId';
 const _keystorePath = 'keystore-path';
 
 const _directoryParameterName = '<directory>';
@@ -16,10 +17,15 @@ class ConfiguratorGenerateCommand extends Command<int> {
   ConfiguratorGenerateCommand({
     required Logger logger,
   }) : _logger = logger {
-    argParser.addOption(
-      _keystorePath,
-      help: "Path to the project's keystore folder.",
-    );
+    argParser
+      ..addOption(
+        _keystorePath,
+        help: "Path to the project's keystore folder.",
+      )
+      ..addOption(
+        _bundleId,
+        help: 'Application identifier.',
+      );
   }
 
   @override
@@ -57,6 +63,13 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final projectKeystorePathBuildConfig = buildConfig[keystorePathField] as String?;
     final projectKeystorePath = projectKeystorePathArg ?? projectKeystorePathBuildConfig ?? '';
 
+    final bundleId = (commandArgResults[_bundleId] as String?) ?? buildConfig[bundleIdField] as String?;
+
+    if ((bundleId ?? '').isEmpty) {
+      _logger.err('Option "$_bundleId" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
     if (projectKeystorePath.isEmpty) {
       _logger.err(
         'The option $_keystorePath cannot be empty and must be provided as a parameter or through $buildConfigFile',
@@ -92,6 +105,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'configure',
         '--yes',
         '--project=$firebaseAccountId',
+        '--android-package-name=$bundleId',
+        '--ios-bundle-id=$bundleId',
         '--service-account=$firebaseServiceAccountPath',
         '--platforms',
         'android,ios',
