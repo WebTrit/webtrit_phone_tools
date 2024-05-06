@@ -94,7 +94,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         '--project=$firebaseAccountId',
         '--service-account=$firebaseServiceAccountPath',
         '--platforms',
-        'android,web,ios',
+        'android,ios',
       ],
       workingDirectory: workingDirectory,
     );
