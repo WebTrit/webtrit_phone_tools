@@ -80,7 +80,10 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final firebaseServiceAccount = _readData(firebaseServiceAccountPath).toMap();
     final firebaseAccountId = firebaseServiceAccount[projectIdField];
 
+    final workingDirectory = _workingDirectory();
+
     _logger
+      ..info('- Scripts working directory: $workingDirectory')
       ..info('- Service account path: $firebaseServiceAccountPath')
       ..info('Configure $firebaseAccountId google services');
     final process = await Process.run(
@@ -93,19 +96,18 @@ class ConfiguratorGenerateCommand extends Command<int> {
         '--platforms',
         'android,web,ios',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
 
     _logger
       ..info(process.stdout.toString())
       ..err(process.stderr.toString())
-      ..info('flutterfire finished with: ${process.exitCode}');
-
-    _logger.info('Flutter gen start');
+      ..info('flutterfire finished with: ${process.exitCode}')
+      ..info('Flutter gen start');
     final flutterGenProcess = await Process.run(
       'fluttergen',
       [],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(flutterGenProcess.stdout.toString())
@@ -119,7 +121,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'flutter_launcher_icons',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(flutterIconsProcess.stdout.toString())
@@ -132,7 +134,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'flutter_native_splash:create',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(nativeSplashProcess.stdout.toString())
@@ -146,7 +148,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'add',
         'package_rename',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(packageInstallProcess.stdout.toString())
@@ -159,7 +161,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'run',
         'package_rename',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(packageRenameProcess.stdout.toString())
@@ -175,7 +177,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'build',
         '--delete-conflicting-outputs',
       ],
-      workingDirectory: _workingDirectory(),
+      workingDirectory: workingDirectory,
     );
     _logger
       ..info(buildRunnerProcess.stdout.toString())
