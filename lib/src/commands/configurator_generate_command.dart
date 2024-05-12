@@ -94,8 +94,20 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final firebaseAccountId = firebaseServiceAccount[projectIdField];
 
     final workingDirectory = _workingDirectory();
-
+    final flutterfireCLIProcess = await Process.run(
+      'dart',
+      [
+        'pub',
+        'global',
+        'activate',
+        'flutterfire_cli',
+      ],
+      workingDirectory: workingDirectory,
+    );
     _logger
+      ..info(flutterfireCLIProcess.stdout.toString())
+      ..err(flutterfireCLIProcess.stderr.toString())
+      ..info('Package renaming finished with: ${flutterfireCLIProcess.exitCode}')
       ..info('- Platform identifier: $bundleId')
       ..info('- Scripts working directory: $workingDirectory')
       ..info('- Service account path: $firebaseServiceAccountPath')
@@ -123,6 +135,23 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..err(process.stderr.toString())
       ..info('flutterfire finished with: ${process.exitCode}')
       ..info('Flutter gen start');
+
+    final flutterGenInstallProcess = await Process.run(
+      'flutter',
+      [
+        'pub',
+        'run',
+        'global',
+        'activate',
+        'flutter_gen',
+      ],
+      workingDirectory: workingDirectory,
+    );
+    _logger
+      ..info(flutterGenInstallProcess.stdout.toString())
+      ..err(flutterGenInstallProcess.stderr.toString())
+      ..info('Flutter gen generation finished with: ${flutterGenInstallProcess.exitCode}');
+
     final flutterGenProcess = await Process.run(
       'fluttergen',
       [],
