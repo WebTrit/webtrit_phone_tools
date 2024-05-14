@@ -14,7 +14,8 @@ const _appendDirectoryFlagName = 'appendDirectory';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
-const _storeFileName = 'upload-keystore.jks';
+const _storeFileNameJKS = 'upload-keystore.jks';
+const _storeFileNameP12 = 'upload-keystore.p12';
 const _keytoolLogFileName = 'keytool.log';
 const _keystoreMetadataFileName = 'upload-keystore-metadata.json';
 
@@ -93,7 +94,7 @@ class KeystoreGenerateCommand extends Command<int> {
     _logger.info('Initializing conventional keystore metadata');
     final keystoreMetadata = KeystoreMetadata.conventional(bundleId);
 
-    _logger.info('Generating key pair using keytool to: ${keystoreMetadata.storeFile}');
+    _logger.info('Generating key pair using keytool to: ${keystoreMetadata.storeFileJKS}');
     final process = Process.runSync(
       'keytool',
       [
@@ -109,7 +110,7 @@ class KeystoreGenerateCommand extends Command<int> {
         '-keypass',
         keystoreMetadata.keyPassword,
         '-keystore',
-        keystoreMetadata.storeFile,
+        keystoreMetadata.storeFileJKS,
         '-storepass',
         keystoreMetadata.storePassword,
         '-dname',
@@ -131,6 +132,39 @@ class KeystoreGenerateCommand extends Command<int> {
       File(keytoolLogPath).writeAsStringSync(process.stderr.toString(), mode: FileMode.append, flush: true);
     }
 
+    _logger.info('Transitioning to PKCS12 Format for KeyStore to: ${keystoreMetadata.storeFileP12}');
+    final transitioningToPKCS12Process = Process.runSync(
+      'keytool',
+      [
+        '-importkeystore',
+        '-noprompt',
+        '-srckeystore',
+        keystoreMetadata.storeFileJKS,
+        '-srcstorepass',
+        keystoreMetadata.keyPassword,
+        '-destkeystore',
+        keystoreMetadata.storeFileP12,
+        '-deststoretype',
+        'PKCS12',
+        '-deststorepass',
+        keystoreMetadata.storePassword,
+      ],
+      workingDirectory: workingDirectoryPath,
+      runInShell: true,
+    );
+    if (transitioningToPKCS12Process.exitCode != 0) {
+      _logger
+        ..info(transitioningToPKCS12Process.stdout.toString())
+        ..err(transitioningToPKCS12Process.stderr.toString());
+      return ExitCode.software.code;
+    } else {
+      _logger.info('Writing PKCS12 execution log to: $_keytoolLogFileName');
+      final keytoolLogPath = path.join(workingDirectoryPath, _keytoolLogFileName);
+      File(keytoolLogPath).writeAsStringSync(transitioningToPKCS12Process.stdout.toString(), flush: true);
+      File(keytoolLogPath)
+          .writeAsStringSync(transitioningToPKCS12Process.stderr.toString(), mode: FileMode.append, flush: true);
+    }
+
     _logger.info('Writing conventional keystore metadata to: $_keystoreMetadataFileName');
     final keystoreMetadataPath = path.join(workingDirectoryPath, _keystoreMetadataFileName);
     final metadataJsonString = keystoreMetadata.toJsonString();
@@ -145,7 +179,8 @@ class KeystoreMetadata {
     required this.bundleId,
     required this.keyAlias,
     required this.keyPassword,
-    required this.storeFile,
+    required this.storeFileP12,
+    required this.storeFileJKS,
     required this.storePassword,
     required this.dname,
   });
@@ -159,7 +194,8 @@ class KeystoreMetadata {
       bundleId: bundleId,
       keyAlias: 'upload',
       keyPassword: password,
-      storeFile: _storeFileName,
+      storeFileJKS: _storeFileNameJKS,
+      storeFileP12: _storeFileNameP12,
       storePassword: password,
       dname: 'CN=$commonName, O=WebTrit, C=UA',
     );
@@ -168,7 +204,8 @@ class KeystoreMetadata {
   String bundleId;
   String keyAlias;
   String keyPassword;
-  String storeFile;
+  String storeFileP12;
+  String storeFileJKS;
   String storePassword;
   String dname;
 
@@ -177,7 +214,8 @@ class KeystoreMetadata {
       'bundleId': bundleId,
       'keyAlias': keyAlias,
       'keyPassword': keyPassword,
-      'storeFile': storeFile,
+      'storeFile': storeFileP12,
+      'storeFileJKS': storeFileJKS,
       'storePassword': storePassword,
     };
     return (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(metadataJson))).toString();
