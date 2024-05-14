@@ -289,6 +289,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'APP_DESCRIPTION': theme.texts?.greeting ?? '',
       'APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
       'APP_ANDROID_KEYSTORE': projectKeystoreDirectoryPath,
+      'APP_BUILD_NAME_IOS': application.iosVersion?.buildName ?? '1.1.0',
+      'APP_BUILD_NUMBER_IOS': application.iosVersion?.buildNumber ?? '1010000',
+      'APP_BUILD_NAME_ANDROID': application.androidVersion?.buildName ?? '1.1.0',
+      'APP_BUILD_NUMBER_ANDROID': application.androidVersion?.buildNumber ?? '1010000',
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = (await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath)).toMap();
