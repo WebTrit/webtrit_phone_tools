@@ -7,7 +7,10 @@ import 'package:path/path.dart' as path;
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
+// TODO: Remove this field
 const _bundleId = 'bundleId';
+const _bundleIdAndroid = 'bundleIdAndroid';
+const _bundleIdIos = 'bundleIdIos';
 const _keystorePath = 'keystore-path';
 
 const _directoryParameterName = '<directory>';
@@ -25,6 +28,14 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..addOption(
         _bundleId,
         help: 'Application identifier.',
+      )
+      ..addOption(
+        _bundleIdAndroid,
+        help: 'Android application identifier.',
+      )
+      ..addOption(
+        _bundleIdIos,
+        help: 'iOS application identifier.',
       );
   }
 
@@ -63,10 +74,26 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final projectKeystorePathBuildConfig = buildConfig[keystorePathField] as String?;
     final projectKeystorePath = projectKeystorePathArg ?? projectKeystorePathBuildConfig ?? '';
 
+    // TODO: Remove this field
     final bundleId = (commandArgResults[_bundleId] as String?) ?? buildConfig[bundleIdField] as String?;
 
     if ((bundleId ?? '').isEmpty) {
       _logger.err('Option "$_bundleId" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
+    final bundleIdAndroid =
+        (commandArgResults[_bundleIdAndroid] as String?) ?? buildConfig[bundleIdAndroidField] as String?;
+
+    if ((bundleIdAndroid ?? '').isEmpty) {
+      _logger.err('Option "$_bundleIdAndroid" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
+    final bundleIdIos = (commandArgResults[_bundleIdIos] as String?) ?? buildConfig[bundleIdIosField] as String?;
+
+    if ((bundleIdIos ?? '').isEmpty) {
+      _logger.err('Option "$_bundleIdIos" can not be empty.');
       return ExitCode.usage.code;
     }
 
@@ -118,8 +145,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'configure',
         '--yes',
         '--project=$firebaseAccountId',
-        '--android-package-name=$bundleId',
-        '--ios-bundle-id=$bundleId',
+        '--android-package-name=$bundleIdAndroid',
+        '--ios-bundle-id=$bundleIdIos',
         '--macos-bundle-id=$bundleId',
         '--web-app-id=$bundleId',
         '--windows-app-id=$bundleId',

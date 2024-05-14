@@ -38,7 +38,9 @@ const configPathLaunchTemplatePath = 'assets/flutter_launcher_icons_template.yam
 const configPathLaunchPath = 'flutter_launcher_icons.yaml';
 
 // Build config
-const bundleIdField = 'bundleId';
+const bundleIdField = 'bundleId'; // TODO: Remove this
+const bundleIdAndroidField = 'bundleIdAndroid';
+const bundleIdIosField = 'bundleIdIos';
 const keystorePathField = 'keystore_path';
 const buildConfigFile = 'build_config.json';
 

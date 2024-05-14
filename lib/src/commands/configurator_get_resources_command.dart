@@ -124,6 +124,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    // TODO: refactor key store path to use applicationid
     final platformIdentifier = application.platformIdentifier;
 
     final keystoreDirectoryPath = _workingDirectory(keystorePath);
@@ -170,7 +171,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
     // This ensures a continuous flow of execution for multiple commands.
     final buildConfig = {
+      // TODO: Remove this field
       bundleIdField: application.platformIdentifier,
+      bundleIdAndroidField: application.androidPlatformId,
+      bundleIdIosField: application.iosPlatformId,
       keystorePathField: projectKeystoreDirectoryPath,
     };
 
@@ -263,7 +267,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.info('- Prepare config for package_rename_config_template');
     final packageNameConfigMapValues = {
       'app_name': application.name!,
+      // TODO: remove this field
       'package_name': application.platformIdentifier!,
+      'android_package_name': application.androidPlatformId,
+      'ios_package_name': application.iosPlatformId,
       'override_old_package': 'com.webtrit.app',
       'description': '',
     };
