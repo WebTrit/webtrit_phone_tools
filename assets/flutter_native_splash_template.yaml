@@ -1,0 +1,6 @@
+flutter_native_splash:
+  color: "{{background}}"
+  color_dark: "{{background}}"
+  android_12:
+    color: "{{background}}"
+    color_dark: "{{background}}"
