@@ -38,8 +38,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       )
       ..addOption(
         _cacheSessionDataPath,
-        help:
-            'Path to file which cache temporarily stores user session data to enhance performance and maintain state across different processes.',
+        help: 'Path to file which cache temporarily stores user session data to enhance performance '
+            'and maintain state across different processes.',
       )
       ..addFlag(
         _publisherAppDemoFlag,
@@ -97,7 +97,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final cacheSessionDataPath = (commandArgResults[_cacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
+    final paramCacheSessionDataPath = commandArgResults[_cacheSessionDataPath] as String?;
+    final cacheSessionDataPath = paramCacheSessionDataPath ?? defaultCacheSessionDataPath;
+    final cacheSessionDataDir = Directory(path.dirname(cacheSessionDataPath));
+
+    if (cacheSessionDataDir.path != '.' && !cacheSessionDataDir.existsSync()) {
+      _logger.err('- The directory specified by $_cacheSessionDataPath does not exist.');
+      return ExitCode.data.code;
+    }
 
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {

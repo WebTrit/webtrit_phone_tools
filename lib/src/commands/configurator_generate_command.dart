@@ -12,6 +12,7 @@ const _bundleId = 'bundleId';
 const _bundleIdAndroid = 'bundleIdAndroid';
 const _bundleIdIos = 'bundleIdIos';
 const _keystorePath = 'keystore-path';
+const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _directoryParameterName = '<directory>';
 const _firebaseServiceAccountFileName = 'firebase-service-account.json';
@@ -36,6 +37,11 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..addOption(
         _bundleIdIos,
         help: 'iOS application identifier.',
+      )
+      ..addOption(
+        _cacheSessionDataPath,
+        help: 'Path to file which cache temporarily stores user session data to enhance performance '
+            'and maintain state across different processes.',
       );
   }
 
@@ -68,7 +74,16 @@ class ConfiguratorGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final cacheSessionData = _readData(_workingDirectory(relativePath: defaultCacheSessionDataPath)).toMap();
+    final cacheSessionDataPath = (commandArgResults[_cacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
+
+    if (!File(cacheSessionDataPath).existsSync()) {
+      _logger.err(
+          '- The default cache_session_data.json file was not used, generated, or prepared before running this script, '
+          'or the custom path to cache session data was not provided correctly.');
+      return ExitCode.data.code;
+    }
+
+    final cacheSessionData = _readData(_workingDirectory(relativePath: cacheSessionDataPath)).toMap();
 
     final projectKeystorePathArg = commandArgResults[_keystorePath] as String?;
     final projectKeystorePathBuildConfig = cacheSessionData[keystorePathField] as String?;
