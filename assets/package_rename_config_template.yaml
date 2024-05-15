@@ -7,7 +7,3 @@ package_rename_config:
   ios:
     app_name: {{ app_name }}
     package_name: {{ ios_package_name }}
-  web:
-    app_name: {{ app_name }}
-    description: {{ description }}
-    bundle_name: {{ package_name }}
