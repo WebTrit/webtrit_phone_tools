@@ -7,8 +7,12 @@ import 'package:path/path.dart' as path;
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
+// TODO: Remove this field
 const _bundleId = 'bundleId';
+const _bundleIdAndroid = 'bundleIdAndroid';
+const _bundleIdIos = 'bundleIdIos';
 const _keystorePath = 'keystore-path';
+const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _directoryParameterName = '<directory>';
 const _firebaseServiceAccountFileName = 'firebase-service-account.json';
@@ -25,6 +29,19 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..addOption(
         _bundleId,
         help: 'Application identifier.',
+      )
+      ..addOption(
+        _bundleIdAndroid,
+        help: 'Android application identifier.',
+      )
+      ..addOption(
+        _bundleIdIos,
+        help: 'iOS application identifier.',
+      )
+      ..addOption(
+        _cacheSessionDataPath,
+        help: 'Path to file which cache temporarily stores user session data to enhance performance '
+            'and maintain state across different processes.',
       );
   }
 
@@ -57,22 +74,47 @@ class ConfiguratorGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final buildConfig = _readData(_workingDirectory(relativePath: buildConfigFile)).toMap();
+    final cacheSessionDataPath = (commandArgResults[_cacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
+
+    if (!File(cacheSessionDataPath).existsSync()) {
+      _logger.err(
+          '- The default cache_session_data.json file was not used, generated, or prepared before running this script, '
+          'or the custom path to cache session data was not provided correctly.');
+      return ExitCode.data.code;
+    }
+
+    final cacheSessionData = _readData(_workingDirectory(relativePath: cacheSessionDataPath)).toMap();
 
     final projectKeystorePathArg = commandArgResults[_keystorePath] as String?;
-    final projectKeystorePathBuildConfig = buildConfig[keystorePathField] as String?;
+    final projectKeystorePathBuildConfig = cacheSessionData[keystorePathField] as String?;
     final projectKeystorePath = projectKeystorePathArg ?? projectKeystorePathBuildConfig ?? '';
 
-    final bundleId = (commandArgResults[_bundleId] as String?) ?? buildConfig[bundleIdField] as String?;
+    // TODO: Remove this field
+    final bundleId = (commandArgResults[_bundleId] as String?) ?? cacheSessionData[bundleIdField] as String?;
 
     if ((bundleId ?? '').isEmpty) {
       _logger.err('Option "$_bundleId" can not be empty.');
       return ExitCode.usage.code;
     }
 
+    final bundleIdAndroid =
+        (commandArgResults[_bundleIdAndroid] as String?) ?? cacheSessionData[bundleIdAndroidField] as String?;
+
+    if ((bundleIdAndroid ?? '').isEmpty) {
+      _logger.err('Option "$_bundleIdAndroid" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
+    final bundleIdIos = (commandArgResults[_bundleIdIos] as String?) ?? cacheSessionData[bundleIdIosField] as String?;
+
+    if ((bundleIdIos ?? '').isEmpty) {
+      _logger.err('Option "$_bundleIdIos" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
     if (projectKeystorePath.isEmpty) {
       _logger.err(
-        'The option $_keystorePath cannot be empty and must be provided as a parameter or through $buildConfigFile',
+        'The option $_keystorePath cannot be empty and must be provided as a parameter or through $defaultCacheSessionDataPath',
       );
       return ExitCode.usage.code;
     }
@@ -98,6 +140,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
       'dart',
       [
         'pub',
+        'run',
         'global',
         'activate',
         'flutterfire_cli',
@@ -118,8 +161,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
         'configure',
         '--yes',
         '--project=$firebaseAccountId',
-        '--android-package-name=$bundleId',
-        '--ios-bundle-id=$bundleId',
+        '--android-package-name=$bundleIdAndroid',
+        '--ios-bundle-id=$bundleIdIos',
         '--macos-bundle-id=$bundleId',
         '--web-app-id=$bundleId',
         '--windows-app-id=$bundleId',
