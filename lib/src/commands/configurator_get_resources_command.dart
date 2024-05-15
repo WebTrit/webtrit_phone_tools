@@ -12,7 +12,7 @@ import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _applicationId = 'applicationId';
-const _keystorePath = 'keystore-path';
+const _keystoresPath = 'keystores-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _publisherAppDemoFlag = 'demo';
@@ -32,7 +32,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         mandatory: true,
       )
       ..addOption(
-        _keystorePath,
+        _keystoresPath,
         help: "Path to the project's keystore folder.",
         mandatory: true,
       )
@@ -91,9 +91,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final keystorePath = (commandArgResults[_keystorePath] as String?) ?? '';
+    final keystorePath = (commandArgResults[_keystoresPath] as String?) ?? '';
     if (keystorePath.isEmpty) {
-      _logger.err('Option "$_keystorePath" can not be empty.');
+      _logger.err('Option "$_keystoresPath" can not be empty.');
       return ExitCode.usage.code;
     }
 
