@@ -13,6 +13,7 @@ import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _applicationId = 'applicationId';
 const _keystorePath = 'keystore-path';
+const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _publisherAppDemoFlag = 'demo';
 const _publisherAppClassicFlag = 'classic';
@@ -34,6 +35,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         _keystorePath,
         help: "Path to the project's keystore folder.",
         mandatory: true,
+      )
+      ..addOption(
+        _cacheSessionDataPath,
+        help:
+            'Path to file which cache temporarily stores user session data to enhance performance and maintain state across different processes.',
       )
       ..addFlag(
         _publisherAppDemoFlag,
@@ -90,6 +96,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('Option "$_keystorePath" can not be empty.');
       return ExitCode.usage.code;
     }
+
+    final cacheSessionDataPath = (commandArgResults[_cacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
 
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
@@ -179,7 +187,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
 
     _writeData(
-      path: _workingDirectory(defaultCacheSessionDataPath),
+      path: _workingDirectory(cacheSessionDataPath),
       data: buildConfig.toJson(),
     );
 
