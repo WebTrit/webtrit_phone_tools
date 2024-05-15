@@ -40,7 +40,11 @@ const configPathLaunchPath = 'flutter_launcher_icons.yaml';
 // Cache session data
 const bundleIdField = 'bundleId'; // TODO: Remove this
 const bundleIdAndroidField = 'bundleIdAndroid';
+const buildNameAndroidField='buildNameAndroidField';
+const buildNumberAndroidField='buildNumberAndroidField';
 const bundleIdIosField = 'bundleIdIos';
+const buildNameIOSField='buildNameIOSField';
+const buildNumberIOSField='buildNumberIOSField';
 const keystorePathField = 'keystore_path';
 const defaultCacheSessionDataPath = 'cache_session_data.json';
 

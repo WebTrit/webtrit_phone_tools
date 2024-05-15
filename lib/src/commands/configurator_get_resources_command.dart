@@ -183,13 +183,29 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.warn('- Project ssl certificates directory path not exists');
     }
 
+    if (application.androidVersion?.buildName == null || application.androidVersion?.buildNumber == null) {
+      _logger.err('Option "$_applicationId" cannot be empty: Android version build name or build number is missing.');
+      return ExitCode.usage.code;
+    }
+
+    if (application.iosVersion?.buildName == null || application.iosVersion?.buildNumber == null) {
+      _logger.err('Option "$_applicationId" cannot be empty: iOS version build name or build number is missing.');
+      return ExitCode.usage.code;
+    }
     // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
     // This ensures a continuous flow of execution for multiple commands.
     final buildConfig = {
       // TODO: Remove this field
       bundleIdField: application.platformIdentifier,
+      // Android build configuration
       bundleIdAndroidField: application.androidPlatformId,
+      buildNameAndroidField: application.androidVersion?.buildName,
+      buildNumberAndroidField: application.androidVersion?.buildNumber,
+      // IOS build configuration
       bundleIdIosField: application.iosPlatformId,
+      buildNameIOSField: application.iosVersion?.buildName,
+      buildNumberIOSField: application.iosVersion?.buildNumber,
+      // Path to keystore
       keystorePathField: projectKeystoreDirectoryPath,
     };
 
