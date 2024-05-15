@@ -179,7 +179,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
 
     _writeData(
-      path: _workingDirectory(buildConfigFile),
+      path: _workingDirectory(defaultCacheSessionDataPath),
       data: buildConfig.toJson(),
     );
 

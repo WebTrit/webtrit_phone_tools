@@ -68,14 +68,14 @@ class ConfiguratorGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    final buildConfig = _readData(_workingDirectory(relativePath: buildConfigFile)).toMap();
+    final cacheSessionData = _readData(_workingDirectory(relativePath: defaultCacheSessionDataPath)).toMap();
 
     final projectKeystorePathArg = commandArgResults[_keystorePath] as String?;
-    final projectKeystorePathBuildConfig = buildConfig[keystorePathField] as String?;
+    final projectKeystorePathBuildConfig = cacheSessionData[keystorePathField] as String?;
     final projectKeystorePath = projectKeystorePathArg ?? projectKeystorePathBuildConfig ?? '';
 
     // TODO: Remove this field
-    final bundleId = (commandArgResults[_bundleId] as String?) ?? buildConfig[bundleIdField] as String?;
+    final bundleId = (commandArgResults[_bundleId] as String?) ?? cacheSessionData[bundleIdField] as String?;
 
     if ((bundleId ?? '').isEmpty) {
       _logger.err('Option "$_bundleId" can not be empty.');
@@ -83,14 +83,14 @@ class ConfiguratorGenerateCommand extends Command<int> {
     }
 
     final bundleIdAndroid =
-        (commandArgResults[_bundleIdAndroid] as String?) ?? buildConfig[bundleIdAndroidField] as String?;
+        (commandArgResults[_bundleIdAndroid] as String?) ?? cacheSessionData[bundleIdAndroidField] as String?;
 
     if ((bundleIdAndroid ?? '').isEmpty) {
       _logger.err('Option "$_bundleIdAndroid" can not be empty.');
       return ExitCode.usage.code;
     }
 
-    final bundleIdIos = (commandArgResults[_bundleIdIos] as String?) ?? buildConfig[bundleIdIosField] as String?;
+    final bundleIdIos = (commandArgResults[_bundleIdIos] as String?) ?? cacheSessionData[bundleIdIosField] as String?;
 
     if ((bundleIdIos ?? '').isEmpty) {
       _logger.err('Option "$_bundleIdIos" can not be empty.');
@@ -99,7 +99,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     if (projectKeystorePath.isEmpty) {
       _logger.err(
-        'The option $_keystorePath cannot be empty and must be provided as a parameter or through $buildConfigFile',
+        'The option $_keystorePath cannot be empty and must be provided as a parameter or through $defaultCacheSessionDataPath',
       );
       return ExitCode.usage.code;
     }
