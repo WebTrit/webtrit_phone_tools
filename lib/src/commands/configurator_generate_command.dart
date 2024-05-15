@@ -126,7 +126,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       'dart',
       [
         'pub',
-        'run',
         'global',
         'activate',
         'flutterfire_cli',
@@ -167,10 +166,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('Flutter gen start');
 
     final flutterGenInstallProcess = await Process.run(
-      'flutter',
+      'dart',
       [
         'pub',
-        'run',
         'global',
         'activate',
         'flutter_gen',
