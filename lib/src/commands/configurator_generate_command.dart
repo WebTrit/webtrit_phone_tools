@@ -7,8 +7,6 @@ import 'package:path/path.dart' as path;
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
-// TODO: Remove this field
-const _bundleId = 'bundleId';
 const _bundleIdAndroid = 'bundleIdAndroid';
 const _bundleIdIos = 'bundleIdIos';
 const _keystorePath = 'keystore-path';
@@ -25,10 +23,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..addOption(
         _keystorePath,
         help: "Path to the project's keystore folder.",
-      )
-      ..addOption(
-        _bundleId,
-        help: 'Application identifier.',
       )
       ..addOption(
         _bundleIdAndroid,
@@ -89,14 +83,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final projectKeystorePathBuildConfig = cacheSessionData[keystorePathField] as String?;
     final projectKeystorePath = projectKeystorePathArg ?? projectKeystorePathBuildConfig ?? '';
 
-    // TODO: Remove this field
-    final bundleId = (commandArgResults[_bundleId] as String?) ?? cacheSessionData[bundleIdField] as String?;
-
-    if ((bundleId ?? '').isEmpty) {
-      _logger.err('Option "$_bundleId" can not be empty.');
-      return ExitCode.usage.code;
-    }
-
     final bundleIdAndroid =
         (commandArgResults[_bundleIdAndroid] as String?) ?? cacheSessionData[bundleIdAndroidField] as String?;
 
@@ -140,7 +126,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       'dart',
       [
         'pub',
-        'run',
         'global',
         'activate',
         'flutterfire_cli',
@@ -151,7 +136,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info(flutterfireCLIProcess.stdout.toString())
       ..err(flutterfireCLIProcess.stderr.toString())
       ..info('Package renaming finished with: ${flutterfireCLIProcess.exitCode}')
-      ..info('- Platform identifier: $bundleId')
+      ..info('- Platform identifier android: $bundleIdAndroid')
+      ..info('- Platform identifier ios: $bundleIdIos')
       ..info('- Scripts working directory: $workingDirectory')
       ..info('- Service account path: $firebaseServiceAccountPath')
       ..info('Configure $firebaseAccountId google services');
@@ -163,9 +149,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
         '--project=$firebaseAccountId',
         '--android-package-name=$bundleIdAndroid',
         '--ios-bundle-id=$bundleIdIos',
-        '--macos-bundle-id=$bundleId',
-        '--web-app-id=$bundleId',
-        '--windows-app-id=$bundleId',
+        '--macos-bundle-id=',
+        '--web-app-id=',
+        '--windows-app-id=',
         '--service-account=$firebaseServiceAccountPath',
         '--platforms',
         'android,ios',
@@ -180,10 +166,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('Flutter gen start');
 
     final flutterGenInstallProcess = await Process.run(
-      'flutter',
+      'dart',
       [
         'pub',
-        'run',
         'global',
         'activate',
         'flutter_gen',

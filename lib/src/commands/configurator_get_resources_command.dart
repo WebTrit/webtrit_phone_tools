@@ -139,13 +139,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    // TODO: refactor key store path to use applicationid
-    final platformIdentifier = application.platformIdentifier;
-
     final keystoreDirectoryPath = _workingDirectory(keystorePath);
     _logger.info('- Keystore directory path: $keystoreDirectoryPath');
 
-    final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, platformIdentifier);
+    final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, applicationId);
     _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
 
     final projectKeystoreSSlCertificateDirectoryPath = path.join(projectKeystoreDirectoryPath, 'ssl_certificates');
@@ -195,8 +192,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
     // This ensures a continuous flow of execution for multiple commands.
     final buildConfig = {
-      // TODO: Remove this field
-      bundleIdField: application.platformIdentifier,
       // Android build configuration
       bundleIdAndroidField: application.androidPlatformId,
       buildNameAndroidField: application.androidVersion?.buildName,
@@ -297,9 +292,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     _logger.info('- Prepare config for package_rename_config_template');
     final packageNameConfigMapValues = {
-      'app_name': application.name!,
-      // TODO: remove this field
-      'package_name': application.platformIdentifier!,
+      'app_name': application.name,
       'android_package_name': application.androidPlatformId,
       'ios_package_name': application.iosPlatformId,
       'override_old_package': 'com.webtrit.app',
