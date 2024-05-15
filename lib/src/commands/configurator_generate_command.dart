@@ -140,6 +140,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
       'dart',
       [
         'pub',
+        'run',
         'global',
         'activate',
         'flutterfire_cli',
