@@ -145,9 +145,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, applicationId);
     _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
 
-    final projectKeystoreSSlCertificateDirectoryPath = path.join(projectKeystoreDirectoryPath, 'ssl_certificates');
-    _logger.info('- Project ssl certificate directory path: $projectKeystoreSSlCertificateDirectoryPath');
-
     final projectSSlCertificatesDirectoryPath = path.join(projectKeystoreDirectoryPath, kSSLCertificatePath);
     final directorySSlCertificates = Directory(projectSSlCertificatesDirectoryPath);
 
