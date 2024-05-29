@@ -27,6 +27,20 @@ dart pub global activate --source=path <path to this package>
 $ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory ../webtrit_phone_keystores
 # Keystore-commit command
 $ webtrit_phone_tools keystore-commit --bundleId="com.webtrit.app" --appendDirectory ../webtrit_phone_keystores
+```
+
+**Application Resource Configuration:**
+
+```sh
+# Configure application resources (using configurator tool)
+$ webtrit_phone_tools configure --applicationId=$(id) $(KEYSTORES_PATH) --$(BUILD_FLOW)
+# Generate configuration files
+$ webtrit_phone_tools configurator-generate
+
+# Create demo classic configuration (using configurator tool)
+$ webtrit_phone_tools create-demo-classic
+
+**Additional Commands:**
 
 # Show CLI version
 $ webtrit_phone_tools --version
@@ -36,5 +50,12 @@ $ webtrit_phone_tools --help
 ```
 
 ---
+
+**Advanced Usage (Configurator Tool):**
+
+These commands are for developers familiar with the `configurator` tool used internally.
+
+* [`configurator-resources`](./lib/src/commands/configurator_get_resources_command.dart)
+* [`configurator-generate`](./lib/src/commands/configurator_generate_command.dart)
 
 [very_good_cli_link]: https://github.com/VeryGoodOpenSource/very_good_cli
