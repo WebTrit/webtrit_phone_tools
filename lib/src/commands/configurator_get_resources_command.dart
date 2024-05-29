@@ -153,11 +153,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
       await for (final entity in directorySSlCertificates.list()) {
         if (entity is File) {
-          _logger.info('--- ${entity.path}');
+          _logger.info('--- path: ${entity.path}');
           final certFile = File(entity.path);
           final directory = _workingDirectory(assetSSLCertificate);
-
           final newFilePath = path.join(directory, path.basename(certFile.path));
+          _logger.info('--- copy: ${entity.path} to $newFilePath');
+
           await certFile.copy(newFilePath);
 
           final sslCertificatesCredentialsPath = path.join(projectKeystoreDirectoryPath, kSSLCertificateCredentialPath);
