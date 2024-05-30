@@ -1,15 +1,24 @@
 import 'dart:convert';
 
-class AssetlinksMetadata {
-  AssetlinksMetadata({
+class AppleAppSiteAssociation {
+  AppleAppSiteAssociation({
     required this.teamId,
+    required this.bundleId,
   });
 
   final String teamId;
+  final String bundleId;
 
   Map<String, dynamic> toJson() {
     return {
-      'teamId': teamId,
+      'applinks': {
+        'details': [
+          {
+            'appID': '$teamId.$bundleId',
+            'paths': ['*'],
+          }
+        ],
+      },
     };
   }
 
