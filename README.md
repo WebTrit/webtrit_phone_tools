@@ -29,6 +29,8 @@ dart pub global activate --source=path <path to this package>
 $ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory ../webtrit_phone_keystores
 # Keystore-commit command
 $ webtrit_phone_tools keystore-commit --bundleId="com.webtrit.app" --appendDirectory ../webtrit_phone_keystores
+# Keystore-verify command
+$ webtrit_phone_tools keystore-verify ../webtrit_phone_keystores/com.webtrit.app
 ```
 
 **Application Resource Configuration:**
