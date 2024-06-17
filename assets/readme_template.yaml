@@ -1,0 +1,26 @@
+# webtrit_phone_keystores
+
+  Keystores for applications are organized by their application id (configurator).
+    An application keystore folder structure created by `keystore-generate` command
+    of [webtrit_phone_tools](https://github.com/WebTrit/webtrit_phone_tools) (KeystoreGenerator).
+  
+  ## Keystore folders
+  
+  { { LIST_OF_APPLICATIONS } }"
+
+## Android
+
+**Transitioning to PKCS12 Format for KeyStore**
+
+Upgrade to PKCS12 format for KeyStore in Android to achieve better compatibility, security, and management across
+different JDK versions and platforms.
+
+*Command to convert jks to PKCS12:*
+
+password=$(jq -r --arg password "keyPassword" '.[$password]' "upload-keystore-metadata.json")
+    keytool -importkeystore -noprompt -srckeystore upload-keystore.jks -srcstorepass $password -destkeystore
+    upload-keystore.p12 -deststoretype PKCS12 -deststorepass $password
+  
+  ### Links
+  
+  [ Android Studio - Sign your app ](https://developer.android.com/studio/publish/app-signing)

@@ -3,6 +3,11 @@ const commonName = 'KeystoreGenerator';
 const parameterIndent = '  ';
 const parameterDelimiter = ' - ';
 
+// Templates APIs
+const configureDartDefineTemplatePath = 'assets/dart_define_template.yaml';
+const credentialsIOSTemplatePath = 'assets/upload-store-connect-metadata.yaml';
+const readmeTemplatePath = 'readme_template.yaml';
+
 // Environment APIs
 const configuratorStageApiUrl = 'https://us-central1-webtrit-configurator-stage.cloudfunctions.net';
 const configuratorProdApiUrl = 'https://us-central1-webtrit-configurator.cloudfunctions.net';
@@ -10,7 +15,6 @@ const configuratorApiUrl = configuratorProdApiUrl;
 
 // Phone environment
 const configureDartDefinePath = 'dart_define.json';
-const configureDartDefineTemplatePath = 'assets/dart_define_template.yaml';
 
 // Phone theme assets
 const assetThemePath = 'assets/themes/original.json';
@@ -53,3 +57,31 @@ const projectIdField = 'project_id';
 // Keystore paths
 const kSSLCertificatePath = 'ssl_certificates';
 const kSSLCertificateCredentialPath = 'ssl-credentials.json';
+
+// Keystore files
+const keystoreFiles = [
+  firebaseServiceAccount,
+  iosAuthKey,
+  iosProvision,
+  iosCertificates,
+  iosCredentials,
+  androidPlayServiceAccount,
+  androidCredentials,
+  androidUploadKeystoreJKS,
+  androidUploadKeystoreP12
+];
+
+// Firebase
+const firebaseServiceAccount = 'firebase-service-account.json';
+
+// IOS
+const iosAuthKey = 'AuthKey_[key_id].p8';
+const iosProvision = 'Provision.mobileprovision';
+const iosCertificates = 'Certificates.p12';
+const iosCredentials = 'upload-store-connect-metadata.json';
+
+// Android
+const androidPlayServiceAccount = 'google-play-service-account.json';
+const androidCredentials = 'upload-keystore-metadata.json';
+const androidUploadKeystoreJKS = 'upload-keystore.jks';
+const androidUploadKeystoreP12 = 'upload-keystore.p12';
