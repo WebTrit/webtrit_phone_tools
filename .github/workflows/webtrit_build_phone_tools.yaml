@@ -7,10 +7,15 @@ on:
         description: 'Target platform for build'
         required: true
         default: 'windows' # or 'windows', 'linux', 'macos'
+      branch:
+        description: 'Branch to checkout'
+        required: true
+        default: 'main'
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    if: contains(matrix.platform, github.event.inputs.platform)
 
     strategy:
       matrix:
@@ -28,6 +33,8 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
@@ -36,7 +43,7 @@ jobs:
 
       - name: Show files in the repository
         run: ls -al
-        
+
       - name: Install dependencies
         run: dart pub get
 
