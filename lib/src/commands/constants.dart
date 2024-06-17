@@ -3,6 +3,10 @@ const commonName = 'KeystoreGenerator';
 const parameterIndent = '  ';
 const parameterDelimiter = ' - ';
 
+// Templates APIs
+const configureDartDefineTemplatePath = 'assets/dart_define_template.yaml';
+const credentialsIOSTemplatePath = 'assets/upload-store-connect-metadata.yaml';
+
 // Environment APIs
 const configuratorStageApiUrl = 'https://us-central1-webtrit-configurator-stage.cloudfunctions.net';
 const configuratorProdApiUrl = 'https://us-central1-webtrit-configurator.cloudfunctions.net';
@@ -10,7 +14,6 @@ const configuratorApiUrl = configuratorProdApiUrl;
 
 // Phone environment
 const configureDartDefinePath = 'dart_define.json';
-const configureDartDefineTemplatePath = 'assets/dart_define_template.yaml';
 
 // Phone theme assets
 const assetThemePath = 'assets/themes/original.json';
