@@ -101,15 +101,31 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final cacheSessionDataPath = paramCacheSessionDataPath ?? defaultCacheSessionDataPath;
     final cacheSessionDataDir = Directory(path.dirname(cacheSessionDataPath));
 
-    if (cacheSessionDataDir.path != '.' && !cacheSessionDataDir.existsSync()) {
-      _logger.err('- The directory specified by $_cacheSessionDataPath does not exist.');
-      return ExitCode.data.code;
-    }
-
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
       return ExitCode.usage.code;
+    }
+
+    final keystoreDirectoryPath = _workingDirectory(keystorePath);
+    if (Directory(keystoreDirectoryPath).existsSync()) {
+      _logger.info('- Keystores directory path: $keystoreDirectoryPath');
+    } else {
+      _logger.err('- Keystores directory path does not exist: $keystoreDirectoryPath');
+      return ExitCode.usage.code;
+    }
+
+    final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, applicationId);
+    if (Directory(projectKeystoreDirectoryPath).existsSync()) {
+      _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
+    } else {
+      _logger.err('- Project keystores directory path does not exist: $projectKeystoreDirectoryPath');
+      return ExitCode.usage.code;
+    }
+
+    if (cacheSessionDataDir.path != '.' && !cacheSessionDataDir.existsSync()) {
+      _logger.err('- The directory specified by $_cacheSessionDataPath does not exist.');
+      return ExitCode.data.code;
     }
 
     final publisherAppDemoFlag = commandArgResults[_publisherAppDemoFlag] as bool;
@@ -138,12 +154,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err(e.toString());
       return ExitCode.usage.code;
     }
-
-    final keystoreDirectoryPath = _workingDirectory(keystorePath);
-    _logger.info('- Keystore directory path: $keystoreDirectoryPath');
-
-    final projectKeystoreDirectoryPath = path.join(keystoreDirectoryPath, applicationId);
-    _logger.info('- Project keystore directory path: $projectKeystoreDirectoryPath');
 
     final projectSSlCertificatesDirectoryPath = path.join(projectKeystoreDirectoryPath, kSSLCertificatePath);
     final directorySSlCertificates = Directory(projectSSlCertificatesDirectoryPath);
