@@ -13,50 +13,56 @@ on:
         default: 'main'
 
 jobs:
+  filter_platform:
+    runs-on: ubuntu-latest
+    outputs:
+      selected_platform: ${{ steps.set_output.outputs.platform }}
+    steps:
+      - name: Set selected platform
+        id: set_output
+        run: echo "::set-output name=platform::${{ github.event.inputs.platform }}"
+
   build:
     runs-on: ${{ matrix.os }}
+    needs: filter_platform
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        platform: [linux, macos, windows]
-        exclude:
+        include:
           - os: ubuntu-latest
-            platform: macos
-          - os: ubuntu-latest
-            platform: windows
-          - os: macos-latest
             platform: linux
+            output: webtrit_phone_tools
           - os: macos-latest
-            platform: windows
-          - os: windows-latest
-            platform: linux
-          - os: windows-latest
             platform: macos
+            output: webtrit_phone_tools
+          - os: windows-latest
+            platform: windows
+            output: webtrit_phone_tools.exe
+      fail-fast: false
 
     steps:
       - name: Checkout source code
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
 
       - name: Setup Dart SDK
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         uses: dart-lang/setup-dart@v1
         with:
           sdk: "stable"
 
       - name: Show files in the repository
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         run: ls -al
 
       - name: Install dependencies
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         run: dart pub get
 
       - name: Build executable
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         run: |
           if [ "${{ matrix.platform }}" == "windows" ]; then
             dart compile exe bin/webtrit_phone_tools.dart -o build/${{ matrix.output }}
@@ -69,13 +75,13 @@ jobs:
             exit 1
 
       - name: Upload build artifact
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         uses: actions/upload-artifact@v3
         with:
           name: dart-cli-build-${{ matrix.platform }}
           path: build/${{ matrix.output }}
 
       - name: Provide download link
-        if: matrix.platform == github.event.inputs.platform
+        if: matrix.platform == needs.filter_platform.outputs.selected_platform
         run: |
           echo "Download the build artifact at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"
