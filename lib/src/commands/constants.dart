@@ -6,6 +6,7 @@ const parameterDelimiter = ' - ';
 // Templates APIs
 const configureDartDefineTemplatePath = 'assets/dart_define_template.yaml';
 const credentialsIOSTemplatePath = 'assets/upload-store-connect-metadata.yaml';
+const readmeTemplatePath = 'readme_template.yaml';
 
 // Environment APIs
 const configuratorStageApiUrl = 'https://us-central1-webtrit-configurator-stage.cloudfunctions.net';

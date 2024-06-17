@@ -11,8 +11,8 @@ import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 const _applicationIdOptionName = 'applicationId';
-
 const _directoryParameterName = '<directory>';
+const _readmeFileName = 'README.md';
 
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
@@ -36,9 +36,11 @@ class KeystoreInitCommand extends Command<int> {
 
   final List<String> _existsKeystoreFiles = List.empty(growable: true);
 
+  late final String _workingDirectoryPath;
+
   late final _datasource = DatasourceProvider(_logger);
 
-  late final String _workingDirectoryPath;
+  late final _readmeUpdater = KeystoreReadmeUpdater(_logger, _datasource);
 
   @override
   Future<int> run() async {
@@ -129,6 +131,11 @@ class KeystoreInitCommand extends Command<int> {
       }
     }
 
+    await _readmeUpdater.addApplicationRecord(
+      _workingDirectoryPath,
+      application.name ?? applicationId,
+      applicationId,
+    );
     return ExitCode.success.code;
   }
 }
