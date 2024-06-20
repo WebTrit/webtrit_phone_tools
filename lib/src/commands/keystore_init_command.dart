@@ -26,7 +26,7 @@ class KeystoreInitCommand extends Command<int> {
   }
 
   @override
-  String get name => 'keystore_init';
+  String get name => 'keystore-init';
 
   @override
   String get description =>
