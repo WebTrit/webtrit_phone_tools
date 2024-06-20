@@ -88,7 +88,7 @@ class KeystoreInitCommand extends Command<int> {
       final process = Process.runSync(
         'dart',
         [
-          await PathProvider.getWebtritPhoneToolsPath(),
+          keystoreProjectPath,
           'keystore-generate',
           '--bundleId=${application.androidPlatformId ?? ''}',
         ],
