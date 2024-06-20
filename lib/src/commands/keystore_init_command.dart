@@ -8,11 +8,11 @@ import 'package:simple_mustache/simple_mustache.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
+import 'package:webtrit_phone_tools/src/gen/assets.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 const _applicationIdOptionName = 'applicationId';
 const _directoryParameterName = '<directory>';
-const _readmeFileName = 'README.md';
 
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
@@ -26,7 +26,7 @@ class KeystoreInitCommand extends Command<int> {
   }
 
   @override
-  String get name => 'keystore_init';
+  String get name => 'keystore-init';
 
   @override
   String get description =>
@@ -88,7 +88,7 @@ class KeystoreInitCommand extends Command<int> {
       final process = Process.runSync(
         'dart',
         [
-          await PathProvider.getWebtritPhoneToolsPath(),
+          keystoreProjectPath,
           'keystore-generate',
           '--bundleId=${application.androidPlatformId ?? ''}',
         ],
@@ -114,7 +114,7 @@ class KeystoreInitCommand extends Command<int> {
     };
 
     final credentialsIOSTemplate = Mustache(map: dartDefineMapValues);
-    final dartDefine = (await credentialsIOSTemplate.convertFromFile(credentialsIOSTemplatePath)).toMap();
+    final dartDefine = credentialsIOSTemplate.convert(StringifyAssets.uploadStoreConnectMetadata).toMap();
 
     _datasource.writeFileData(
       path: path.join(keystoreProjectPath, '$iosCredentials.incomplete'),

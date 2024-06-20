@@ -10,6 +10,7 @@ import 'package:simple_mustache/simple_mustache.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
+import 'package:webtrit_phone_tools/src/gen/assets.dart';
 
 const _applicationId = 'applicationId';
 const _keystoresPath = 'keystores-path';
@@ -277,7 +278,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'theme_color': theme.colors?.launch?.adaptiveIconBackground,
       };
       final flutterLauncherIconsTemplate = Mustache(map: flutterLauncherIconsMapValues);
-      final flutterLauncherIcons = await flutterLauncherIconsTemplate.convertFromFile(configPathLaunchTemplatePath);
+      final flutterLauncherIcons = flutterLauncherIconsTemplate.convert(StringifyAssets.flutterLauncherIconsTemplate);
       _writeData(
         path: _workingDirectory(configPathLaunchPath),
         data: flutterLauncherIcons,
@@ -291,7 +292,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', ''),
       };
       final flutterNativeSplashTemplate = Mustache(map: flutterNativeSplashMapValues);
-      final flutterNativeSplash = await flutterNativeSplashTemplate.convertFromFile(configPathSplashTemplatePath);
+      final flutterNativeSplash = flutterNativeSplashTemplate.convert(StringifyAssets.flutterNativeSplashTemplate);
       _writeData(
         path: _workingDirectory(configPathSplashPath),
         data: flutterNativeSplash,
@@ -307,7 +308,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'description': '',
     };
     final packageNameConfigTemplate = Mustache(map: packageNameConfigMapValues);
-    final packageNameConfig = await packageNameConfigTemplate.convertFromFile(configPathPackageTemplatePath);
+    final packageNameConfig = packageNameConfigTemplate.convert(StringifyAssets.packageRenameConfigTemplate);
     _writeData(
       path: _workingDirectory(configPathPackagePath),
       data: packageNameConfig,
@@ -330,7 +331,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'APP_ANDROID_KEYSTORE': projectKeystoreDirectoryPath,
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
-    final dartDefine = (await dartDefineTemplate.convertFromFile(configureDartDefineTemplatePath)).toMap();
+    final dartDefine = dartDefineTemplate.convert(StringifyAssets.dartDefineTemplate).toMap();
 
     if (publisherAppDemoFlag) {
       _logger.warn('Use force demo flow');

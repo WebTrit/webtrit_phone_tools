@@ -6,6 +6,7 @@ import 'package:simple_mustache/simple_mustache.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
+import 'package:webtrit_phone_tools/src/gen/assets.dart';
 import 'package:webtrit_phone_tools/src/utils/datasource_provider.dart';
 
 class KeystoreReadmeUpdater {
@@ -43,7 +44,7 @@ class KeystoreReadmeUpdater {
         'LIST_OF_APPLICATIONS': newKeystoreEntry,
       };
       final dartDefineTemplate = Mustache(map: dartDefineMapValues);
-      final dartDefine = (await dartDefineTemplate.convertFromFile(readmeTemplatePath)).toMap();
+      final dartDefine = dartDefineTemplate.convert(StringifyAssets.readmeTemplate).toMap();
 
       _datasourceProvider.writeFileData(
         path: path.join(workingDirectoryPath, '$iosCredentials.incomplete'),
