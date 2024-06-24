@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:args/command_runner.dart';
 import 'package:dto/dto.dart';
 import 'package:http/http.dart' as http;
@@ -151,6 +152,22 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     try {
       final url = '$configuratorApiUrl/api/v1/applications/$applicationId/themes/${application.theme}';
       theme = await _loadData(url, ThemeDTO.fromJsonString);
+    } catch (e) {
+      _logger.err(e.toString());
+      return ExitCode.usage.code;
+    }
+
+    try {
+      final url = '$configuratorApiUrl/api/v1/translations/compose-arb/$applicationId';
+
+      final translationsZip = await _loadFile(url);
+
+      for (final file in ZipDecoder().decodeBytes(translationsZip!)) {
+        final filename = file.name;
+        final data = file.content;
+        final outPath = _workingDirectory('$translationsArbPath/app_$filename');
+        _writeData(path: outPath, data: data);
+      }
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;

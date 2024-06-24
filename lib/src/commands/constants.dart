@@ -22,6 +22,9 @@ const assetLauncherAndroidIconPath = 'assets/launcher_icons/android.png';
 const assetLauncherIosIconPath = 'assets/launcher_icons/ios.png';
 const assetLauncherWebIconPath = 'assets/launcher_icons/web.png';
 
+// Phone translations arb path
+const translationsArbPath = 'lib/l10n/arb';
+
 // SSL certificate
 const assetSSLCertificate = 'assets/certificates';
 const assetSSLCertificateCredentials = 'credentials.json';

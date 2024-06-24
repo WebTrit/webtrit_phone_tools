@@ -15,6 +15,7 @@ dependencies:
   package_rename: ^1.5.0
   simple_mustache: ^2.1.0
   http: ^1.1.0
+  archive: ^3.6.0
 
   dto:
     path: ../webtrit_phone_configurator_common/packages/dto
