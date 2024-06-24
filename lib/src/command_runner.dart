@@ -45,6 +45,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(KeystoreInitCommand(logger: _logger));
     addCommand(KeystoreGenerateCommand(logger: _logger));
     addCommand(KeystoreCommitCommand(logger: _logger));
+    addCommand(AssetlinksGenerateCommand(logger: _logger));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
   }
 

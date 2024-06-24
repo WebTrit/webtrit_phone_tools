@@ -42,6 +42,9 @@ $ webtrit_phone_tools configurator-generate
 # Create demo classic configuration (using configurator tool)
 $ webtrit_phone_tools create-demo-classic
 
+# Create assetlink and apple-app-site-association files
+$ webtrit_phone_tools assetlinks-generate --bundleId=$(bundle_id) --appleTeamID=$(team_id) --androidFingerprints=$(SHA256_key) --output=$(out_path) $(metadata_path)
+
 **Additional Commands:**
 
 # Show CLI version
