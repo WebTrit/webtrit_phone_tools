@@ -33,7 +33,7 @@ class AssetlinksGenerateCommand extends Command<int> {
       ..addOption(
         _bundleIdOptionName,
         help: 'Platform bundle ID.',
-        mandatory: true,
+        defaultsTo: '',
       )
       ..addMultiOption(
         _androidFingerprints,
@@ -48,6 +48,7 @@ class AssetlinksGenerateCommand extends Command<int> {
       ..addOption(
         _appleTeamIDOptionName,
         help: 'Apple Team ID',
+        defaultsTo: '',
       )
       ..addFlag(
         _appendWellKnowDirectory,
@@ -63,7 +64,7 @@ class AssetlinksGenerateCommand extends Command<int> {
   String get description {
     final buffer = StringBuffer()
       ..writeln(
-        'Generate a .well-known files for configuration applinks in the WebTrit Phone Android application.',
+        'Generate a .well-known files for configuration applinks in the WebTrit Phone Android and iOS applications.',
       )
       ..write(parameterIndent)
       ..write(_directoryParameterDescriptionName)
@@ -85,18 +86,15 @@ class AssetlinksGenerateCommand extends Command<int> {
     final bundleId = commandArgResults[_bundleIdOptionName] as String;
     final androidFingerprints = commandArgResults[_androidFingerprints] as List<String>;
     final outputPath = commandArgResults[_outputDirectoryName] as String;
-
-    final teamIdArg = commandArgResults[_appleTeamIDOptionName] as String?;
-
+    final teamIdArg = commandArgResults[_appleTeamIDOptionName] as String;
     final appendWellKnownDirectory = commandArgResults[_appendWellKnowDirectory] as bool;
 
-    if (bundleId.isEmpty) {
-      _logger.err('Option "$_bundleIdOptionName" can not be empty.');
-      return ExitCode.usage.code;
-    }
+    final isGenerateGoogleAssetLinks = androidFingerprints.isNotEmpty;
+    final isGenerateAppleAssetLinks = teamIdArg.isNotEmpty && bundleId.isNotEmpty;
 
-    if (androidFingerprints.isEmpty) {
-      _logger.err('Option "$_androidFingerprints" can not be empty.');
+    if (!isGenerateGoogleAssetLinks && !isGenerateAppleAssetLinks) {
+      _logger.err(
+          'At least one of "$_androidFingerprints" or "$_appleTeamIDOptionName" && "$_bundleIdOptionName" must be provided.');
       return ExitCode.usage.code;
     }
 
@@ -105,60 +103,43 @@ class AssetlinksGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    String? teamId;
+    /// Well Known processing
+    var welKnownWorkingDirectoryPath = outputPath;
 
-    /// Metadata processing
-    String assetlinksMetadataWorkingDirectoryPath;
-
-    if (commandArgResults.rest.isEmpty) {
-      assetlinksMetadataWorkingDirectoryPath = Directory.current.path;
-    } else if (commandArgResults.rest.length == 1) {
-      assetlinksMetadataWorkingDirectoryPath = commandArgResults.rest[0];
-    } else {
-      _logger.err('Only one "$_directoryParameterName" parameter can be passed.');
-      return ExitCode.usage.code;
+    if (appendWellKnownDirectory) {
+      welKnownWorkingDirectoryPath = path.join(welKnownWorkingDirectoryPath, _wellKnownPackage);
     }
 
-    // Create new metadata file if teamId is specified
-    // or trying to read existed metadata file to get the teamId
-    if (teamIdArg != null && teamIdArg.isNotEmpty) {
-      teamId = teamIdArg;
+    _logger.info('Creating working directory: $welKnownWorkingDirectoryPath');
+    Directory(welKnownWorkingDirectoryPath).createSync(recursive: true);
 
-      _logger.info('Creating working directory: $assetlinksMetadataWorkingDirectoryPath');
-      Directory(assetlinksMetadataWorkingDirectoryPath).createSync(recursive: true);
-
-      /// Well Known processing
-      var welKnownWorkingDirectoryPath = outputPath;
-
-      if (appendWellKnownDirectory) {
-        welKnownWorkingDirectoryPath = path.join(welKnownWorkingDirectoryPath, _wellKnownPackage);
-      }
-
-      _logger.info('Creating working directory: $welKnownWorkingDirectoryPath');
-      Directory(welKnownWorkingDirectoryPath).createSync(recursive: true);
-
+    if (isGenerateAppleAssetLinks) {
       _logger.info('Writing Apple app site association to: $_appleAppSiteAssociation');
 
       final appleData = Mustache(map: {
-        'appID': '$teamId.$bundleId',
+        'appID': '$teamIdArg.$bundleId',
       });
       final appleJSON = appleData.toStringifyJSON(StringifyAssets.appleAssetLinksTemplate);
       final appleFilePath = path.join(welKnownWorkingDirectoryPath, _appleAppSiteAssociation);
       File(appleFilePath).writeAsStringSync(appleJSON, flush: true);
+    } else {
+      _logger.warn('Apple Team ID is not provided. Skipping Apple app site association.');
+    }
 
+    if (isGenerateGoogleAssetLinks) {
       _logger.info('Writing Google asset links to: $_assetlinks');
 
       final googleData = Mustache(map: {
-        'package_name': '$teamId.$bundleId',
+        'package_name': bundleId,
         'sha256_cert_fingerprints': androidFingerprints,
       });
       final googleJSON = googleData.toStringifyJSON(StringifyAssets.androidAssetLinksTemplate);
       final googleFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
       File(googleFilePath).writeAsStringSync(googleJSON, flush: true);
-
-      return ExitCode.success.code;
     } else {
-      return ExitCode.usage.code;
+      _logger.warn('Android Fingerprints are not provided. Skipping Google asset links.');
     }
+
+    return ExitCode.success.code;
   }
 }
