@@ -25,7 +25,8 @@ dev_dependencies:
   build_version: ^2.1.1
   mocktail: ^1.0.3
   test: ^1.25.2
-  very_good_analysis: ^5.1.0
+  webtrit_analysis:
+    git: https://github.com/WebTrit/webtrit_analysis.git
 
 executables:
   webtrit_phone_tools:
