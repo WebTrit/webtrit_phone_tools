@@ -17,7 +17,11 @@ const _directoryParameterName = '<directory>';
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
     required Logger logger,
-  }) : _logger = logger {
+    required HttpClient httpClient,
+    required KeystoreReadmeUpdater keystoreReadmeUpdater,
+  })  : _logger = logger,
+        _httpClient = httpClient,
+        _readmeUpdater = keystoreReadmeUpdater {
     argParser.addOption(
       _applicationIdOptionName,
       help: 'Application ID to initialize the keystore project.',
@@ -34,13 +38,13 @@ class KeystoreInitCommand extends Command<int> {
 
   final Logger _logger;
 
+  final HttpClient _httpClient;
+
+  final KeystoreReadmeUpdater _readmeUpdater;
+
   final List<String> _existsKeystoreFiles = List.empty(growable: true);
 
   late final String _workingDirectoryPath;
-
-  late final _httpClient = HttpClient(configuratorApiUrl, _logger);
-
-  late final _readmeUpdater = KeystoreReadmeUpdater(_logger);
 
   @override
   Future<int> run() async {
