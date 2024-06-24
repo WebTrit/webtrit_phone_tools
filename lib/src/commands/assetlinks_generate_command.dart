@@ -133,7 +133,7 @@ class AssetlinksGenerateCommand extends Command<int> {
         'package_name': bundleId,
         'sha256_cert_fingerprints': androidFingerprints,
       });
-      final googleJSON = googleData.toStringifyJSON(StringifyAssets.androidAssetLinksTemplate);
+      final googleJSON = googleData.toStringifyJSON(StringifyAssets.googleAssetLinksTemplate);
       final googleFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
       File(googleFilePath).writeAsStringSync(googleJSON, flush: true);
     } else {
