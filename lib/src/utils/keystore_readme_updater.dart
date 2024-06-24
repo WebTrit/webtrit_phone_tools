@@ -4,16 +4,13 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:simple_mustache/simple_mustache.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/gen/assets.dart';
-import 'package:webtrit_phone_tools/src/utils/datasource_provider.dart';
 
 class KeystoreReadmeUpdater {
-  KeystoreReadmeUpdater(this._logger, this._datasourceProvider);
+  KeystoreReadmeUpdater(this._logger);
 
   final Logger _logger;
-  final DatasourceProvider _datasourceProvider;
 
   static const _readmeFileName = 'README.md';
   static const _keystoreFoldersSectionStart = '## Keystore folders\n';
@@ -46,10 +43,7 @@ class KeystoreReadmeUpdater {
       final dartDefineTemplate = Mustache(map: dartDefineMapValues);
       final dartDefine = dartDefineTemplate.convert(StringifyAssets.readmeTemplate).toMap();
 
-      _datasourceProvider.writeFileData(
-        path: path.join(workingDirectoryPath, '$iosCredentials.incomplete'),
-        data: dartDefine.toJson(),
-      );
+      File(readmeFilePath).writeAsStringSync(dartDefine.toJson());
     }
   }
 

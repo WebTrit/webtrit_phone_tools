@@ -40,7 +40,7 @@ class KeystoreInitCommand extends Command<int> {
 
   late final _datasource = DatasourceProvider(_logger);
 
-  late final _readmeUpdater = KeystoreReadmeUpdater(_logger, _datasource);
+  late final _readmeUpdater = KeystoreReadmeUpdater(_logger);
 
   @override
   Future<int> run() async {
@@ -116,11 +116,9 @@ class KeystoreInitCommand extends Command<int> {
     final credentialsIOSTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = credentialsIOSTemplate.convert(StringifyAssets.uploadStoreConnectMetadata).toMap();
 
-    _datasource.writeFileData(
-      path: path.join(keystoreProjectPath, '$iosCredentials.incomplete'),
-      data: dartDefine.toJson(),
-    );
-    _existsKeystoreFiles.add(androidCredentials);
+    final iosCredentialsFilePath = path.join(keystoreProjectPath, '$iosCredentials.incomplete');
+    File(iosCredentialsFilePath).writeAsStringSync(dartDefine.toJson());
+    _existsKeystoreFiles.add(iosCredentials);
 
     // Create incomplete files which still need attention
     for (final fileName in keystoreFiles) {
