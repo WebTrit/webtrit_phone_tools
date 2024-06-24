@@ -38,7 +38,7 @@ class KeystoreInitCommand extends Command<int> {
 
   late final String _workingDirectoryPath;
 
-  late final _httpClient = HttpClient(_logger);
+  late final _httpClient = HttpClient(configuratorApiUrl, _logger);
 
   late final _readmeUpdater = KeystoreReadmeUpdater(_logger);
 
@@ -68,8 +68,7 @@ class KeystoreInitCommand extends Command<int> {
 
     ApplicationDTO application;
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$applicationId';
-      application = await _httpClient.getData(url, ApplicationDTO.fromJsonString);
+      application = await _httpClient.getApplication(applicationId);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
