@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -6,7 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
-import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
+import 'package:webtrit_phone_tools/src/models/keystore_metadata.dart';
 
 const _bundleIdOptionName = 'bundleId';
 const _createParentDirectoriesFlagName = 'createParentDirectories';
@@ -14,8 +13,6 @@ const _appendDirectoryFlagName = 'appendDirectory';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
-const _storeFileNameJKS = 'upload-keystore.jks';
-const _storeFileNameP12 = 'upload-keystore.p12';
 const _keytoolLogFileName = 'keytool.log';
 const _keystoreMetadataFileName = 'upload-keystore-metadata.json';
 
@@ -171,53 +168,5 @@ class KeystoreGenerateCommand extends Command<int> {
     File(keystoreMetadataPath).writeAsStringSync(metadataJsonString, flush: true);
 
     return ExitCode.success.code;
-  }
-}
-
-class KeystoreMetadata {
-  KeystoreMetadata({
-    required this.bundleId,
-    required this.keyAlias,
-    required this.keyPassword,
-    required this.storeFileP12,
-    required this.storeFileJKS,
-    required this.storePassword,
-    required this.dname,
-  });
-
-  factory KeystoreMetadata.conventional(String bundleId) {
-    final password = PasswordGenerator.random(
-      uppercase: true,
-      numbers: true,
-    );
-    return KeystoreMetadata(
-      bundleId: bundleId,
-      keyAlias: 'upload',
-      keyPassword: password,
-      storeFileJKS: _storeFileNameJKS,
-      storeFileP12: _storeFileNameP12,
-      storePassword: password,
-      dname: 'CN=$commonName, O=WebTrit, C=UA',
-    );
-  }
-
-  String bundleId;
-  String keyAlias;
-  String keyPassword;
-  String storeFileP12;
-  String storeFileJKS;
-  String storePassword;
-  String dname;
-
-  String toJsonString() {
-    final metadataJson = {
-      'bundleId': bundleId,
-      'keyAlias': keyAlias,
-      'keyPassword': keyPassword,
-      'storeFile': storeFileP12,
-      'storeFileJKS': storeFileJKS,
-      'storePassword': storePassword,
-    };
-    return (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(metadataJson))).toString();
   }
 }
