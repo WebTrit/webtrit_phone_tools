@@ -35,10 +35,10 @@ class AssetlinksGenerateCommand extends Command<int> {
         help: 'Platform bundle ID.',
         mandatory: true,
       )
-      ..addOption(
+      ..addMultiOption(
         _androidFingerprint,
-        help: 'Android Fingerprint',
-        mandatory: true,
+        help: 'Android Fingerprints (comma-separated)',
+        defaultsTo: [],
       )
       ..addOption(
         _outputDirectoryName,
@@ -83,7 +83,7 @@ class AssetlinksGenerateCommand extends Command<int> {
   Future<int> run() async {
     final commandArgResults = argResults!;
     final bundleId = commandArgResults[_bundleIdOptionName] as String;
-    final androidFingerprint = commandArgResults[_androidFingerprint] as String;
+    final androidFingerprints = commandArgResults[_androidFingerprint] as List<String>;
     final outputPath = commandArgResults[_outputDirectoryName] as String;
 
     final teamIdArg = commandArgResults[_appleTeamIDOptionName] as String?;
@@ -95,7 +95,7 @@ class AssetlinksGenerateCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
-    if (androidFingerprint.isEmpty) {
+    if (androidFingerprints.isEmpty) {
       _logger.err('Option "$_androidFingerprint" can not be empty.');
       return ExitCode.usage.code;
     }
@@ -150,7 +150,7 @@ class AssetlinksGenerateCommand extends Command<int> {
 
       final googleData = Mustache(map: {
         'package_name': '$teamId.$bundleId',
-        'sha256_cert_fingerprints': [_androidFingerprint]
+        'sha256_cert_fingerprints': androidFingerprints,
       });
       final googleJSON = googleData.toStringifyJSON(StringifyAssets.androidAssetLinksTemplate);
       final googleFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
