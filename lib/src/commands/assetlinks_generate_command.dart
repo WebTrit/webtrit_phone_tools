@@ -13,7 +13,7 @@ import '../gen/assets.dart';
 
 const _bundleIdOptionName = 'bundleId';
 const _appleTeamIDOptionName = 'appleTeamID';
-const _androidFingerprint = 'androidFingerprint';
+const _androidFingerprints = 'androidFingerprints';
 
 const _outputDirectoryName = 'output';
 
@@ -36,7 +36,7 @@ class AssetlinksGenerateCommand extends Command<int> {
         mandatory: true,
       )
       ..addMultiOption(
-        _androidFingerprint,
+        _androidFingerprints,
         help: 'Android Fingerprints (comma-separated)',
         defaultsTo: [],
       )
@@ -83,7 +83,7 @@ class AssetlinksGenerateCommand extends Command<int> {
   Future<int> run() async {
     final commandArgResults = argResults!;
     final bundleId = commandArgResults[_bundleIdOptionName] as String;
-    final androidFingerprints = commandArgResults[_androidFingerprint] as List<String>;
+    final androidFingerprints = commandArgResults[_androidFingerprints] as List<String>;
     final outputPath = commandArgResults[_outputDirectoryName] as String;
 
     final teamIdArg = commandArgResults[_appleTeamIDOptionName] as String?;
@@ -96,7 +96,7 @@ class AssetlinksGenerateCommand extends Command<int> {
     }
 
     if (androidFingerprints.isEmpty) {
-      _logger.err('Option "$_androidFingerprint" can not be empty.');
+      _logger.err('Option "$_androidFingerprints" can not be empty.');
       return ExitCode.usage.code;
     }
 
