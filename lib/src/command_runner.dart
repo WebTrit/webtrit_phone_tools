@@ -7,6 +7,9 @@ import 'package:pub_updater/pub_updater.dart';
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
+import 'commands/constants.dart';
+import 'utils/utils.dart';
+
 const executableName = 'webtrit_phone_tools';
 const packageName = 'webtrit_phone_tools';
 const description = 'WebTrit Phone CLI tools';
@@ -22,8 +25,12 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   /// {@macro webtrit_phone_tools_command_runner}
   WebtritPhoneToolsCommandRunner({
     Logger? logger,
+    HttpClient? httpClient,
+    KeystoreReadmeUpdater? keystoreReadmeUpdater,
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
+        _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
+        _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
     // Add root options and flags
@@ -42,7 +49,11 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     // Add sub commands
     addCommand(ConfiguratorGetResourcesCommand(logger: _logger));
     addCommand(ConfiguratorGenerateCommand(logger: _logger));
-    addCommand(KeystoreInitCommand(logger: _logger));
+    addCommand(KeystoreInitCommand(
+      logger: _logger,
+      httpClient: _httpClient,
+      keystoreReadmeUpdater: _keystoreReadmeUpdater,
+    ));
     addCommand(KeystoreGenerateCommand(logger: _logger));
     addCommand(KeystoreCommitCommand(logger: _logger));
     addCommand(KeystoreVerifyCommand(logger: _logger));
@@ -54,6 +65,8 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   void printUsage() => _logger.info(usage);
 
   final Logger _logger;
+  final HttpClient _httpClient;
+  final KeystoreReadmeUpdater _keystoreReadmeUpdater;
   final PubUpdater _pubUpdater;
 
   @override

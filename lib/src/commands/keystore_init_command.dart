@@ -17,7 +17,11 @@ const _directoryParameterName = '<directory>';
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
     required Logger logger,
-  }) : _logger = logger {
+    required HttpClient httpClient,
+    required KeystoreReadmeUpdater keystoreReadmeUpdater,
+  })  : _logger = logger,
+        _httpClient = httpClient,
+        _readmeUpdater = keystoreReadmeUpdater {
     argParser.addOption(
       _applicationIdOptionName,
       help: 'Application ID to initialize the keystore project.',
@@ -34,13 +38,13 @@ class KeystoreInitCommand extends Command<int> {
 
   final Logger _logger;
 
+  final HttpClient _httpClient;
+
+  final KeystoreReadmeUpdater _readmeUpdater;
+
   final List<String> _existsKeystoreFiles = List.empty(growable: true);
 
   late final String _workingDirectoryPath;
-
-  late final _datasource = DatasourceProvider(_logger);
-
-  late final _readmeUpdater = KeystoreReadmeUpdater(_logger, _datasource);
 
   @override
   Future<int> run() async {
@@ -68,8 +72,7 @@ class KeystoreInitCommand extends Command<int> {
 
     ApplicationDTO application;
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$applicationId';
-      application = await _datasource.getHttpData(url, ApplicationDTO.fromJsonString);
+      application = await _httpClient.getApplication(applicationId);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -116,11 +119,9 @@ class KeystoreInitCommand extends Command<int> {
     final credentialsIOSTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = credentialsIOSTemplate.convert(StringifyAssets.uploadStoreConnectMetadata).toMap();
 
-    _datasource.writeFileData(
-      path: path.join(keystoreProjectPath, '$iosCredentials.incomplete'),
-      data: dartDefine.toJson(),
-    );
-    _existsKeystoreFiles.add(androidCredentials);
+    final iosCredentialsFilePath = path.join(keystoreProjectPath, '$iosCredentials.incomplete');
+    File(iosCredentialsFilePath).writeAsStringSync(dartDefine.toJson());
+    _existsKeystoreFiles.add(iosCredentials);
 
     // Create incomplete files which still need attention
     for (final fileName in keystoreFiles) {

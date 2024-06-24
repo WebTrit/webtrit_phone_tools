@@ -2,21 +2,15 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:simple_mustache/simple_mustache.dart';
-
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
-import 'package:webtrit_phone_tools/src/extension/extension.dart';
-import 'package:webtrit_phone_tools/src/gen/assets.dart';
-import 'package:webtrit_phone_tools/src/utils/datasource_provider.dart';
 
 class KeystoreReadmeUpdater {
-  KeystoreReadmeUpdater(this._logger, this._datasourceProvider);
+  KeystoreReadmeUpdater(this._logger);
 
   final Logger _logger;
-  final DatasourceProvider _datasourceProvider;
 
   static const _readmeFileName = 'README.md';
   static const _keystoreFoldersSectionStart = '## Keystore folders\n';
+  static const _separator = '\n---';
 
   Future<void> addApplicationRecord(
     String workingDirectoryPath,
@@ -38,33 +32,23 @@ class KeystoreReadmeUpdater {
         throw Exception('README.md is missing the "## Keystore folders" section.');
       }
     } else {
-      _logger.info('Creating README.md and adding application entry.');
-
-      final dartDefineMapValues = {
-        'LIST_OF_APPLICATIONS': newKeystoreEntry,
-      };
-      final dartDefineTemplate = Mustache(map: dartDefineMapValues);
-      final dartDefine = dartDefineTemplate.convert(StringifyAssets.readmeTemplate).toMap();
-
-      _datasourceProvider.writeFileData(
-        path: path.join(workingDirectoryPath, '$iosCredentials.incomplete'),
-        data: dartDefine.toJson(),
-      );
+      _logger.info('README.md not found.');
     }
   }
 
   String _insertKeystoreEntry(String readmeContent, String newKeystoreEntry) {
     final keystoreFoldersSectionIndex = readmeContent.indexOf(_keystoreFoldersSectionStart);
-    final keystoreFoldersSectionEndIndex =
-        readmeContent.indexOf('##', keystoreFoldersSectionIndex + _keystoreFoldersSectionStart.length);
+    final separatorIndex = readmeContent.indexOf(_separator, keystoreFoldersSectionIndex);
 
-    final keystoreFoldersSectionEnd =
-        keystoreFoldersSectionEndIndex != -1 ? keystoreFoldersSectionEndIndex : readmeContent.length;
+    final keystoreFoldersEnd = separatorIndex != -1 ? separatorIndex : readmeContent.length;
+
+    final keystoreSection = readmeContent.substring(keystoreFoldersSectionIndex, keystoreFoldersEnd).trim();
+    final newKeystoreSection = '$keystoreSection\n$newKeystoreEntry';
 
     return readmeContent.replaceRange(
       keystoreFoldersSectionIndex,
-      keystoreFoldersSectionEnd,
-      '${readmeContent.substring(keystoreFoldersSectionIndex, keystoreFoldersSectionEnd).trim()}\n$newKeystoreEntry\n',
+      keystoreFoldersEnd,
+      newKeystoreSection,
     );
   }
 }
