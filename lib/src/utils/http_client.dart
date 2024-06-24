@@ -1,12 +1,12 @@
 import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 
-class DatasourceProvider {
-  DatasourceProvider(this.logger);
+class HttpClient {
+  HttpClient(this.logger);
 
   final Logger logger;
 
-  Future<T> getHttpData<T>(String url, T Function(String) fromBody) async {
+  Future<T> getData<T>(String url, T Function(String) fromBody) async {
     final progress = logger.progress('Loading data from $url');
 
     try {
