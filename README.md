@@ -43,7 +43,7 @@ $ webtrit_phone_tools configurator-generate
 $ webtrit_phone_tools create-demo-classic
 
 # Create assetlink and apple-app-site-association files
-$ webtrit_phone_tools assetlinks-generate --bundleId=$(bundle_id) --appleTeamID=$(team_id) --androidFingerprint=$(SHA256_key) --output=$(out_path) $(metadata_path)
+$ webtrit_phone_tools assetlinks-generate --bundleId=$(bundle_id) --appleTeamID=$(team_id) --androidFingerprints=$(SHA256_key) --output=$(out_path) $(metadata_path)
 
 **Additional Commands:**
 
