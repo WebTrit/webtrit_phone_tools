@@ -19,7 +19,7 @@ class KeystoreMetadata {
   factory KeystoreMetadata.fromJson(String jsonString) {
     final json = jsonDecode(jsonString) as Map;
 
-    // TODO: Remove this block after repo update
+    // TODO(Serdun): Remove this block after repo update
     // Migration 1: split storeFile to storeFileJKS and storeFileP12
     if (json.containsKey('storeFile')) {
       json['storeFileP12'] = json['storeFile'] ?? _storeFileNameP12;
