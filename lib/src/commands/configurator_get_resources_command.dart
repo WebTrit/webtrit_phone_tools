@@ -147,7 +147,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     if (application.theme == null) {
-      _logger.err('Application $applicationId do not have default theme');
+      _logger.err('Application $applicationId does not have a default theme');
       return ExitCode.usage.code;
     }
 
@@ -163,9 +163,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
       for (final file in translationsZip) {
         final filename = file.name;
-        final data = file.content;
+        final data = file.content as Uint8List;
         final outPath = _workingDirectory('$translationsArbPath/app_$filename');
-        _writeData(path: outPath, data: data);
+        await File(outPath).writeAsBytes(data);
+
+        _logger.success('✓ Written successfully to $outPath');
       }
     } catch (e) {
       _logger.err(e.toString());
@@ -197,12 +199,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
             final newSSLCertificatesCredentials = path.join(directory, assetSSLCertificateCredentials);
             await sslCertificatesCredentials.copy(newSSLCertificatesCredentials);
           } else {
-            _logger.info('- Project ssl certificates directory credentials path not exists');
+            _logger.info('- Project ssl certificates directory credentials path does not exist');
           }
         }
       }
     } else {
-      _logger.warn('- Project ssl certificates directory path not exists');
+      _logger.warn('- Project ssl certificates directory path does not exist');
     }
 
     if (application.androidVersion?.buildName == null || application.androidVersion?.buildNumber == null) {
@@ -229,63 +231,85 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       keystorePathField: projectKeystoreDirectoryPath,
     };
 
-    _writeData(
-      path: _workingDirectory(cacheSessionDataPath),
-      data: buildConfig.toJson(),
-    );
+    final buildConfigPath = _workingDirectory(cacheSessionDataPath);
+    File(buildConfigPath).writeAsStringSync(buildConfig.toJson());
+    _logger.success('✓ Written successfully to $buildConfigPath');
 
     final adaptiveIconBackground = await _httpClient.getBytes(theme.images?.adaptiveIconBackground);
-    _writeData(
-      path: _workingDirectory(assetSplashIconPath),
-      data: adaptiveIconBackground,
-    );
+    final adaptiveIconBackgroundPath = _workingDirectory(assetSplashIconPath);
+    if (adaptiveIconBackground != null) {
+      File(adaptiveIconBackgroundPath).writeAsBytesSync(adaptiveIconBackground);
+      _logger.success('✓ Written successfully to $adaptiveIconBackgroundPath');
+    } else {
+      _logger.err('✗ Failed to write $adaptiveIconBackgroundPath with $adaptiveIconBackground');
+    }
 
     final adaptiveIconForeground = await _httpClient.getBytes(theme.images?.adaptiveIconForeground);
-    _writeData(
-      path: _workingDirectory(assetLauncherIconAdaptiveForegroundPath),
-      data: adaptiveIconForeground,
-    );
+    final adaptiveIconForegroundPath = _workingDirectory(assetLauncherIconAdaptiveForegroundPath);
+    if (adaptiveIconForeground != null) {
+      File(adaptiveIconForegroundPath).writeAsBytesSync(adaptiveIconForeground);
+      _logger.success('✓ Written successfully to $adaptiveIconForegroundPath');
+    } else {
+      _logger.err('✗ Failed to write $adaptiveIconForegroundPath with $adaptiveIconForeground');
+    }
 
     final webLauncherIcon = await _httpClient.getBytes(theme.images?.webLauncherIcon);
-    _writeData(
-      path: _workingDirectory(assetLauncherWebIconPath),
-      data: webLauncherIcon,
-    );
+    final webLauncherIconPath = _workingDirectory(assetLauncherWebIconPath);
+    if (webLauncherIcon != null) {
+      File(webLauncherIconPath).writeAsBytesSync(webLauncherIcon);
+      _logger.success('✓ Written successfully to $webLauncherIconPath');
+    } else {
+      _logger.err('✗ Failed to write $webLauncherIconPath with $webLauncherIcon');
+    }
 
     final androidLauncherIcon = await _httpClient.getBytes(theme.images?.androidLauncherIcon);
-    _writeData(
-      path: _workingDirectory(assetLauncherAndroidIconPath),
-      data: androidLauncherIcon,
-    );
+    final androidLauncherIconPath = _workingDirectory(assetLauncherAndroidIconPath);
+    if (androidLauncherIcon != null) {
+      File(androidLauncherIconPath).writeAsBytesSync(androidLauncherIcon);
+      _logger.success('✓ Written successfully to $androidLauncherIconPath');
+    } else {
+      _logger.err('✗ Failed to write $androidLauncherIconPath with $androidLauncherIcon');
+    }
 
     final iosLauncherIcon = await _httpClient.getBytes(theme.images?.iosLauncherIcon);
-    _writeData(
-      path: _workingDirectory(assetLauncherIosIconPath),
-      data: iosLauncherIcon,
-    );
+    final iosLauncherIconPath = _workingDirectory(assetLauncherIosIconPath);
+    if (iosLauncherIcon != null) {
+      File(iosLauncherIconPath).writeAsBytesSync(iosLauncherIcon);
+      _logger.success('✓ Written successfully to $iosLauncherIconPath');
+    } else {
+      _logger.err('✗ Failed to write $iosLauncherIconPath with $iosLauncherIcon');
+    }
 
     final notificationLogo = await _httpClient.getBytes(theme.images?.notificationLogo);
-    _writeData(
-      path: _workingDirectory(assetIconIosNotificationTemplateImagePath),
-      data: notificationLogo,
-    );
+    final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
+    if (notificationLogo != null) {
+      File(notificationLogoPath).writeAsBytesSync(notificationLogo);
+      _logger.success('✓ Written successfully to $notificationLogoPath');
+    } else {
+      _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
+    }
 
     final primaryOnboardingLogo = await _httpClient.getBytes(theme.images?.primaryOnboardingLogo);
-    _writeData(
-      path: _workingDirectory(assetImagePrimaryOnboardingLogoPath),
-      data: primaryOnboardingLogo,
-    );
+    final primaryOnboardingLogoPath = _workingDirectory(assetImagePrimaryOnboardingLogoPath);
+    if (primaryOnboardingLogo != null) {
+      File(primaryOnboardingLogoPath).writeAsBytesSync(primaryOnboardingLogo);
+      _logger.success('✓ Written successfully to $primaryOnboardingLogoPath');
+    } else {
+      _logger.err('✗ Failed to write $primaryOnboardingLogoPath with $primaryOnboardingLogo');
+    }
 
     final secondaryOnboardingLogo = await _httpClient.getBytes(theme.images?.secondaryOnboardingLogo);
-    _writeData(
-      path: _workingDirectory(assetImageSecondaryOnboardingLogoPath),
-      data: secondaryOnboardingLogo,
-    );
+    final secondaryOnboardingLogoPath = _workingDirectory(assetImageSecondaryOnboardingLogoPath);
+    if (secondaryOnboardingLogo != null) {
+      File(secondaryOnboardingLogoPath).writeAsBytesSync(secondaryOnboardingLogo);
+      _logger.success('✓ Written successfully to $secondaryOnboardingLogoPath');
+    } else {
+      _logger.err('✗ Failed to write $secondaryOnboardingLogoPath with $secondaryOnboardingLogo');
+    }
 
-    _writeData(
-      path: _workingDirectory(assetThemePath),
-      data: theme.toThemeSettingJsonString(),
-    );
+    final themePath = _workingDirectory(assetThemePath);
+    File(themePath).writeAsStringSync(theme.toThemeSettingJsonString());
+    _logger.success('✓ Written successfully to $themePath');
 
     if (theme.colors?.launch?.adaptiveIconBackground != null && theme.colors?.launch?.adaptiveIconBackground != null) {
       _logger.info('- Prepare config for flutter_launcher_icons_template');
@@ -295,10 +319,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       };
       final flutterLauncherIconsTemplate = Mustache(map: flutterLauncherIconsMapValues);
       final flutterLauncherIcons = flutterLauncherIconsTemplate.convert(StringifyAssets.flutterLauncherIconsTemplate);
-      _writeData(
-        path: _workingDirectory(configPathLaunchPath),
-        data: flutterLauncherIcons,
-      );
+      final flutterLauncherIconsPath = _workingDirectory(configPathLaunchPath);
+      File(flutterLauncherIconsPath).writeAsStringSync(flutterLauncherIcons);
+      _logger.success('✓ Written successfully to $flutterLauncherIconsPath');
     }
 
     if (theme.colors?.launch?.splashBackground != null) {
@@ -309,10 +332,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       };
       final flutterNativeSplashTemplate = Mustache(map: flutterNativeSplashMapValues);
       final flutterNativeSplash = flutterNativeSplashTemplate.convert(StringifyAssets.flutterNativeSplashTemplate);
-      _writeData(
-        path: _workingDirectory(configPathSplashPath),
-        data: flutterNativeSplash,
-      );
+      final flutterNativeSplashPath = _workingDirectory(configPathSplashPath);
+      File(flutterNativeSplashPath).writeAsStringSync(flutterNativeSplash);
+      _logger.success('✓ Written successfully to $flutterNativeSplashPath');
     }
 
     _logger.info('- Prepare config for package_rename_config_template');
@@ -325,14 +347,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
     final packageNameConfigTemplate = Mustache(map: packageNameConfigMapValues);
     final packageNameConfig = packageNameConfigTemplate.convert(StringifyAssets.packageRenameConfigTemplate);
-    _writeData(
-      path: _workingDirectory(configPathPackagePath),
-      data: packageNameConfig,
-    );
-
-    // Configure dart define
-
-    _logger.info('- Prepare config for $configureDartDefinePath');
+    final packageNameConfigPath = _workingDirectory(configPathPackagePath);
+    File(packageNameConfigPath).writeAsStringSync(packageNameConfig);
+    _logger
+      ..success('✓ Written successfully to $packageNameConfigPath')
+      // Configure dart define
+      ..info('- Prepare config for $configureDartDefinePath');
     final httpsPrefix = application.coreUrl!.startsWith('https://') || application.coreUrl!.startsWith('http://');
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
@@ -350,14 +370,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = dartDefineTemplate.convert(StringifyAssets.dartDefineTemplate).toMap();
+    final dartDefinePath = _workingDirectory(configureDartDefinePath);
+    File(dartDefinePath).writeAsStringSync(dartDefine.toJson());
+    _logger
+      ..success('✓ Written successfully to $dartDefinePath')
+      ..info('- dart define appSalesEmailAvailable:$appSalesEmailAvailable');
 
-    _logger.info('- dart define appSalesEmailAvailable:$appSalesEmailAvailable');
-
-    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
     if (!appSalesEmailAvailable) {
       dartDefine.remove('WEBTRIT_APP_SALES_EMAIL');
     }
-    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
     if (publisherAppDemoFlag) {
       _logger.warn('Use force demo flow');
       dartDefine.remove('WEBTRIT_APP_CORE_URL');
@@ -372,31 +393,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       dartDefine.remove('WEBTRIT_APP_DEMO_CORE_URL');
     }
 
-    _writeData(
-      path: _workingDirectory(configureDartDefinePath),
-      data: dartDefine.toJson(),
-    );
+    File(dartDefinePath).writeAsStringSync(dartDefine.toJson());
+    _logger.success('✓ Written successfully to $dartDefinePath');
 
     return ExitCode.success.code;
   }
 
   String _workingDirectory(String relativePath) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
-  }
-
-  void _writeData({
-    required String path,
-    required dynamic data,
-  }) {
-    if (data != null) {
-      if (data is String) {
-        File(path).writeAsStringSync(data);
-      } else if (data is Uint8List) {
-        File(path).writeAsBytesSync(data);
-      }
-      _logger.success('✓ Written successfully to $path');
-    } else {
-      _logger.err('✗ Field to write $path with $data');
-    }
   }
 }
