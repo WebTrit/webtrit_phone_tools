@@ -338,18 +338,27 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
 
+    final appSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
     final dartDefineMapValues = {
-      'APP_DEMO_CORE_URL': url,
-      'APP_CORE_URL': url,
-      'APP_NAME': application.name,
-      'APP_GREETING': theme.texts?.greeting ?? application.name,
-      'APP_DESCRIPTION': theme.texts?.greeting ?? '',
-      'APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
-      'APP_ANDROID_KEYSTORE': projectKeystoreDirectoryPath,
+      'WEBTRIT_APP_DEMO_CORE_URL': url,
+      'WEBTRIT_APP_CORE_URL': url,
+      'WEBTRIT_APP_SALES_EMAIL': application.contactInfo?.appSalesEmail,
+      'WEBTRIT_APP_NAME': application.name,
+      'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
+      'WEBTRIT_APP_DESCRIPTION': theme.texts?.greeting ?? '',
+      'WEBTRIT_APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
+      'WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH': projectKeystoreDirectoryPath,
     };
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = dartDefineTemplate.convert(StringifyAssets.dartDefineTemplate).toMap();
 
+    _logger.info('- dart define appSalesEmailAvailable:$appSalesEmailAvailable');
+
+    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
+    if (!appSalesEmailAvailable) {
+      dartDefine.remove('WEBTRIT_APP_SALES_EMAIL');
+    }
+    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
     if (publisherAppDemoFlag) {
       _logger.warn('Use force demo flow');
       dartDefine.remove('WEBTRIT_APP_CORE_URL');
