@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:archive/archive.dart';
@@ -24,58 +26,61 @@ class HttpClient {
 
   Future<ApplicationDTO> getApplication(String applicationId) async {
     final url = _applicationUrl(applicationId);
-    final progress = logger.progress('Loading data from $url');
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        progress.complete('Data loaded successfully from $url');
-        return ApplicationDTO.fromJsonString(response.body);
-      } else {
-        progress.fail('Failed to load data from $url: ${response.statusCode}');
-        throw Exception('Failed to load data from $url: ${response.statusCode}');
-      }
-    } catch (e) {
-      progress.fail('Failed to load data from $url: $e');
-      rethrow;
-    }
+    return _fetchData<ApplicationDTO>(
+      url,
+      (response) => ApplicationDTO.fromJsonString(response.body),
+    );
   }
 
   Future<ThemeDTO> getTheme(String applicationId, String themeId) async {
     final url = _themeUrl(applicationId, themeId);
+    return _fetchData<ThemeDTO>(
+      url,
+      (response) => ThemeDTO.fromJsonString(response.body),
+    );
+  }
+
+  Future<Archive> getTranslationFiles(String applicationId) async {
+    final url = _translationsUrl(applicationId);
+    final fileBytes = await getBytes(url);
+    if (fileBytes != null) {
+      return ZipDecoder().decodeBytes(fileBytes);
+    } else {
+      throw Exception('Failed to load file from $url');
+    }
+  }
+
+  Future<Uint8List?> getBytes(String? url) async {
+    if (url == null) {
+      logger.err('Failed to load file from null link');
+      return null;
+    }
+    return _fetchData<Uint8List>(
+      url,
+      (response) => response.bodyBytes,
+    );
+  }
+
+  Future<T> _fetchData<T>(
+    String url,
+    T Function(http.Response response) parseResponse,
+  ) async {
     final progress = logger.progress('Loading data from $url');
 
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         progress.complete('Data loaded successfully from $url');
-        return ThemeDTO.fromJsonString(response.body);
+        return parseResponse(response);
       } else {
-        progress.fail('Failed to load data from $url: ${response.statusCode}');
-        throw Exception('Failed to load data from $url: ${response.statusCode}');
+        final errorMessage = 'Failed to load data from $url: ${response.statusCode} ${response.reasonPhrase}';
+        progress.fail(errorMessage);
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      progress.fail('Failed to load data from $url: $e');
-      rethrow;
-    }
-  }
-
-  Future<Archive> getTranslationFiles(String applicationId) async {
-    final url = _translationsUrl(applicationId);
-    final progress = logger.progress('Loading file from $url');
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        progress.complete('File loaded successfully from $url');
-        return ZipDecoder().decodeBytes(response.bodyBytes);
-      } else {
-        progress.fail('Failed to load file from $url: ${response.statusCode}');
-        throw Exception('Failed to load file from $url: ${response.statusCode}');
-      }
-    } catch (e) {
-      progress.fail('Failed to load file from $url: $e');
-      rethrow;
+      final errorMessage = 'Failed to load data from $url: $e';
+      progress.fail(errorMessage);
+      throw Exception(errorMessage);
     }
   }
 }
