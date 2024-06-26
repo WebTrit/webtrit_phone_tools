@@ -6,6 +6,7 @@ import 'package:dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:simple_mustache/simple_mustache.dart';
+import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
@@ -159,16 +160,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      final translationsZip = await _httpClient.getTranslationFiles(applicationId);
-
-      for (final file in translationsZip) {
-        final filename = file.name;
-        final data = file.content as Uint8List;
-        final outPath = _workingDirectory('$translationsArbPath/app_$filename');
-        await File(outPath).writeAsBytes(data);
-
-        _logger.success('✓ Written successfully to $outPath');
-      }
+      await _configureTranslations(applicationId);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -397,6 +389,49 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.success('✓ Written successfully to $dartDefinePath');
 
     return ExitCode.success.code;
+  }
+
+  Future<void> _configureTranslations(String applicationId) async {
+    // Read and parse the localizely.yml file
+    final configFile = File(_workingDirectory('localizely.yml'));
+    if (!configFile.existsSync()) {
+      _logger.warn('localizely.yml file not found in the working directory.');
+      return;
+    }
+
+    final configContent = await configFile.readAsString();
+    final config = loadYaml(configContent);
+
+    // Extract the download locale codes
+    // ignore: dynamic_invocation, avoid_dynamic_calls
+    final downloadFiles = config['download']['files'] as List;
+    // ignore: dynamic_invocation, avoid_dynamic_calls
+    final localeCodes = downloadFiles.map((file) => file['locale_code']).toList();
+
+    // Display the locale codes before starting downloading
+    _logger.info('Locales to be downloaded: ${localeCodes.join(', ')}');
+
+    // Fetch the translation files
+    final translationsZip = await _httpClient.getTranslationFiles(applicationId);
+    _logger.info('Locales downloaded: ${translationsZip.map((file) => file.name).join(', ')}');
+
+    // Write the translation files to the working directory
+    for (final file in translationsZip) {
+      final filename = file.name;
+      final localeCode = filename.split('.').first; // assuming the file name is in the format localeCode.arb
+
+      // TODO(Serdun): Add filtration of translations to API
+      // Check if the locale code is in the list of desired locale codes
+      if (localeCodes.contains(localeCode)) {
+        final data = file.content as Uint8List;
+        final outPath = _workingDirectory('$translationsArbPath/app_$filename');
+        await File(outPath).writeAsBytes(data);
+
+        _logger.success('✓ Written successfully to $outPath');
+      } else {
+        _logger.info('Locale $localeCode is not in the list of desired locales, skipping.');
+      }
+    }
   }
 
   String _workingDirectory(String relativePath) {
