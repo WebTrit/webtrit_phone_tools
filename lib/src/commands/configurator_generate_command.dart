@@ -260,6 +260,18 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..err(buildRunnerProcess.stderr.toString())
       ..info('Build runner finished with: ${buildRunnerProcess.exitCode}');
 
+    final flutterL10nProcess = await Process.run(
+      'flutter',
+      [
+        'gen-l10n',
+      ],
+      workingDirectory: workingDirectory,
+    );
+    _logger
+      ..info(flutterL10nProcess.stdout.toString())
+      ..err(flutterL10nProcess.stderr.toString())
+      ..info('Localization generation finished with: ${flutterL10nProcess.exitCode}');
+
     return ExitCode.success.code;
   }
 
