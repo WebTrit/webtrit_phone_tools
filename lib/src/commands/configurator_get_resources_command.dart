@@ -338,9 +338,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
 
+    final appSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
     final dartDefineMapValues = {
       'APP_DEMO_CORE_URL': url,
       'APP_CORE_URL': url,
+      'APP_SALES_EMAIL': application.contactInfo?.appSalesEmail,
       'APP_NAME': application.name,
       'APP_GREETING': theme.texts?.greeting ?? application.name,
       'APP_DESCRIPTION': theme.texts?.greeting ?? '',
@@ -350,6 +352,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final dartDefineTemplate = Mustache(map: dartDefineMapValues);
     final dartDefine = dartDefineTemplate.convert(StringifyAssets.dartDefineTemplate).toMap();
 
+    _logger.info('- dart define appSalesEmailAvailable:$appSalesEmailAvailable');
+
+    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
+    if (!appSalesEmailAvailable) {
+      dartDefine.remove('WEBTRIT_APP_SALES_EMAIL');
+    }
+    // TODO(Serdun): Check if another implementation of mustache exists or add the possibility to handle these cases more easily.
     if (publisherAppDemoFlag) {
       _logger.warn('Use force demo flow');
       dartDefine.remove('WEBTRIT_APP_CORE_URL');
