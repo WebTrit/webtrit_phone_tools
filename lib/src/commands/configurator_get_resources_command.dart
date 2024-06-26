@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
 import 'package:args/command_runner.dart';
 import 'package:dto/dto.dart';
-import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:simple_mustache/simple_mustache.dart';
@@ -12,6 +10,7 @@ import 'package:simple_mustache/simple_mustache.dart';
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/gen/assets.dart';
+import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 const _applicationId = 'applicationId';
 const _keystoresPath = 'keystores-path';
@@ -26,7 +25,9 @@ const _directoryParameterDescriptionName = '$_directoryParameterName (optional)'
 class ConfiguratorGetResourcesCommand extends Command<int> {
   ConfiguratorGetResourcesCommand({
     required Logger logger,
-  }) : _logger = logger {
+    required HttpClient httpClient,
+  })  : _logger = logger,
+        _httpClient = httpClient {
     argParser
       ..addOption(
         _applicationId,
@@ -57,6 +58,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
   @override
   String get name => 'configurator-resources';
+
+  final HttpClient _httpClient;
 
   @override
   String get description {
@@ -137,8 +140,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     late ThemeDTO theme;
 
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$applicationId';
-      application = await _loadData(url, ApplicationDTO.fromJsonString);
+      application = await _httpClient.getApplication(applicationId);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -150,19 +152,16 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      final url = '$configuratorApiUrl/api/v1/applications/$applicationId/themes/${application.theme}';
-      theme = await _loadData(url, ThemeDTO.fromJsonString);
+      theme = await _httpClient.getTheme(applicationId, application.theme!);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
     }
 
     try {
-      final url = '$configuratorApiUrl/api/v1/translations/compose-arb/$applicationId';
+      final translationsZip = await _httpClient.getTranslationFiles(applicationId);
 
-      final translationsZip = await _loadFile(url);
-
-      for (final file in ZipDecoder().decodeBytes(translationsZip!)) {
+      for (final file in translationsZip) {
         final filename = file.name;
         final data = file.content;
         final outPath = _workingDirectory('$translationsArbPath/app_$filename');
@@ -235,49 +234,49 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       data: buildConfig.toJson(),
     );
 
-    final adaptiveIconBackground = await _loadFile(theme.images?.adaptiveIconBackground);
+    final adaptiveIconBackground = await _httpClient.getBytes(theme.images?.adaptiveIconBackground);
     _writeData(
       path: _workingDirectory(assetSplashIconPath),
       data: adaptiveIconBackground,
     );
 
-    final adaptiveIconForeground = await _loadFile(theme.images?.adaptiveIconForeground);
+    final adaptiveIconForeground = await _httpClient.getBytes(theme.images?.adaptiveIconForeground);
     _writeData(
       path: _workingDirectory(assetLauncherIconAdaptiveForegroundPath),
       data: adaptiveIconForeground,
     );
 
-    final webLauncherIcon = await _loadFile(theme.images?.webLauncherIcon);
+    final webLauncherIcon = await _httpClient.getBytes(theme.images?.webLauncherIcon);
     _writeData(
       path: _workingDirectory(assetLauncherWebIconPath),
       data: webLauncherIcon,
     );
 
-    final androidLauncherIcon = await _loadFile(theme.images?.androidLauncherIcon);
+    final androidLauncherIcon = await _httpClient.getBytes(theme.images?.androidLauncherIcon);
     _writeData(
       path: _workingDirectory(assetLauncherAndroidIconPath),
       data: androidLauncherIcon,
     );
 
-    final iosLauncherIcon = await _loadFile(theme.images?.iosLauncherIcon);
+    final iosLauncherIcon = await _httpClient.getBytes(theme.images?.iosLauncherIcon);
     _writeData(
       path: _workingDirectory(assetLauncherIosIconPath),
       data: iosLauncherIcon,
     );
 
-    final notificationLogo = await _loadFile(theme.images?.notificationLogo);
+    final notificationLogo = await _httpClient.getBytes(theme.images?.notificationLogo);
     _writeData(
       path: _workingDirectory(assetIconIosNotificationTemplateImagePath),
       data: notificationLogo,
     );
 
-    final primaryOnboardingLogo = await _loadFile(theme.images?.primaryOnboardingLogo);
+    final primaryOnboardingLogo = await _httpClient.getBytes(theme.images?.primaryOnboardingLogo);
     _writeData(
       path: _workingDirectory(assetImagePrimaryOnboardingLogoPath),
       data: primaryOnboardingLogo,
     );
 
-    final secondaryOnboardingLogo = await _loadFile(theme.images?.secondaryOnboardingLogo);
+    final secondaryOnboardingLogo = await _httpClient.getBytes(theme.images?.secondaryOnboardingLogo);
     _writeData(
       path: _workingDirectory(assetImageSecondaryOnboardingLogoPath),
       data: secondaryOnboardingLogo,
@@ -385,24 +384,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
 
-  Future<T> _loadData<T>(String url, T Function(String) fromBody) async {
-    final progress = _logger.progress('Loading data from $url');
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        progress.complete('Data loaded successfully from $url');
-        return fromBody(response.body);
-      } else {
-        progress.fail('Failed to load data from $url: ${response.statusCode}');
-        throw Exception('Failed to load data from $url: ${response.statusCode}');
-      }
-    } catch (e) {
-      progress.fail('Failed to load data from $url: $e');
-      rethrow;
-    }
-  }
-
   void _writeData({
     required String path,
     required dynamic data,
@@ -416,28 +397,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.success('✓ Written successfully to $path');
     } else {
       _logger.err('✗ Field to write $path with $data');
-    }
-  }
-
-  Future<Uint8List?> _loadFile(String? url) async {
-    final progress = _logger.progress('Load file');
-    if (url == null) {
-      progress.fail('Failed to load file from null link');
-      return null;
-    }
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        progress.complete('File get successfully from $url');
-        return response.bodyBytes;
-      } else {
-        progress.fail('Failed to load file from $url: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      progress.fail('Failed to load file from $url: $e');
-      return null;
     }
   }
 }
