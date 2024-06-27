@@ -66,7 +66,7 @@ class KeystoreMetadata {
       'bundleId': bundleId,
       'keyAlias': keyAlias,
       'keyPassword': keyPassword,
-      'storeFileP12': storeFileP12,
+      'storeFile': storeFileP12,
       'storeFileJKS': storeFileJKS,
       'storePassword': storePassword,
     };
