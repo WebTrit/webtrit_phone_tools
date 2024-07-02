@@ -14,6 +14,7 @@ dependencies:
   pub_updater: ^0.4.0
   package_rename: ^1.5.0
   simple_mustache: ^2.1.0
+  mustache_template: ^2.0.0
   http: ^1.1.0
   archive: ^3.6.0
 
