@@ -4,7 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:dto/application/application.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:simple_mustache/simple_mustache.dart';
+import 'package:mustache_template/mustache.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
@@ -112,15 +112,15 @@ class KeystoreInitCommand extends Command<int> {
     }
 
     // Prepare base credentials template for ios auto deploy
-    final dartDefineMapValues = {
+    final credentialsIOSMapValues = {
       'BUNDLE_ID': application.iosPlatformId,
     };
 
-    final credentialsIOSTemplate = Mustache(map: dartDefineMapValues);
-    final dartDefine = credentialsIOSTemplate.convert(StringifyAssets.uploadStoreConnectMetadata).toMap();
-
+    final credentialsIOSTemplate = Template(StringifyAssets.uploadStoreConnectMetadata, htmlEscapeValues: false);
+    final credentialsIOS = credentialsIOSTemplate.renderStringFilteredJson(credentialsIOSMapValues).toMap();
     final iosCredentialsFilePath = path.join(keystoreProjectPath, '$iosCredentials.incomplete');
-    File(iosCredentialsFilePath).writeAsStringSync(dartDefine.toJson());
+
+    File(iosCredentialsFilePath).writeAsStringSync(credentialsIOS.toJson());
     _existsKeystoreFiles.add(iosCredentials);
 
     // Create incomplete files which still need attention
