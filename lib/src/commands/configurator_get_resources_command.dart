@@ -309,9 +309,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'adaptive_icon_background': theme.colors?.launch?.adaptiveIconBackground,
         'theme_color': theme.colors?.launch?.adaptiveIconBackground,
       };
-      final flutterLauncherIconsTemplate =
-          Template(StringifyAssets.flutterLauncherIconsTemplate, htmlEscapeValues: false);
-      final flutterLauncherIcons = flutterLauncherIconsTemplate.renderString(flutterLauncherIconsMapValues);
+      final launcherIconsTemplate = Template(StringifyAssets.flutterLauncherIconsTemplate, htmlEscapeValues: false);
+      final flutterLauncherIcons = launcherIconsTemplate.renderString(flutterLauncherIconsMapValues);
       final flutterLauncherIconsPath = _workingDirectory(configPathLaunchPath);
       File(flutterLauncherIconsPath).writeAsStringSync(flutterLauncherIcons);
       _logger.success('✓ Written successfully to $flutterLauncherIconsPath');
@@ -323,9 +322,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final flutterNativeSplashMapValues = {
         'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', ''),
       };
-      final flutterNativeSplashTemplate =
-          Template(StringifyAssets.flutterNativeSplashTemplate, htmlEscapeValues: false);
-      final flutterNativeSplash = flutterNativeSplashTemplate.renderString(flutterNativeSplashMapValues);
+      final nativeSplashTemplate = Template(StringifyAssets.flutterNativeSplashTemplate, htmlEscapeValues: false);
+      final flutterNativeSplash = nativeSplashTemplate.renderString(flutterNativeSplashMapValues);
       final flutterNativeSplashPath = _workingDirectory(configPathSplashPath);
       File(flutterNativeSplashPath).writeAsStringSync(flutterNativeSplash);
       _logger.success('✓ Written successfully to $flutterNativeSplashPath');
