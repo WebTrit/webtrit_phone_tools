@@ -13,7 +13,7 @@ const _keystorePath = 'keystore-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _directoryParameterName = '<directory>';
-const _firebaseServiceAccountFileName = 'firebase-service-account.json';
+const _firebaseServiceAccountFileName = 'push_notifications/firebase-service-account.json';
 
 class ConfiguratorGenerateCommand extends Command<int> {
   ConfiguratorGenerateCommand({
