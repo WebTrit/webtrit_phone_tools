@@ -117,7 +117,7 @@ class KeystoreInitCommand extends Command<int> {
         '--appleTeamID',
         'test',
         '--output',
-        path.join(keystoreProjectPath, 'deep-links'),
+        path.join(keystoreProjectPath, 'deep_links'),
         '--appendWellKnowDirectory',
         keystoreProjectPath
       ];
