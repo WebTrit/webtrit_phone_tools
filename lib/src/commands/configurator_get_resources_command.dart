@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:args/command_runner.dart';
 import 'package:dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:mustache_template/mustache.dart';
 import 'package:path/path.dart' as path;
-import 'package:simple_mustache/simple_mustache.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
@@ -309,8 +309,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         'adaptive_icon_background': theme.colors?.launch?.adaptiveIconBackground,
         'theme_color': theme.colors?.launch?.adaptiveIconBackground,
       };
-      final flutterLauncherIconsTemplate = Mustache(map: flutterLauncherIconsMapValues);
-      final flutterLauncherIcons = flutterLauncherIconsTemplate.convert(StringifyAssets.flutterLauncherIconsTemplate);
+      final flutterLauncherIconsTemplate =
+          Template(StringifyAssets.flutterLauncherIconsTemplate, htmlEscapeValues: false);
+      final flutterLauncherIcons = flutterLauncherIconsTemplate.renderString(flutterLauncherIconsMapValues);
       final flutterLauncherIconsPath = _workingDirectory(configPathLaunchPath);
       File(flutterLauncherIconsPath).writeAsStringSync(flutterLauncherIcons);
       _logger.success('✓ Written successfully to $flutterLauncherIconsPath');
@@ -322,8 +323,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final flutterNativeSplashMapValues = {
         'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', ''),
       };
-      final flutterNativeSplashTemplate = Mustache(map: flutterNativeSplashMapValues);
-      final flutterNativeSplash = flutterNativeSplashTemplate.convert(StringifyAssets.flutterNativeSplashTemplate);
+      final flutterNativeSplashTemplate =
+          Template(StringifyAssets.flutterNativeSplashTemplate, htmlEscapeValues: false);
+      final flutterNativeSplash = flutterNativeSplashTemplate.renderString(flutterNativeSplashMapValues);
       final flutterNativeSplashPath = _workingDirectory(configPathSplashPath);
       File(flutterNativeSplashPath).writeAsStringSync(flutterNativeSplash);
       _logger.success('✓ Written successfully to $flutterNativeSplashPath');
@@ -337,56 +339,44 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'override_old_package': 'com.webtrit.app',
       'description': '',
     };
-    final packageNameConfigTemplate = Mustache(map: packageNameConfigMapValues);
-    final packageNameConfig = packageNameConfigTemplate.convert(StringifyAssets.packageRenameConfigTemplate);
+    final packageNameConfigTemplate = Template(StringifyAssets.packageRenameConfigTemplate, htmlEscapeValues: false);
+    final packageNameConfig = packageNameConfigTemplate.renderString(packageNameConfigMapValues);
     final packageNameConfigPath = _workingDirectory(configPathPackagePath);
     File(packageNameConfigPath).writeAsStringSync(packageNameConfig);
     _logger
       ..success('✓ Written successfully to $packageNameConfigPath')
-      // Configure dart define
       ..info('- Prepare config for $configureDartDefinePath');
+
     final httpsPrefix = application.coreUrl!.startsWith('https://') || application.coreUrl!.startsWith('http://');
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
 
-    final appSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
+    final isAppSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
+    final isDemoFlow = publisherAppDemoFlag || application.demo;
+    final isClassicFlow = publisherAppClassicFlag && !application.demo;
+
     final dartDefineMapValues = {
-      'WEBTRIT_APP_DEMO_CORE_URL': url,
-      'WEBTRIT_APP_CORE_URL': url,
-      'WEBTRIT_APP_SALES_EMAIL': application.contactInfo?.appSalesEmail,
-      'WEBTRIT_APP_NAME': application.name,
+      'WEBTRIT_APP_CORE_URL': isClassicFlow ? url : null,
+      'WEBTRIT_APP_DEMO_CORE_URL': isDemoFlow ? url : null,
+      'WEBTRIT_APP_SALES_EMAIL': isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : null,
+      'WEBTRIT_APP_NAME': null,
       'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
       'WEBTRIT_APP_DESCRIPTION': theme.texts?.greeting ?? '',
       'WEBTRIT_APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
       'WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH': projectKeystoreDirectoryPath,
     };
-    final dartDefineTemplate = Mustache(map: dartDefineMapValues);
-    final dartDefine = dartDefineTemplate.convert(StringifyAssets.dartDefineTemplate).toMap();
+
+    final dartDefineTemplate = Template(StringifyAssets.dartDefineTemplate, htmlEscapeValues: false, lenient: true);
+    final dartDefine = dartDefineTemplate.renderStringFilteredJson(dartDefineMapValues);
+
     final dartDefinePath = _workingDirectory(configureDartDefinePath);
-    File(dartDefinePath).writeAsStringSync(dartDefine.toJson());
+    File(dartDefinePath).writeAsStringSync(dartDefine);
     _logger
       ..success('✓ Written successfully to $dartDefinePath')
-      ..info('- dart define appSalesEmailAvailable:$appSalesEmailAvailable');
-
-    if (!appSalesEmailAvailable) {
-      dartDefine.remove('WEBTRIT_APP_SALES_EMAIL');
-    }
-    if (publisherAppDemoFlag) {
-      _logger.warn('Use force demo flow');
-      dartDefine.remove('WEBTRIT_APP_CORE_URL');
-    } else if (publisherAppClassicFlag) {
-      _logger.warn('Use force classic flow');
-      dartDefine.remove('WEBTRIT_APP_DEMO_CORE_URL');
-    } else if (application.demo) {
-      _logger.warn('Use config demo flow');
-      dartDefine.remove('WEBTRIT_APP_CORE_URL');
-    } else {
-      _logger.warn('Use config classic flow');
-      dartDefine.remove('WEBTRIT_APP_DEMO_CORE_URL');
-    }
-
-    File(dartDefinePath).writeAsStringSync(dartDefine.toJson());
-    _logger.success('✓ Written successfully to $dartDefinePath');
+      ..info('- dart define appSalesEmailAvailable:$isClassicFlow')
+      ..info('- dart define demo flow:$isDemoFlow')
+      ..info('- dart define classic flow:$isClassicFlow')
+      ..success('✓ Written successfully to $dartDefinePath');
 
     return ExitCode.success.code;
   }
