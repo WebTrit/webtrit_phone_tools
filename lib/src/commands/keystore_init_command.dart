@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:dto/application/application.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:mustache_template/mustache.dart';
 
+import 'package:dto/application/application.dart';
+
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate_command.dart';
+import 'package:webtrit_phone_tools/src/commands/assetlinks_generate_command.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/gen/assets.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
@@ -21,7 +25,10 @@ class KeystoreInitCommand extends Command<int> {
     required KeystoreReadmeUpdater keystoreReadmeUpdater,
   })  : _logger = logger,
         _httpClient = httpClient,
-        _readmeUpdater = keystoreReadmeUpdater {
+        _readmeUpdater = keystoreReadmeUpdater,
+        _commandRunner = CommandRunner<int>('tool', 'A tool to manage keystore')
+          ..addCommand(KeystoreGenerateCommand(logger: logger))
+          ..addCommand(AssetlinksGenerateCommand(logger: logger)) {
     argParser.addOption(
       _applicationIdOptionName,
       help: 'Application ID to initialize the keystore project.',
@@ -45,6 +52,8 @@ class KeystoreInitCommand extends Command<int> {
   final List<String> _existsKeystoreFiles = List.empty(growable: true);
 
   late final String _workingDirectoryPath;
+
+  final CommandRunner<int> _commandRunner;
 
   @override
   Future<int> run() async {
@@ -87,28 +96,32 @@ class KeystoreInitCommand extends Command<int> {
 
     // Add keystore for signing android build
     if (((application.androidPlatformId) ?? '').isNotEmpty) {
-      _logger.info('Generating keystore using webtrit_phone_tools');
-      final process = Process.runSync(
-        'dart',
-        [
-          keystoreProjectPath,
-          'keystore-generate',
-          '--bundleId=${application.androidPlatformId ?? ''}',
-        ],
-        workingDirectory: keystoreProjectPath,
-        runInShell: true,
-      );
+      await _commandRunner
+          .run(['keystore-generate', '--bundleId', application.androidPlatformId!, keystoreProjectPath]);
 
-      if (process.exitCode == 0) {
-        _logger
-          ..info(process.stdout.toString())
-          ..err(process.stderr.toString());
+      _existsKeystoreFiles.addAll([
+        androidCredentials,
+        androidUploadKeystoreJKS,
+        androidUploadKeystoreP12,
+      ]);
+    }
 
-        _existsKeystoreFiles
-          ..add(androidCredentials)
-          ..add(androidUploadKeystoreJKS)
-          ..add(androidUploadKeystoreP12);
-      }
+    final uploadFingerprint = _getKeystoreFingerprint(keystoreProjectPath);
+    if (uploadFingerprint != null) {
+      final command = [
+        'assetlinks-generate',
+        '--bundleId',
+        application.iosPlatformId!,
+        '--androidFingerprints',
+        uploadFingerprint,
+        '--appleTeamID',
+        'test',
+        '--output',
+        path.join(keystoreProjectPath, 'deep-links'),
+        '--appendWellKnowDirectory',
+        keystoreProjectPath
+      ];
+      await _commandRunner.run(command);
     }
 
     // Prepare base credentials template for ios auto deploy
@@ -138,5 +151,41 @@ class KeystoreInitCommand extends Command<int> {
       applicationId,
     );
     return ExitCode.success.code;
+  }
+
+  String? _getKeystoreFingerprint(String keystoreProjectPath) {
+    final metadataFile = File(path.join(keystoreProjectPath, 'upload-keystore-metadata.json'));
+    if (metadataFile.existsSync()) {
+      final metadata = jsonDecode(metadataFile.readAsStringSync()) as Map<String, dynamic>;
+      final keyPassword = metadata['keyPassword'];
+      final storeFileP12 = metadata['storeFile'];
+
+      final command = [
+        '-c',
+        'keytool -list -v -keystore $storeFileP12 -storetype PKCS12 -storepass $keyPassword | grep SHA256'
+      ];
+      final process = Process.runSync(
+        'sh',
+        command,
+        workingDirectory: keystoreProjectPath,
+        runInShell: true,
+      );
+
+      if (process.exitCode == 0) {
+        final output = process.stdout as String;
+        final regex = RegExp(r'SHA256:\s*([\w:]+)');
+        final match = regex.firstMatch(output);
+        if (match != null) {
+          return match.group(1);
+        } else {
+          _logger.err('SHA256 hash not found in the output.');
+        }
+      } else {
+        _logger.err('Error running keytool command: ${process.stderr ?? process.stdout}, command: $command');
+      }
+    } else {
+      _logger.err('Keystore not provided.');
+    }
+    return null;
   }
 }
