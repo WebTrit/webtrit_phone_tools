@@ -3,11 +3,10 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:simple_mustache/simple_mustache.dart';
+import 'package:mustache_template/mustache.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
-import 'package:webtrit_phone_tools/src/extension/mustache_extension.dart';
 
 import '../gen/assets.dart';
 
@@ -116,12 +115,18 @@ class AssetlinksGenerateCommand extends Command<int> {
     if (isGenerateAppleAssetLinks) {
       _logger.info('Writing Apple app site association to: $_appleAppSiteAssociation');
 
-      final appleData = Mustache(map: {
+      final appleAssetlinksMapValues = {
         'appID': '$teamIdArg.$bundleId',
-      });
-      final appleJSON = appleData.toStringifyJSON(StringifyAssets.appleAssetLinksTemplate);
-      final appleFilePath = path.join(welKnownWorkingDirectoryPath, _appleAppSiteAssociation);
-      File(appleFilePath).writeAsStringSync(appleJSON, flush: true);
+      };
+
+      final appleAssetlinksTemplate = Template(StringifyAssets.appleAssetLinksTemplate, htmlEscapeValues: false);
+      final appleAssetlinks = appleAssetlinksTemplate.renderString(appleAssetlinksMapValues);
+      final appleAssetlinksFilePath = path.join(welKnownWorkingDirectoryPath, _appleAppSiteAssociation);
+
+      File(appleAssetlinksFilePath).writeAsStringSync(appleAssetlinks, flush: true);
+      _logger
+        ..info(appleAssetlinks)
+        ..success('Apple Assetlinks successfully created.');
     } else {
       _logger.warn('Apple Team ID is not provided. Skipping Apple app site association.');
     }
@@ -129,13 +134,19 @@ class AssetlinksGenerateCommand extends Command<int> {
     if (isGenerateGoogleAssetLinks) {
       _logger.info('Writing Google asset links to: $_assetlinks');
 
-      final googleData = Mustache(map: {
+      final googleAssetlinksMapValues = {
         'package_name': bundleId,
-        'sha256_cert_fingerprints': androidFingerprints,
-      });
-      final googleJSON = googleData.toStringifyJSON(StringifyAssets.googleAssetLinksTemplate);
-      final googleFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
-      File(googleFilePath).writeAsStringSync(googleJSON, flush: true);
+        'sha256_cert_fingerprints': '[${androidFingerprints.map((fp) => '"$fp"').join(', ')}]',
+      };
+
+      final googleAssetlinksTemplate = Template(StringifyAssets.googleAssetLinksTemplate, htmlEscapeValues: false);
+      final googleAssetlinks = googleAssetlinksTemplate.renderStringFilteredJson(googleAssetlinksMapValues);
+      final googleAssetlinksFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
+
+      File(googleAssetlinksFilePath).writeAsStringSync(googleAssetlinks, flush: true);
+      _logger
+        ..info(googleAssetlinks)
+        ..success('Google Assetlinks successfully created.');
     } else {
       _logger.warn('Android Fingerprints are not provided. Skipping Google asset links.');
     }
