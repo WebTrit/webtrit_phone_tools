@@ -365,7 +365,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
 
     final dartDefineTemplate = Template(StringifyAssets.dartDefineTemplate, htmlEscapeValues: false, lenient: true);
-    final dartDefine = dartDefineTemplate.renderStringFilteredJson(dartDefineMapValues);
+    final dartDefine = dartDefineTemplate.renderAndCleanJson(dartDefineMapValues);
 
     final dartDefinePath = _workingDirectory(configureDartDefinePath);
     File(dartDefinePath).writeAsStringSync(dartDefine);
