@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -17,8 +18,8 @@ const _applicationId = 'applicationId';
 const _keystoresPath = 'keystores-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
-const _publisherAppDemoFlag = 'demo';
-const _publisherAppClassicFlag = 'classic';
+const _publisherAppDemoFlagName = 'demo';
+const _publisherAppClassicFlagName = 'classic';
 
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
@@ -46,12 +47,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
             'and maintain state across different processes.',
       )
       ..addFlag(
-        _publisherAppDemoFlag,
+        _publisherAppDemoFlagName,
         help: 'Force-enable the demo app flow, disregarding the configuration value.',
         negatable: false,
       )
       ..addFlag(
-        _publisherAppClassicFlag,
+        _publisherAppClassicFlagName,
         help: 'Force-enable the classic app flow, disregarding the configuration value.',
         negatable: false,
       );
@@ -80,6 +81,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   @override
   String get invocation => '${super.invocation} [$_directoryParameterName]';
 
+  /// Enables the demo flow (email-only login) for the phone authentication feature.
+  bool get _publisherAppDemoFlag => argResults?[_publisherAppDemoFlagName] as bool;
+
+  /// Enables the classic flow with the ability to configure the authentication flow on the adapter side.
+  bool get _publisherAppClassicFlag => argResults?[_publisherAppClassicFlagName] as bool;
+
   final Logger _logger;
 
   late String workingDirectoryPath;
@@ -106,6 +113,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final paramCacheSessionDataPath = commandArgResults[_cacheSessionDataPath] as String?;
     final cacheSessionDataPath = paramCacheSessionDataPath ?? defaultCacheSessionDataPath;
     final cacheSessionDataDir = Directory(path.dirname(cacheSessionDataPath));
+
+    // This map is initialized from the `application_env_config.json` file,
+    // which overrides the application's environment fields if the field is not
+    // initialized in the application's object from the configurator.
+
+    // If a field is not defined in both `application_env_config.json` and the
+    // application's object from the configurator, the parameter is not added
+    // to the resulting file. If the field exists in `application_env_config.json`,
+    // it is taken from there. If it exists in both `application_env_config.json`
+    // and the application's object from the configurator, the field from the
+    // application's object from the configurator is used.
+    final phoneEnvironmentOverrideKeystoreFields = <String, dynamic>{};
 
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
@@ -134,8 +153,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.data.code;
     }
 
-    final publisherAppDemoFlag = commandArgResults[_publisherAppDemoFlag] as bool;
-    final publisherAppClassicFlag = commandArgResults[_publisherAppClassicFlag] as bool;
+    try {
+      final config = await _getApplicationEnvKeystoreConfig(keystorePath, applicationId);
+      phoneEnvironmentOverrideKeystoreFields.addAll(config);
+      _logger.info('- Phone environment override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
+    } catch (e) {
+      _logger.err(e.toString());
+    }
 
     late ApplicationDTO application;
     late ThemeDTO theme;
@@ -348,17 +372,38 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $packageNameConfigPath')
       ..info('- Prepare config for $configureDartDefinePath');
 
+    try {
+      _configurePhoneEnv(application, phoneEnvironmentOverrideKeystoreFields, theme, projectKeystoreDirectoryPath);
+    } catch (e) {
+      _logger.err(e.toString());
+      return ExitCode.usage.code;
+    }
+
+    return ExitCode.success.code;
+  }
+
+  // Configures the phone environment for the application by setting environment variables
+  // and writing them to a Dart define file.
+  void _configurePhoneEnv(
+    ApplicationDTO application,
+    Map<String, dynamic> phoneEnvironmentOverrideKeystoreFields,
+    ThemeDTO theme,
+    String projectKeystoreDirectoryPath,
+  ) {
     final httpsPrefix = application.coreUrl!.startsWith('https://') || application.coreUrl!.startsWith('http://');
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
 
     final isAppSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
-    final isDemoFlow = publisherAppDemoFlag || application.demo;
-    final isClassicFlow = publisherAppClassicFlag && !application.demo;
+    final isDemoFlow = _publisherAppDemoFlag || application.demo;
+    final isClassicFlow = _publisherAppClassicFlag && !application.demo;
+
+    final credentialsRequestUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CREDENTIALS_REQUEST_URL'];
 
     final dartDefineMapValues = {
       'WEBTRIT_APP_CORE_URL': isClassicFlow ? url : null,
       'WEBTRIT_APP_DEMO_CORE_URL': isDemoFlow ? url : null,
+      'WEBTRIT_APP_CREDENTIALS_REQUEST_URL': credentialsRequestUrl as String?,
       'WEBTRIT_APP_SALES_EMAIL': isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : null,
       'WEBTRIT_APP_NAME': null,
       'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
@@ -378,8 +423,21 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..info('- dart define demo flow:$isDemoFlow')
       ..info('- dart define classic flow:$isClassicFlow')
       ..success('✓ Written successfully to $dartDefinePath');
+  }
 
-    return ExitCode.success.code;
+  // Retrieves and decodes the application environment configuration from a specified keystore path and application ID.
+  // Returns an empty map if the configuration file does not exist.
+  Future<Map<String, dynamic>> _getApplicationEnvKeystoreConfig(String keystorePath, String applicationId) async {
+    final configFilePath = path.join(keystorePath, applicationId, 'application_env_config.json');
+    final applicationEnvConfigFile = File(configFilePath);
+
+    if (!applicationEnvConfigFile.existsSync()) {
+      _logger.info('“Keystore configuration lacks application environment override fields');
+      return {};
+    }
+
+    final contents = await applicationEnvConfigFile.readAsString();
+    return json.decode(contents) as Map<String, dynamic>;
   }
 
   void _configureTheme(ThemeDTO theme) {
