@@ -81,6 +81,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   @override
   String get invocation => '${super.invocation} [$_directoryParameterName]';
 
+  /// Enables the demo flow (email-only login) for the phone authentication feature.
+  bool get _publisherAppDemoFlag => argResults?[_publisherAppDemoFlag] as bool;
+
+  /// Enables the classic flow with the ability to configure the authentication flow on the adapter side.
+  bool get _publisherAppClassicFlag => argResults?[_publisherAppClassicFlag] as bool;
+
   final Logger _logger;
 
   late String workingDirectoryPath;
@@ -154,9 +160,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     } catch (e) {
       _logger.err(e.toString());
     }
-
-    final publisherAppDemoFlag = commandArgResults[_publisherAppDemoFlag] as bool;
-    final publisherAppClassicFlag = commandArgResults[_publisherAppClassicFlag] as bool;
 
     late ApplicationDTO application;
     late ThemeDTO theme;
@@ -374,8 +377,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.info('- Use $url as core');
 
     final isAppSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
-    final isDemoFlow = publisherAppDemoFlag || application.demo;
-    final isClassicFlow = publisherAppClassicFlag && !application.demo;
+    final isDemoFlow = _publisherAppDemoFlag || application.demo;
+    final isClassicFlow = _publisherAppClassicFlag && !application.demo;
 
     final credentialsRequestUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CREDENTIALS_REQUEST_URL'];
 
