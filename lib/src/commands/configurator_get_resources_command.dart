@@ -18,8 +18,8 @@ const _applicationId = 'applicationId';
 const _keystoresPath = 'keystores-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
-const _publisherAppDemoFlag = 'demo';
-const _publisherAppClassicFlag = 'classic';
+const _publisherAppDemoFlagName = 'demo';
+const _publisherAppClassicFlagName = 'classic';
 
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
@@ -47,12 +47,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
             'and maintain state across different processes.',
       )
       ..addFlag(
-        _publisherAppDemoFlag,
+        _publisherAppDemoFlagName,
         help: 'Force-enable the demo app flow, disregarding the configuration value.',
         negatable: false,
       )
       ..addFlag(
-        _publisherAppClassicFlag,
+        _publisherAppClassicFlagName,
         help: 'Force-enable the classic app flow, disregarding the configuration value.',
         negatable: false,
       );
@@ -82,10 +82,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   String get invocation => '${super.invocation} [$_directoryParameterName]';
 
   /// Enables the demo flow (email-only login) for the phone authentication feature.
-  bool get _publisherAppDemoFlag => argResults?[_publisherAppDemoFlag] as bool;
+  bool get _publisherAppDemoFlag => argResults?[_publisherAppDemoFlagName] as bool;
 
   /// Enables the classic flow with the ability to configure the authentication flow on the adapter side.
-  bool get _publisherAppClassicFlag => argResults?[_publisherAppClassicFlag] as bool;
+  bool get _publisherAppClassicFlag => argResults?[_publisherAppClassicFlagName] as bool;
 
   final Logger _logger;
 
@@ -372,6 +372,24 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $packageNameConfigPath')
       ..info('- Prepare config for $configureDartDefinePath');
 
+    try {
+      _configurePhoneEnv(application, phoneEnvironmentOverrideKeystoreFields, theme, projectKeystoreDirectoryPath);
+    } catch (e) {
+      _logger.err(e.toString());
+      return ExitCode.usage.code;
+    }
+
+    return ExitCode.success.code;
+  }
+
+  // Configures the phone environment for the application by setting environment variables
+  // and writing them to a Dart define file.
+  void _configurePhoneEnv(
+    ApplicationDTO application,
+    Map<String, dynamic> phoneEnvironmentOverrideKeystoreFields,
+    ThemeDTO theme,
+    String projectKeystoreDirectoryPath,
+  ) {
     final httpsPrefix = application.coreUrl!.startsWith('https://') || application.coreUrl!.startsWith('http://');
     final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
     _logger.info('- Use $url as core');
@@ -405,8 +423,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..info('- dart define demo flow:$isDemoFlow')
       ..info('- dart define classic flow:$isClassicFlow')
       ..success('✓ Written successfully to $dartDefinePath');
-
-    return ExitCode.success.code;
   }
 
   // Retrieves and decodes the application environment configuration from a specified keystore path and application ID.
