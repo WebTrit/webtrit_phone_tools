@@ -377,9 +377,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final isDemoFlow = publisherAppDemoFlag || application.demo;
     final isClassicFlow = publisherAppClassicFlag && !application.demo;
 
+    final credentialsRequestUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CREDENTIALS_REQUEST_URL'];
+
     final dartDefineMapValues = {
       'WEBTRIT_APP_CORE_URL': isClassicFlow ? url : null,
       'WEBTRIT_APP_DEMO_CORE_URL': isDemoFlow ? url : null,
+      'WEBTRIT_APP_CREDENTIALS_REQUEST_URL': credentialsRequestUrl as String?,
       'WEBTRIT_APP_SALES_EMAIL': isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : null,
       'WEBTRIT_APP_NAME': null,
       'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
