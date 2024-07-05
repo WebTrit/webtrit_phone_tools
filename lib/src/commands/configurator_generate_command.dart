@@ -165,31 +165,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('flutterfire finished with: ${process.exitCode}')
       ..info('Flutter gen start');
 
-    final flutterGenInstallProcess = await Process.run(
-      'dart',
-      [
-        'pub',
-        'global',
-        'activate',
-        'flutter_gen',
-      ],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterGenInstallProcess.stdout.toString())
-      ..err(flutterGenInstallProcess.stderr.toString())
-      ..info('Flutter gen generation finished with: ${flutterGenInstallProcess.exitCode}');
-
-    final flutterGenProcess = await Process.run(
-      'fluttergen',
-      [],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterGenProcess.stdout.toString())
-      ..err(flutterGenProcess.stderr.toString())
-      ..info('Flutter gen finished with: ${flutterGenProcess.exitCode}');
-
     final flutterIconsProcess = await Process.run(
       'flutter',
       [
@@ -271,6 +246,31 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info(flutterL10nProcess.stdout.toString())
       ..err(flutterL10nProcess.stderr.toString())
       ..info('Localization generation finished with: ${flutterL10nProcess.exitCode}');
+
+    final flutterGenInstallProcess = await Process.run(
+      'dart',
+      [
+        'pub',
+        'global',
+        'activate',
+        'flutter_gen',
+      ],
+      workingDirectory: workingDirectory,
+    );
+    _logger
+      ..info(flutterGenInstallProcess.stdout.toString())
+      ..err(flutterGenInstallProcess.stderr.toString())
+      ..info('Flutter gen generation finished with: ${flutterGenInstallProcess.exitCode}');
+
+    final flutterGenProcess = await Process.run(
+      'fluttergen',
+      [],
+      workingDirectory: workingDirectory,
+    );
+    _logger
+      ..info(flutterGenProcess.stdout.toString())
+      ..err(flutterGenProcess.stderr.toString())
+      ..info('Flutter gen finished with: ${flutterGenProcess.exitCode}');
 
     return ExitCode.success.code;
   }
