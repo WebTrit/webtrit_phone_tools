@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -107,6 +108,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final cacheSessionDataPath = paramCacheSessionDataPath ?? defaultCacheSessionDataPath;
     final cacheSessionDataDir = Directory(path.dirname(cacheSessionDataPath));
 
+    // This map is initialized from the `application_env_config.json` file,
+    // which overrides the application's environment fields if the field is not
+    // initialized in the application's object from the configurator.
+
+    // If a field is not defined in both `application_env_config.json` and the
+    // application's object from the configurator, the parameter is not added
+    // to the resulting file. If the field exists in `application_env_config.json`,
+    // it is taken from there. If it exists in both `application_env_config.json`
+    // and the application's object from the configurator, the field from the
+    // application's object from the configurator is used.
+    final phoneEnvironmentOverrideKeystoreFields = <String, dynamic>{};
+
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
@@ -132,6 +145,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     if (cacheSessionDataDir.path != '.' && !cacheSessionDataDir.existsSync()) {
       _logger.err('- The directory specified by $_cacheSessionDataPath does not exist.');
       return ExitCode.data.code;
+    }
+
+    try {
+      final config = await _getApplicationEnvKeystoreConfig(keystorePath, applicationId);
+      phoneEnvironmentOverrideKeystoreFields.addAll(config);
+      _logger.info('- Phone environment override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
+    } catch (e) {
+      _logger.err(e.toString());
     }
 
     final publisherAppDemoFlag = commandArgResults[_publisherAppDemoFlag] as bool;
@@ -380,6 +401,21 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $dartDefinePath');
 
     return ExitCode.success.code;
+  }
+
+  // Retrieves and decodes the application environment configuration from a specified keystore path and application ID.
+  // Returns an empty map if the configuration file does not exist.
+  Future<Map<String, dynamic>> _getApplicationEnvKeystoreConfig(String keystorePath, String applicationId) async {
+    final configFilePath = path.join(keystorePath, applicationId, 'application_env_config.json');
+    final applicationEnvConfigFile = File(configFilePath);
+
+    if (!applicationEnvConfigFile.existsSync()) {
+      _logger.info('“Keystore configuration lacks application environment override fields');
+      return {};
+    }
+
+    final contents = await applicationEnvConfigFile.readAsString();
+    return json.decode(contents) as Map<String, dynamic>;
   }
 
   void _configureTheme(ThemeDTO theme) {
