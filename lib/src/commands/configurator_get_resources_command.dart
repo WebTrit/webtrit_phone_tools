@@ -405,7 +405,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       'WEBTRIT_APP_DEMO_CORE_URL': isDemoFlow ? url : null,
       'WEBTRIT_APP_CREDENTIALS_REQUEST_URL': credentialsRequestUrl as String?,
       'WEBTRIT_APP_SALES_EMAIL': isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : null,
-      'WEBTRIT_APP_NAME': null,
+      'WEBTRIT_APP_NAME': application.name,
       'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
       'WEBTRIT_APP_DESCRIPTION': theme.texts?.greeting ?? '',
       'WEBTRIT_APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
