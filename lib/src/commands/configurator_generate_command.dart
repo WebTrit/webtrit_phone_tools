@@ -158,11 +158,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final flutterIconsProcess = await Process.run(
       'flutter',
-      [
-        'pub',
-        'run',
-        'flutter_launcher_icons',
-      ],
+      ['pub', 'run', 'flutter_launcher_icons'],
       workingDirectory: workingDirectory,
     );
     _logger
@@ -172,10 +168,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final nativeSplashProcess = await Process.run(
       'dart',
-      [
-        'run',
-        'flutter_native_splash:create',
-      ],
+      ['run', 'flutter_native_splash:create'],
       workingDirectory: workingDirectory,
     );
     _logger
@@ -185,10 +178,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final packageRenameProcess = await Process.run(
       'dart',
-      [
-        'run',
-        'package_rename',
-      ],
+      ['run', 'package_rename'],
       workingDirectory: workingDirectory,
     );
     _logger
@@ -198,13 +188,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final buildRunnerProcess = await Process.run(
       'flutter',
-      [
-        'pub',
-        'run',
-        'build_runner',
-        'build',
-        '--delete-conflicting-outputs',
-      ],
+      ['pub', 'run', 'build_runner', 'build', '--delete-conflicting-outputs'],
       workingDirectory: workingDirectory,
     );
     _logger
@@ -214,9 +198,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final flutterL10nProcess = await Process.run(
       'flutter',
-      [
-        'gen-l10n',
-      ],
+      ['gen-l10n'],
       workingDirectory: workingDirectory,
     );
     _logger
