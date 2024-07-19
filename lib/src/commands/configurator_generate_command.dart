@@ -77,7 +77,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
       return ExitCode.data.code;
     }
 
-    final cacheSessionData = _readData(_workingDirectory(relativePath: cacheSessionDataPath)).toMap();
+    final cacheSessionData = File(_workingDirectory(relativePath: cacheSessionDataPath)).readAsStringSync().toMap();
 
     final projectKeystorePathArg = commandArgResults[_keystorePath] as String?;
     final projectKeystorePathBuildConfig = cacheSessionData[keystorePathField] as String?;
@@ -118,7 +118,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
     }
 
     final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
-    final firebaseServiceAccount = _readData(firebaseServiceAccountPath).toMap();
+    final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
     final firebaseAccountId = firebaseServiceAccount[projectIdField];
 
     final workingDirectory = _workingDirectory();
@@ -275,9 +275,5 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
   String _workingDirectory({String relativePath = ''}) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
-  }
-
-  String _readData(String path) {
-    return File(path).readAsStringSync();
   }
 }
