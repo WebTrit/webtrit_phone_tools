@@ -122,25 +122,17 @@ class ConfiguratorGenerateCommand extends Command<int> {
     final firebaseAccountId = firebaseServiceAccount[projectIdField];
 
     final workingDirectory = _workingDirectory();
-    final flutterfireCLIProcess = await Process.run(
-      'dart',
-      [
-        'pub',
-        'global',
-        'activate',
-        'flutterfire_cli',
-      ],
-      workingDirectory: workingDirectory,
-    );
+
+    // Setup dependencies for the proper functioning of the configuration script
+    await _setupDependencies(workingDirectory);
+
     _logger
-      ..info(flutterfireCLIProcess.stdout.toString())
-      ..err(flutterfireCLIProcess.stderr.toString())
-      ..info('Package renaming finished with: ${flutterfireCLIProcess.exitCode}')
       ..info('- Platform identifier android: $bundleIdAndroid')
       ..info('- Platform identifier ios: $bundleIdIos')
       ..info('- Scripts working directory: $workingDirectory')
       ..info('- Service account path: $firebaseServiceAccountPath')
       ..info('Configure $firebaseAccountId google services');
+
     final process = await Process.run(
       'flutterfire',
       [
@@ -192,20 +184,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..err(nativeSplashProcess.stderr.toString())
       ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
 
-    final packageInstallProcess = await Process.run(
-      'dart',
-      [
-        'pub',
-        'add',
-        'package_rename',
-      ],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(packageInstallProcess.stdout.toString())
-      ..err(packageInstallProcess.stderr.toString())
-      ..info('Package renaming finished with: ${packageInstallProcess.exitCode}');
-
     final packageRenameProcess = await Process.run(
       'dart',
       [
@@ -247,21 +225,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..err(flutterL10nProcess.stderr.toString())
       ..info('Localization generation finished with: ${flutterL10nProcess.exitCode}');
 
-    final flutterGenInstallProcess = await Process.run(
-      'dart',
-      [
-        'pub',
-        'global',
-        'activate',
-        'flutter_gen',
-      ],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterGenInstallProcess.stdout.toString())
-      ..err(flutterGenInstallProcess.stderr.toString())
-      ..info('Flutter gen generation finished with: ${flutterGenInstallProcess.exitCode}');
-
     final flutterGenProcess = await Process.run(
       'fluttergen',
       [],
@@ -273,6 +236,41 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('Flutter gen finished with: ${flutterGenProcess.exitCode}');
 
     return ExitCode.success.code;
+  }
+
+  Future<void> _setupDependencies(String workingDirectory) async {
+    final flutterGenDependencyProcess = await Process.run(
+      'dart',
+      ['pub', 'global', 'activate', 'flutter_gen'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(flutterGenDependencyProcess.stdout.toString())
+      ..err(flutterGenDependencyProcess.stderr.toString())
+      ..info('Flutter gen generation finished with: ${flutterGenDependencyProcess.exitCode}');
+
+    final firebaseDependencyProgress = await Process.run(
+      'dart',
+      ['pub', 'global', 'activate', 'flutterfire_cli'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(firebaseDependencyProgress.stdout.toString())
+      ..err(firebaseDependencyProgress.stderr.toString())
+      ..info('Package renaming finished with: ${firebaseDependencyProgress.exitCode}');
+
+    final packageRenameDependencyProgress = await Process.run(
+      'dart',
+      ['pub', 'add', 'package_rename'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(packageRenameDependencyProgress.stdout.toString())
+      ..err(packageRenameDependencyProgress.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameDependencyProgress.exitCode}');
   }
 
   String _workingDirectory({String relativePath = ''}) {
