@@ -154,8 +154,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
     _logger
       ..info(process.stdout.toString())
       ..err(process.stderr.toString())
-      ..info('flutterfire finished with: ${process.exitCode}')
-      ..info('Flutter gen start');
+      ..info('flutterfire finished with: ${process.exitCode}');
 
     final flutterIconsProcess = await Process.run(
       'flutter',
