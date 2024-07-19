@@ -119,7 +119,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
     final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
-    final firebaseAccountId = firebaseServiceAccount[projectIdField];
+    final firebaseAccountId = firebaseServiceAccount[projectIdField] as String;
 
     final workingDirectory = _workingDirectory();
 
@@ -130,91 +130,25 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('- Platform identifier android: $bundleIdAndroid')
       ..info('- Platform identifier ios: $bundleIdIos')
       ..info('- Scripts working directory: $workingDirectory')
-      ..info('- Service account path: $firebaseServiceAccountPath')
-      ..info('Configure $firebaseAccountId google services');
+      ..info('- Service account path: $firebaseServiceAccountPath');
 
-    final process = await Process.run(
-      'flutterfire',
-      [
-        'configure',
-        '--yes',
-        '--project=$firebaseAccountId',
-        '--android-package-name=$bundleIdAndroid',
-        '--ios-bundle-id=$bundleIdIos',
-        '--macos-bundle-id=',
-        '--web-app-id=',
-        '--windows-app-id=',
-        '--service-account=$firebaseServiceAccountPath',
-        '--platforms',
-        'android,ios',
-      ],
-      workingDirectory: workingDirectory,
-    );
+    // Configure firebase for all supported platforms
+    await _configureFirebase(firebaseAccountId, bundleIdAndroid, bundleIdIos, firebaseServiceAccountPath);
 
-    _logger
-      ..info(process.stdout.toString())
-      ..err(process.stderr.toString())
-      ..info('flutterfire finished with: ${process.exitCode}');
+    // Configure launch icons for all supported platforms
+    await _configureLaunchIcons(workingDirectory);
 
-    final flutterIconsProcess = await Process.run(
-      'flutter',
-      ['pub', 'run', 'flutter_launcher_icons'],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterIconsProcess.stdout.toString())
-      ..err(flutterIconsProcess.stderr.toString())
-      ..info('Flutter icons generation finished with: ${flutterIconsProcess.exitCode}');
+    // Configure splash screen for all supported platforms
+    await _configureSplash(workingDirectory);
 
-    final nativeSplashProcess = await Process.run(
-      'dart',
-      ['run', 'flutter_native_splash:create'],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(nativeSplashProcess.stdout.toString())
-      ..err(nativeSplashProcess.stderr.toString())
-      ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
+    // Configure platforms bundle id and package name
+    await _configurePlatformsIdentifiers(workingDirectory);
 
-    final packageRenameProcess = await Process.run(
-      'dart',
-      ['run', 'package_rename'],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(packageRenameProcess.stdout.toString())
-      ..err(packageRenameProcess.stderr.toString())
-      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
+    // Configure localization for support languages
+    await _configureLocalization(workingDirectory);
 
-    final buildRunnerProcess = await Process.run(
-      'flutter',
-      ['pub', 'run', 'build_runner', 'build', '--delete-conflicting-outputs'],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(buildRunnerProcess.stdout.toString())
-      ..err(buildRunnerProcess.stderr.toString())
-      ..info('Build runner finished with: ${buildRunnerProcess.exitCode}');
-
-    final flutterL10nProcess = await Process.run(
-      'flutter',
-      ['gen-l10n'],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterL10nProcess.stdout.toString())
-      ..err(flutterL10nProcess.stderr.toString())
-      ..info('Localization generation finished with: ${flutterL10nProcess.exitCode}');
-
-    final flutterGenProcess = await Process.run(
-      'fluttergen',
-      [],
-      workingDirectory: workingDirectory,
-    );
-    _logger
-      ..info(flutterGenProcess.stdout.toString())
-      ..err(flutterGenProcess.stderr.toString())
-      ..info('Flutter gen finished with: ${flutterGenProcess.exitCode}');
+    // Configure assets, especially if they are removed unexpectedly
+    await _configureAssets(workingDirectory);
 
     return ExitCode.success.code;
   }
@@ -252,6 +186,105 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info(packageRenameDependencyProgress.stdout.toString())
       ..err(packageRenameDependencyProgress.stderr.toString())
       ..info('Package renaming finished with: ${packageRenameDependencyProgress.exitCode}');
+  }
+
+  Future<void> _configureFirebase(
+    String firebaseAccountId,
+    String? bundleIdAndroid,
+    String? bundleIdIos,
+    String firebaseServiceAccountPath,
+  ) async {
+    final workingDirectory = _workingDirectory();
+
+    _logger.info('Configure $firebaseAccountId google services');
+
+    final process = await Process.run(
+      'flutterfire',
+      [
+        'configure',
+        '--yes',
+        '--project=$firebaseAccountId',
+        '--android-package-name=$bundleIdAndroid',
+        '--ios-bundle-id=$bundleIdIos',
+        '--macos-bundle-id=',
+        '--web-app-id=',
+        '--windows-app-id=',
+        '--service-account=$firebaseServiceAccountPath',
+        '--platforms',
+        'android,ios',
+      ],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(process.stdout.toString())
+      ..err(process.stderr.toString())
+      ..info('flutterfire finished with: ${process.exitCode}');
+  }
+
+  Future<void> _configureSplash(String workingDirectory) async {
+    final nativeSplashProcess = await Process.run(
+      'dart',
+      ['run', 'flutter_native_splash:create'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(nativeSplashProcess.stdout.toString())
+      ..err(nativeSplashProcess.stderr.toString())
+      ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
+  }
+
+  Future<void> _configureLaunchIcons(String workingDirectory) async {
+    final flutterIconsProcess = await Process.run(
+      'flutter',
+      ['pub', 'run', 'flutter_launcher_icons'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(flutterIconsProcess.stdout.toString())
+      ..err(flutterIconsProcess.stderr.toString())
+      ..info('Flutter icons generation finished with: ${flutterIconsProcess.exitCode}');
+  }
+
+  Future<void> _configureAssets(String workingDirectory) async {
+    final flutterGenProcess = await Process.run(
+      'fluttergen',
+      [],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(flutterGenProcess.stdout.toString())
+      ..err(flutterGenProcess.stderr.toString())
+      ..info('Flutter gen finished with: ${flutterGenProcess.exitCode}');
+  }
+
+  Future<void> _configureLocalization(String workingDirectory) async {
+    final flutterL10nProcess = await Process.run(
+      'flutter',
+      ['gen-l10n'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(flutterL10nProcess.stdout.toString())
+      ..err(flutterL10nProcess.stderr.toString())
+      ..info('Localization generation finished with: ${flutterL10nProcess.exitCode}');
+  }
+
+  Future<void> _configurePlatformsIdentifiers(String workingDirectory) async {
+    final packageRenameProcess = await Process.run(
+      'dart',
+      ['run', 'package_rename'],
+      workingDirectory: workingDirectory,
+    );
+
+    _logger
+      ..info(packageRenameProcess.stdout.toString())
+      ..err(packageRenameProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
   }
 
   String _workingDirectory({String relativePath = ''}) {
