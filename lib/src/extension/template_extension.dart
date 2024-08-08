@@ -6,7 +6,7 @@ import 'package:webtrit_phone_tools/src/extension/map_extension.dart';
 
 extension TemplateExtension on Template {
   String renderAndCleanJson(
-    Map<String, String?> stringValues, {
+    Map<String, dynamic> stringValues, {
     bool removeEmptyFields = true,
   }) {
     final renderedString = renderString(stringValues);
