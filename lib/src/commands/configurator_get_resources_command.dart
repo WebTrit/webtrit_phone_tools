@@ -341,6 +341,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final flutterLauncherIconsPath = _workingDirectory(configPathLaunchPath);
       File(flutterLauncherIconsPath).writeAsStringSync(flutterLauncherIcons);
       _logger.success('✓ Written successfully to $flutterLauncherIconsPath');
+    } else {
+      _logger.warn(
+          'adaptiveIconBackground: ${theme.colors?.launch?.adaptiveIconBackground} adaptiveIconBackground: ${theme.colors?.launch?.adaptiveIconBackground}');
     }
 
     if (theme.colors?.launch?.splashBackground != null) {
