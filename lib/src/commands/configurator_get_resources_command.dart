@@ -403,18 +403,27 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     final attendedTransferEnabled = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_ENABLE_ATTENDED_TRANSFER'];
     final credentialsRequestUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CREDENTIALS_REQUEST_URL'];
+    final chatServiceUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CHAT_SERVICE_URL'];
+    final smsServiceUrl = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_SMS_SERVICE_URL'];
+    final chatFeatureEnable = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_CHAT_FEATURE_ENABLE'];
+    final smsFeatureEnable = phoneEnvironmentOverrideKeystoreFields['WEBTRIT_APP_SMS_FEATURE_ENABLE'];
 
+    // TODO(Serdun): Passing a nullable bool will result in an error, while passing a nullable string will exclude it from the resulting env file.
     final dartDefineMapValues = {
       'WEBTRIT_APP_CORE_URL': isClassicFlow ? url : null,
       'WEBTRIT_APP_DEMO_CORE_URL': isDemoFlow ? url : null,
       'WEBTRIT_APP_CREDENTIALS_REQUEST_URL': credentialsRequestUrl as String?,
-      'WEBTRIT_APP_ENABLE_ATTENDED_TRANSFER': attendedTransferEnabled as bool?,
+      'WEBTRIT_APP_ENABLE_ATTENDED_TRANSFER': attendedTransferEnabled ?? false,
       'WEBTRIT_APP_SALES_EMAIL': isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : null,
       'WEBTRIT_APP_NAME': application.name,
       'WEBTRIT_APP_GREETING': theme.texts?.greeting ?? application.name,
       'WEBTRIT_APP_DESCRIPTION': theme.texts?.greeting ?? '',
       'WEBTRIT_APP_TERMS_AND_CONDITIONS_URL': application.termsConditionsUrl,
       'WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH': projectKeystoreDirectoryPath,
+      'WEBTRIT_APP_CHAT_FEATURE_ENABLE': chatFeatureEnable ?? false,
+      'WEBTRIT_APP_SMS_FEATURE_ENABLE': smsFeatureEnable ?? false,
+      'WEBTRIT_APP_CHAT_SERVICE_URL': chatServiceUrl as String?,
+      'WEBTRIT_APP_SMS_SERVICE_URL': smsServiceUrl as String?
     };
 
     final dartDefineTemplate = Template(StringifyAssets.dartDefineTemplate, htmlEscapeValues: false, lenient: true);
