@@ -1,0 +1,9 @@
+package_rename_config:
+  android:
+    app_name: {{ app_name }}
+    package_name: {{ android_package_name }}
+    override_old_package: {{override_old_package}}
+    lang: kotlin
+  ios:
+    app_name: {{ app_name }}
+    package_name: {{ ios_package_name }}

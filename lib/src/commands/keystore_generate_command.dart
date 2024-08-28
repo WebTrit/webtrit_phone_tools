@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -6,7 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
-import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
+import 'package:webtrit_phone_tools/src/models/keystore_metadata.dart';
 
 const _bundleIdOptionName = 'bundleId';
 const _createParentDirectoriesFlagName = 'createParentDirectories';
@@ -14,7 +13,6 @@ const _appendDirectoryFlagName = 'appendDirectory';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
-const _storeFileName = 'upload-keystore.jks';
 const _keytoolLogFileName = 'keytool.log';
 const _keystoreMetadataFileName = 'upload-keystore-metadata.json';
 
@@ -93,7 +91,7 @@ class KeystoreGenerateCommand extends Command<int> {
     _logger.info('Initializing conventional keystore metadata');
     final keystoreMetadata = KeystoreMetadata.conventional(bundleId);
 
-    _logger.info('Generating key pair using keytool to: ${keystoreMetadata.storeFile}');
+    _logger.info('Generating key pair using keytool to: ${keystoreMetadata.storeFileJKS}');
     final process = Process.runSync(
       'keytool',
       [
@@ -109,7 +107,7 @@ class KeystoreGenerateCommand extends Command<int> {
         '-keypass',
         keystoreMetadata.keyPassword,
         '-keystore',
-        keystoreMetadata.storeFile,
+        keystoreMetadata.storeFileJKS,
         '-storepass',
         keystoreMetadata.storePassword,
         '-dname',
@@ -131,55 +129,44 @@ class KeystoreGenerateCommand extends Command<int> {
       File(keytoolLogPath).writeAsStringSync(process.stderr.toString(), mode: FileMode.append, flush: true);
     }
 
+    _logger.info('Transitioning to PKCS12 Format for KeyStore to: ${keystoreMetadata.storeFileP12}');
+    final transitioningToPKCS12Process = Process.runSync(
+      'keytool',
+      [
+        '-importkeystore',
+        '-noprompt',
+        '-srckeystore',
+        keystoreMetadata.storeFileJKS,
+        '-srcstorepass',
+        keystoreMetadata.keyPassword,
+        '-destkeystore',
+        keystoreMetadata.storeFileP12,
+        '-deststoretype',
+        'PKCS12',
+        '-deststorepass',
+        keystoreMetadata.storePassword,
+      ],
+      workingDirectory: workingDirectoryPath,
+      runInShell: true,
+    );
+    if (transitioningToPKCS12Process.exitCode != 0) {
+      _logger
+        ..info(transitioningToPKCS12Process.stdout.toString())
+        ..err(transitioningToPKCS12Process.stderr.toString());
+      return ExitCode.software.code;
+    } else {
+      _logger.info('Writing PKCS12 execution log to: $_keytoolLogFileName');
+      final keytoolLogPath = path.join(workingDirectoryPath, _keytoolLogFileName);
+      File(keytoolLogPath).writeAsStringSync(transitioningToPKCS12Process.stdout.toString(), flush: true);
+      File(keytoolLogPath)
+          .writeAsStringSync(transitioningToPKCS12Process.stderr.toString(), mode: FileMode.append, flush: true);
+    }
+
     _logger.info('Writing conventional keystore metadata to: $_keystoreMetadataFileName');
     final keystoreMetadataPath = path.join(workingDirectoryPath, _keystoreMetadataFileName);
     final metadataJsonString = keystoreMetadata.toJsonString();
     File(keystoreMetadataPath).writeAsStringSync(metadataJsonString, flush: true);
 
     return ExitCode.success.code;
-  }
-}
-
-class KeystoreMetadata {
-  KeystoreMetadata({
-    required this.bundleId,
-    required this.keyAlias,
-    required this.keyPassword,
-    required this.storeFile,
-    required this.storePassword,
-    required this.dname,
-  });
-
-  factory KeystoreMetadata.conventional(String bundleId) {
-    final password = PasswordGenerator.random(
-      uppercase: true,
-      numbers: true,
-    );
-    return KeystoreMetadata(
-      bundleId: bundleId,
-      keyAlias: 'upload',
-      keyPassword: password,
-      storeFile: _storeFileName,
-      storePassword: password,
-      dname: 'CN=$commonName, O=WebTrit, C=UA',
-    );
-  }
-
-  String bundleId;
-  String keyAlias;
-  String keyPassword;
-  String storeFile;
-  String storePassword;
-  String dname;
-
-  String toJsonString() {
-    final metadataJson = {
-      'bundleId': bundleId,
-      'keyAlias': keyAlias,
-      'keyPassword': keyPassword,
-      'storeFile': storeFile,
-      'storePassword': storePassword,
-    };
-    return (StringBuffer()..writeln(const JsonEncoder.withIndent('  ').convert(metadataJson))).toString();
   }
 }

@@ -1,0 +1,7 @@
+{
+  "bundleId": "{{ BUNDLE_ID }}",
+  "issuer-id": "",
+  "key_id": "",
+  "code-signing-identity": "",
+  "team-id": ""
+}

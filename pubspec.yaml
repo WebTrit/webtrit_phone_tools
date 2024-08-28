@@ -7,19 +7,28 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  args: ^2.4.1
-  cli_completion: ^0.3.0
-  mason_logger: ^0.2.5
-  path: ^1.8.3
-  pub_updater: ^0.3.1
+  args: ^2.4.2
+  cli_completion: ^0.5.0
+  mason_logger: ^0.2.12
+  path: ^1.9.0
+  pub_updater: ^0.4.0
+  package_rename: ^1.5.0
+  mustache_template: ^2.0.0
+  http: ^1.1.0
+  archive: ^3.6.0
+
+  dto:
+    path: ../webtrit_phone_configurator_common/packages/dto
+  yaml: ^3.1.2
 
 dev_dependencies:
-  build_runner: ^2.4.4
+  build_runner: ^2.4.8
   build_verify: ^3.1.0
   build_version: ^2.1.1
-  mocktail: ^1.0.0
-  test: ^1.24.6
-  very_good_analysis: ^5.1.0
+  mocktail: ^1.0.3
+  test: ^1.25.2
+  webtrit_analysis:
+    git: https://github.com/WebTrit/webtrit_analysis.git
 
 executables:
   webtrit_phone_tools:
