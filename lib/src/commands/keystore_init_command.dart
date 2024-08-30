@@ -130,7 +130,7 @@ class KeystoreInitCommand extends Command<int> {
     };
 
     final credentialsIOSTemplate = Template(StringifyAssets.uploadStoreConnectMetadata, htmlEscapeValues: false);
-    final credentialsIOS = credentialsIOSTemplate.renderAndCleanJson(credentialsIOSMapValues).toMap();
+    final credentialsIOS = credentialsIOSTemplate.renderAndCleanJson(credentialsIOSMapValues);
     final iosCredentialsFilePath = path.join(keystoreProjectPath, '$iosCredentials.incomplete');
 
     File(iosCredentialsFilePath).writeAsStringSync(credentialsIOS.toJson());

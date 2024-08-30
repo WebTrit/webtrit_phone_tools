@@ -140,7 +140,7 @@ class AssetlinksGenerateCommand extends Command<int> {
       };
 
       final googleAssetlinksTemplate = Template(StringifyAssets.googleAssetLinksTemplate, htmlEscapeValues: false);
-      final googleAssetlinks = googleAssetlinksTemplate.renderAndCleanJson(googleAssetlinksMapValues);
+      final googleAssetlinks = googleAssetlinksTemplate.renderAndCleanJson(googleAssetlinksMapValues).toJson();
       final googleAssetlinksFilePath = path.join(welKnownWorkingDirectoryPath, _assetlinks);
 
       File(googleAssetlinksFilePath).writeAsStringSync(googleAssetlinks, flush: true);

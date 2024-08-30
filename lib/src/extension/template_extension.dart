@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:mustache_template/mustache.dart';
 
-import 'package:webtrit_phone_tools/src/extension/map_extension.dart';
-
 extension TemplateExtension on Template {
-  String renderAndCleanJson(
+  Map<String, dynamic> renderAndCleanJson(
     Map<String, dynamic> stringValues, {
     bool removeEmptyFields = true,
   }) {
@@ -18,9 +16,7 @@ extension TemplateExtension on Template {
       throw FormatException('Rendered template is not a valid JSON: $e');
     }
 
-    final json = removeEmptyFields ? _removeEmptyAndNullFields(parsedJson) : parsedJson;
-
-    return json.toJson();
+    return removeEmptyFields ? _removeEmptyAndNullFields(parsedJson) : parsedJson;
   }
 
   Map<String, dynamic> _removeEmptyAndNullFields(Map<String, dynamic> json) {

@@ -430,7 +430,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final dartDefine = dartDefineTemplate.renderAndCleanJson(dartDefineMapValues);
 
     final dartDefinePath = _workingDirectory(configureDartDefinePath);
-    File(dartDefinePath).writeAsStringSync(dartDefine);
+    File(dartDefinePath).writeAsStringSync(dartDefine.toJson());
     _logger
       ..success('✓ Written successfully to $dartDefinePath')
       ..info('- dart define appSalesEmailAvailable:$isClassicFlow')
@@ -519,7 +519,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final appTheme = appThemeTemplate.renderAndCleanJson(data);
 
     final appThemePath = _workingDirectory(assetThemePath);
-    File(appThemePath).writeAsStringSync(appTheme);
+    File(appThemePath).writeAsStringSync(appTheme.toJson());
     _logger.success('✓ Written successfully to $appThemePath');
   }
 
