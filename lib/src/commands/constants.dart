@@ -10,6 +10,7 @@ const configuratorApiUrl = configuratorProdApiUrl;
 
 // Phone environment
 const configureDartDefinePath = 'dart_define.json';
+const assetAppConfigPath = 'assets/themes/app.config.json';
 
 // Phone theme assets
 const assetThemePath = 'assets/themes/original.json';

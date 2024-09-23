@@ -127,6 +127,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     // application's object from the configurator is used.
     final phoneEnvironmentOverrideKeystoreFields = <String, dynamic>{};
 
+    File? appConfig;
+
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
@@ -158,6 +160,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final config = await _getApplicationEnvKeystoreConfig(keystorePath, applicationId);
       phoneEnvironmentOverrideKeystoreFields.addAll(config);
       _logger.info('- Phone environment override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
+    } catch (e) {
+      _logger.err(e.toString());
+    }
+
+    try {
+      appConfig = await _getKeystoreAppConfig(keystorePath, applicationId);
+      _logger.info('- App config override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
     } catch (e) {
       _logger.err(e.toString());
     }
@@ -383,6 +392,17 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    try {
+      final appConfigPath = _workingDirectory(assetAppConfigPath);
+      if (appConfig != null) {
+        await appConfig.copy(appConfigPath);
+      } else {
+        _logger.err('appConfig is null');
+      }
+    } catch (e) {
+      _logger.err(e.toString());
+    }
+
     return ExitCode.success.code;
   }
 
@@ -425,6 +445,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $dartDefinePath');
   }
 
+  // TODO(Serdun): Migrate to app config
   // Retrieves and decodes the application environment configuration from a specified keystore path and application ID.
   // Returns an empty map if the configuration file does not exist.
   Future<Map<String, dynamic>> _getApplicationEnvKeystoreConfig(String keystorePath, String applicationId) async {
@@ -438,6 +459,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     final contents = await applicationEnvConfigFile.readAsString();
     return json.decode(contents) as Map<String, dynamic>;
+  }
+
+  Future<File?> _getKeystoreAppConfig(String keystorePath, String applicationId) async {
+    final configFilePath = path.join(keystorePath, applicationId, 'app_config/app.config.json');
+    final appConfigFile = File(configFilePath);
+
+    if (!appConfigFile.existsSync()) {
+      _logger.info('“Keystore configuration lacks application environment override fields');
+      return null;
+    }
+
+    return appConfigFile;
   }
 
   void _configureTheme(ThemeDTO theme) {

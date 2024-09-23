@@ -48,7 +48,7 @@ class DartDefineTemplate {
       if (demoFlow) _webtritAppDemoCoreUrl: url,
       if (!demoFlow) _webtritAppCoreUrl: url,
       _webtritAppName: appName,
-      _webtritAppGreeting: appGreening ?? appName,
+      if (appGreening != null) _webtritAppGreeting: appGreening,
       _webtritAppDescription: appDescription,
       _webtritAppTermsAndConditionsUrl: termsAndConditionsUrl,
       _webtritAppSalesEmail: salesEmail,
