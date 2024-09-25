@@ -127,8 +127,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     // application's object from the configurator is used.
     final phoneEnvironmentOverrideKeystoreFields = <String, dynamic>{};
 
-    File? appConfig;
-
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
@@ -160,13 +158,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final config = await _getApplicationEnvKeystoreConfig(keystorePath, applicationId);
       phoneEnvironmentOverrideKeystoreFields.addAll(config);
       _logger.info('- Phone environment override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
-    } catch (e) {
-      _logger.err(e.toString());
-    }
-
-    try {
-      appConfig = await _getKeystoreAppConfig(keystorePath, applicationId);
-      _logger.info('- App config override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
     } catch (e) {
       _logger.err(e.toString());
     }
@@ -393,16 +384,34 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      final appConfigPath = _workingDirectory(assetAppConfigPath);
-      if (appConfig != null) {
-        await appConfig.copy(appConfigPath);
+      _logger.info('Attempting to get app config directory...');
+      final appConfigDirectory = await _getKeystoreAppConfigDirectory(keystorePath, applicationId);
+      if (appConfigDirectory != null) {
+        _logger.info('App config directory found: ${appConfigDirectory.path}');
+        final appConfigPath = _workingDirectory(assetThemeFolderPath);
+        final targetDirectory = Directory(appConfigPath);
+
+        if (!targetDirectory.existsSync()) {
+          _logger.info('Target directory does not exist. Creating: $appConfigPath');
+          targetDirectory.createSync(recursive: true);
+        } else {
+          _logger.info('Target directory already exists: $appConfigPath');
+        }
+
+        await for (final entity in appConfigDirectory.list()) {
+          if (entity is File) {
+            final newFilePath = path.join(appConfigPath, path.basename(entity.path));
+            _logger.info('Copying file from ${entity.path} to $newFilePath');
+            await entity.copy(newFilePath);
+          }
+        }
+        _logger.info('All files copied successfully.');
       } else {
-        _logger.err('appConfig is null');
+        _logger.err('appConfigDirectory is null');
       }
     } catch (e) {
-      _logger.err(e.toString());
+      _logger.err('Error during copying app config files: ${e.toString()}');
     }
-
     return ExitCode.success.code;
   }
 
@@ -461,16 +470,16 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return json.decode(contents) as Map<String, dynamic>;
   }
 
-  Future<File?> _getKeystoreAppConfig(String keystorePath, String applicationId) async {
-    final configFilePath = path.join(keystorePath, applicationId, 'app_config/app.config.json');
-    final appConfigFile = File(configFilePath);
+  Future<Directory?> _getKeystoreAppConfigDirectory(String keystorePath, String applicationId) async {
+    final configDirectoryPath = path.join(keystorePath, applicationId, 'app_config');
+    final appConfigDirectory = Directory(configDirectoryPath);
 
-    if (!appConfigFile.existsSync()) {
-      _logger.info('“Keystore configuration lacks application environment override fields');
+    if (!appConfigDirectory.existsSync()) {
+      _logger.info('Keystore configuration lacks application environment override fields');
       return null;
     }
 
-    return appConfigFile;
+    return appConfigDirectory;
   }
 
   void _configureTheme(ThemeDTO theme) {
