@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -196,27 +197,51 @@ class ConfiguratorGenerateCommand extends Command<int> {
   ) async {
     final workingDirectory = _workingDirectory();
 
-    _logger.info('Configure $firebaseAccountId google services');
+    _logger.info('Starting Firebase configuration for account: $firebaseAccountId');
+    _logger.info('Working directory: $workingDirectory');
+    _logger.info('Android bundle ID: $bundleIdAndroid');
+    _logger.info('iOS bundle ID: $bundleIdIos');
+    _logger.info('Service account path: $firebaseServiceAccountPath');
 
-    final process = await Process.run(
-      'flutterfire',
-      [
-        'configure',
-        '--yes',
-        '--project=$firebaseAccountId',
-        '--android-package-name=$bundleIdAndroid',
-        '--ios-bundle-id=$bundleIdIos',
-        '--service-account=$firebaseServiceAccountPath',
-        '--platforms',
-        'android,ios',
-      ],
-      workingDirectory: workingDirectory,
-    );
+    try {
+      _logger.info('Running flutterfire configure process...');
 
-    _logger
-      ..info(process.stdout.toString())
-      ..err(process.stderr.toString())
-      ..info('flutterfire finished with: ${process.exitCode}');
+      final process = await Process.start(
+        'flutterfire',
+        [
+          'configure',
+          '--yes',
+          '--project=$firebaseAccountId',
+          '--android-package-name=${bundleIdAndroid ?? ''}',
+          '--ios-bundle-id=${bundleIdIos ?? ''}',
+          '--service-account=$firebaseServiceAccountPath',
+          '--platforms',
+          'android,ios',
+        ],
+        workingDirectory: workingDirectory,
+        runInShell: true,
+      );
+
+      process.stdout.transform(utf8.decoder).listen((data) {
+        _logger.info('stdout: $data');
+      });
+
+      process.stderr.transform(utf8.decoder).listen((data) {
+        _logger.err('stderr: $data');
+      });
+
+      final exitCode = await process.exitCode;
+      _logger.info('flutterfire finished with exit code: $exitCode');
+
+      if (exitCode != 0) {
+        _logger.err('Flutterfire process failed with exit code $exitCode. Please check the logs above for details.');
+        throw Exception('Flutterfire configuration failed with exit code $exitCode');
+      }
+    } catch (e, stackTrace) {
+      _logger.err('Error during Firebase configuration: $e');
+      _logger.err('StackTrace: $stackTrace');
+      rethrow; // Rethrow to allow higher-level error handling if needed
+    }
   }
 
   Future<void> _configureSplash(String workingDirectory) async {
