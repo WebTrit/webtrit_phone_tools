@@ -17,9 +17,6 @@ const _token = 'token';
 const _keystoresPath = 'keystores-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
-const _publisherAppDemoFlagName = 'demo';
-const _publisherAppClassicFlagName = 'classic';
-
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
@@ -51,16 +48,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         _cacheSessionDataPath,
         help: 'Path to file which cache temporarily stores user session data to enhance performance '
             'and maintain state across different processes.',
-      )
-      ..addFlag(
-        _publisherAppDemoFlagName,
-        help: 'Force-enable the demo app flow, disregarding the configuration value.',
-        negatable: false,
-      )
-      ..addFlag(
-        _publisherAppClassicFlagName,
-        help: 'Force-enable the classic app flow, disregarding the configuration value.',
-        negatable: false,
       );
   }
 
