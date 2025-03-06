@@ -1,10 +1,9 @@
 import 'dart:typed_data';
 
+import 'package:data/dto/application/application.dart';
 import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:archive/archive.dart';
-
-import 'package:dto/dto.dart';
 
 class HttpClient {
   HttpClient(this.baseUrl, this.logger);
@@ -16,10 +15,6 @@ class HttpClient {
     return '$baseUrl/api/v1/applications/$applicationId';
   }
 
-  String _themeUrl(String applicationId, String themeId) {
-    return '$baseUrl/api/v1/applications/$applicationId/themes/$themeId';
-  }
-
   String _translationsUrl(String applicationId) {
     return '$baseUrl/api/v1/translations/compose-arb/$applicationId';
   }
@@ -29,14 +24,6 @@ class HttpClient {
     return _fetchData<ApplicationDTO>(
       url,
       (response) => ApplicationDTO.fromJsonString(response.body),
-    );
-  }
-
-  Future<ThemeDTO> getTheme(String applicationId, String themeId) async {
-    final url = _themeUrl(applicationId, themeId);
-    return _fetchData<ThemeDTO>(
-      url,
-      (response) => ThemeDTO.fromJsonString(response.body),
     );
   }
 

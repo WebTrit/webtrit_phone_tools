@@ -1,26 +1,21 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:args/command_runner.dart';
-import 'package:dto/dto.dart';
+import 'package:data/datasource/datasource.dart';
+import 'package:data/dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
-import 'package:mustache_template/mustache.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
-import 'package:webtrit_phone_tools/src/gen/assets.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
-import 'package:webtrit_phone_tools/src/models/models.dart';
 
 const _applicationId = 'applicationId';
+const _token = 'token';
 const _keystoresPath = 'keystores-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
-
-const _publisherAppDemoFlagName = 'demo';
-const _publisherAppClassicFlagName = 'classic';
 
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
@@ -29,12 +24,19 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   ConfiguratorGetResourcesCommand({
     required Logger logger,
     required HttpClient httpClient,
+    required ConfiguratorBackandDatasource datasource,
   })  : _logger = logger,
-        _httpClient = httpClient {
+        _httpClient = httpClient,
+        _datasource = datasource {
     argParser
       ..addOption(
         _applicationId,
         help: 'Configurator application id.',
+        mandatory: true,
+      )
+      ..addOption(
+        _token,
+        help: 'JWT token for  configurator API.',
         mandatory: true,
       )
       ..addOption(
@@ -46,16 +48,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         _cacheSessionDataPath,
         help: 'Path to file which cache temporarily stores user session data to enhance performance '
             'and maintain state across different processes.',
-      )
-      ..addFlag(
-        _publisherAppDemoFlagName,
-        help: 'Force-enable the demo app flow, disregarding the configuration value.',
-        negatable: false,
-      )
-      ..addFlag(
-        _publisherAppClassicFlagName,
-        help: 'Force-enable the classic app flow, disregarding the configuration value.',
-        negatable: false,
       );
   }
 
@@ -63,6 +55,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   String get name => 'configurator-resources';
 
   final HttpClient _httpClient;
+  final ConfiguratorBackandDatasource _datasource;
 
   @override
   String get description {
@@ -81,12 +74,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
   @override
   String get invocation => '${super.invocation} [$_directoryParameterName]';
-
-  /// Enables the demo flow (email-only login) for the phone authentication feature.
-  bool get _publisherAppDemoFlag => argResults?[_publisherAppDemoFlagName] as bool;
-
-  /// Enables the classic flow with the ability to configure the authentication flow on the adapter side.
-  bool get _publisherAppClassicFlag => argResults?[_publisherAppClassicFlagName] as bool;
 
   final Logger _logger;
 
@@ -115,21 +102,16 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final cacheSessionDataPath = paramCacheSessionDataPath ?? defaultCacheSessionDataPath;
     final cacheSessionDataDir = Directory(path.dirname(cacheSessionDataPath));
 
-    // This map is initialized from the `application_env_config.json` file,
-    // which overrides the application's environment fields if the field is not
-    // initialized in the application's object from the configurator.
-
-    // If a field is not defined in both `application_env_config.json` and the
-    // application's object from the configurator, the parameter is not added
-    // to the resulting file. If the field exists in `application_env_config.json`,
-    // it is taken from there. If it exists in both `application_env_config.json`
-    // and the application's object from the configurator, the field from the
-    // application's object from the configurator is used.
-    final phoneEnvironmentOverrideKeystoreFields = <String, dynamic>{};
-
     final applicationId = commandArgResults[_applicationId] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationId" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
+    final jwtToken = commandArgResults[_token] as String;
+    final authHeader = {'Authorization': 'Bearer $jwtToken'};
+    if (jwtToken.isEmpty) {
+      _logger.err('Option "$_token" can not be empty.');
       return ExitCode.usage.code;
     }
 
@@ -154,19 +136,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.data.code;
     }
 
-    try {
-      final config = await _getApplicationEnvKeystoreConfig(keystorePath, applicationId);
-      phoneEnvironmentOverrideKeystoreFields.addAll(config);
-      _logger.info('- Phone environment override keystore fields:$phoneEnvironmentOverrideKeystoreFields');
-    } catch (e) {
-      _logger.err(e.toString());
-    }
-
     late ApplicationDTO application;
     late ThemeDTO theme;
 
     try {
-      application = await _httpClient.getApplication(applicationId);
+      application = await _datasource.getApplication(
+        applicationId: applicationId,
+        headers: authHeader,
+      );
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -178,7 +155,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      theme = await _httpClient.getTheme(applicationId, application.theme!);
+      theme = await _datasource.getTheme(
+        applicationId: applicationId,
+        themeId: application.theme!,
+        headers: authHeader,
+      );
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -249,10 +230,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     };
 
     final buildConfigPath = _workingDirectory(cacheSessionDataPath);
-    File(buildConfigPath).writeAsStringSync(buildConfig.toJson());
+    File(buildConfigPath).writeAsStringSync(buildConfig.toStringifyJson());
     _logger.success('✓ Written successfully to $buildConfigPath');
 
-    final adaptiveIconBackground = await _httpClient.getBytes(theme.images?.adaptiveIconBackground);
+    final adaptiveIconBackground = await _httpClient.getBytes(theme.splashAssets.pictureUrl);
     final adaptiveIconBackgroundPath = _workingDirectory(assetSplashIconPath);
     if (adaptiveIconBackground != null) {
       File(adaptiveIconBackgroundPath).writeAsBytesSync(adaptiveIconBackground);
@@ -261,25 +242,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $adaptiveIconBackgroundPath with $adaptiveIconBackground');
     }
 
-    final adaptiveIconForeground = await _httpClient.getBytes(theme.images?.adaptiveIconForeground);
-    final adaptiveIconForegroundPath = _workingDirectory(assetLauncherIconAdaptiveForegroundPath);
-    if (adaptiveIconForeground != null) {
-      File(adaptiveIconForegroundPath).writeAsBytesSync(adaptiveIconForeground);
-      _logger.success('✓ Written successfully to $adaptiveIconForegroundPath');
-    } else {
-      _logger.err('✗ Failed to write $adaptiveIconForegroundPath with $adaptiveIconForeground');
-    }
-
-    final webLauncherIcon = await _httpClient.getBytes(theme.images?.webLauncherIcon);
-    final webLauncherIconPath = _workingDirectory(assetLauncherWebIconPath);
-    if (webLauncherIcon != null) {
-      File(webLauncherIconPath).writeAsBytesSync(webLauncherIcon);
-      _logger.success('✓ Written successfully to $webLauncherIconPath');
-    } else {
-      _logger.err('✗ Failed to write $webLauncherIconPath with $webLauncherIcon');
-    }
-
-    final androidLauncherIcon = await _httpClient.getBytes(theme.images?.androidLauncherIcon);
+    final androidLauncherIcon = await _httpClient.getBytes(theme.launchAssets.androidLauncherIconUrl);
     final androidLauncherIconPath = _workingDirectory(assetLauncherAndroidIconPath);
     if (androidLauncherIcon != null) {
       File(androidLauncherIconPath).writeAsBytesSync(androidLauncherIcon);
@@ -288,7 +251,26 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $androidLauncherIconPath with $androidLauncherIcon');
     }
 
-    final iosLauncherIcon = await _httpClient.getBytes(theme.images?.iosLauncherIcon);
+    // TODO(Serdun): Re check structure of naming
+    final adaptiveIconForeground = await _httpClient.getBytes(theme.launchAssets.adaptiveIconBackgroundUrl);
+    final adaptiveIconForegroundPath = _workingDirectory(assetLauncherIconAdaptiveForegroundPath);
+    if (adaptiveIconForeground != null) {
+      File(adaptiveIconForegroundPath).writeAsBytesSync(adaptiveIconForeground);
+      _logger.success('✓ Written successfully to $adaptiveIconForegroundPath');
+    } else {
+      _logger.err('✗ Failed to write $adaptiveIconForegroundPath with $adaptiveIconForeground');
+    }
+
+    final webLauncherIcon = await _httpClient.getBytes(theme.launchAssets.webLauncherIconUrl);
+    final webLauncherIconPath = _workingDirectory(assetLauncherWebIconPath);
+    if (webLauncherIcon != null) {
+      File(webLauncherIconPath).writeAsBytesSync(webLauncherIcon);
+      _logger.success('✓ Written successfully to $webLauncherIconPath');
+    } else {
+      _logger.err('✗ Failed to write $webLauncherIconPath with $webLauncherIcon');
+    }
+
+    final iosLauncherIcon = await _httpClient.getBytes(theme.launchAssets.iosLauncherIconUrl);
     final iosLauncherIconPath = _workingDirectory(assetLauncherIosIconPath);
     if (iosLauncherIcon != null) {
       File(iosLauncherIconPath).writeAsBytesSync(iosLauncherIcon);
@@ -297,7 +279,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $iosLauncherIconPath with $iosLauncherIcon');
     }
 
-    final notificationLogo = await _httpClient.getBytes(theme.images?.notificationLogo);
+    final notificationLogo = await _httpClient.getBytes(theme.launchAssets.notificationLogoUrl);
     final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
     if (notificationLogo != null) {
       File(notificationLogoPath).writeAsBytesSync(notificationLogo);
@@ -306,7 +288,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
     }
 
-    final primaryOnboardingLogo = await _httpClient.getBytes(theme.images?.primaryOnboardingLogo);
+    final metadataPrimaryOnboardingLogoUrl = theme.themeWidgetConfig.imageAssets.primaryOnboardingLogo.metadata
+        .getString(ImageAssetsConfig.metadataPrimaryOnboardingLogoUrl);
+    final primaryOnboardingLogo = await _httpClient.getBytes(metadataPrimaryOnboardingLogoUrl);
     final primaryOnboardingLogoPath = _workingDirectory(assetImagePrimaryOnboardingLogoPath);
     if (primaryOnboardingLogo != null) {
       File(primaryOnboardingLogoPath).writeAsBytesSync(primaryOnboardingLogo);
@@ -315,7 +299,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $primaryOnboardingLogoPath with $primaryOnboardingLogo');
     }
 
-    final secondaryOnboardingLogo = await _httpClient.getBytes(theme.images?.secondaryOnboardingLogo);
+    final metadataSecondaryOnboardingLogoUrl = theme.themeWidgetConfig.imageAssets.secondaryOnboardingLogo.metadata
+        .getString(ImageAssetsConfig.metadataSecondaryOnboardingLogoUrl);
+    final secondaryOnboardingLogo = await _httpClient.getBytes(metadataSecondaryOnboardingLogoUrl);
     final secondaryOnboardingLogoPath = _workingDirectory(assetImageSecondaryOnboardingLogoPath);
     if (secondaryOnboardingLogo != null) {
       File(secondaryOnboardingLogoPath).writeAsBytesSync(secondaryOnboardingLogo);
@@ -325,93 +311,70 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      _configureTheme(theme);
+      await _configureTheme(theme);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
     }
 
-    if (theme.colors?.launch?.adaptiveIconBackground != null && theme.colors?.launch?.adaptiveIconBackground != null) {
-      _logger.info('- Prepare config for flutter_launcher_icons_template');
-      final flutterLauncherIconsMapValues = {
-        'adaptive_icon_background': theme.colors?.launch?.adaptiveIconBackground,
-        'theme_color': theme.colors?.launch?.adaptiveIconBackground,
-      };
-      final launcherIconsTemplate = Template(StringifyAssets.flutterLauncherIconsTemplate, htmlEscapeValues: false);
-      final flutterLauncherIcons = launcherIconsTemplate.renderString(flutterLauncherIconsMapValues);
-      final flutterLauncherIconsPath = _workingDirectory(configPathLaunchPath);
-      File(flutterLauncherIconsPath).writeAsStringSync(flutterLauncherIcons);
-      _logger.success('✓ Written successfully to $flutterLauncherIconsPath');
+    _logger.info('- Prepare config for flutter_launcher_icons_template');
+
+    if (theme.launchAssets.backgroundColor != null) {
+      await Process.start(
+        'make',
+        ['generate-launcher-icons-config'],
+        workingDirectory: workingDirectoryPath,
+        runInShell: true,
+        environment: {
+          'LAUNCHER_ICON_IMAGE_ANDROID': assetLauncherAndroidIconPath,
+          'ICON_BACKGROUND_COLOR': theme.launchAssets.backgroundColor ?? '',
+          'LAUNCHER_ICON_FOREGROUND': assetLauncherIconAdaptiveForegroundPath,
+          'LAUNCHER_ICON_IMAGE_IOS': assetLauncherIosIconPath,
+          'LAUNCHER_ICON_IMAGE_WEB': assetLauncherWebIconPath,
+          'THEME_COLOR': theme.launchAssets.backgroundColor ?? '',
+        },
+      );
     } else {
-      _logger.warn(
-          'adaptiveIconBackground: ${theme.colors?.launch?.adaptiveIconBackground} adaptiveIconBackground: ${theme.colors?.launch?.adaptiveIconBackground}');
+      _logger.warn('adaptiveIconBackground: ${theme.launchAssets.backgroundColor} adaptiveIconBackground');
     }
 
-    if (theme.colors?.launch?.splashBackground != null) {
+    if (theme.splashAssets.color != null) {
       _logger.info('- Prepare config for flutter_native_splash_template');
-
-      final flutterNativeSplashMapValues = {
-        'background': theme.colors?.launch?.splashBackground?.replaceFirst('ff', ''),
-      };
-      final nativeSplashTemplate = Template(StringifyAssets.flutterNativeSplashTemplate, htmlEscapeValues: false);
-      final flutterNativeSplash = nativeSplashTemplate.renderString(flutterNativeSplashMapValues);
-      final flutterNativeSplashPath = _workingDirectory(configPathSplashPath);
-      File(flutterNativeSplashPath).writeAsStringSync(flutterNativeSplash);
-      _logger.success('✓ Written successfully to $flutterNativeSplashPath');
+      await Process.start(
+        'make',
+        ['generate-native-splash-config'],
+        workingDirectory: workingDirectoryPath,
+        runInShell: true,
+        environment: {
+          'SPLASH_COLOR': theme.splashAssets.color ?? '',
+          'SPLASH_IMAGE': assetSplashIconPath,
+          'ANDROID_12_SPLASH_COLOR': theme.splashAssets.color ?? '',
+        },
+      );
     }
 
     _logger.info('- Prepare config for package_rename_config_template');
-    final packageNameConfigMapValues = {
-      'app_name': application.name,
-      'android_package_name': application.androidPlatformId,
-      'ios_package_name': application.iosPlatformId,
-      'override_old_package': 'com.webtrit.app',
-      'description': '',
-    };
-    final packageNameConfigTemplate = Template(StringifyAssets.packageRenameConfigTemplate, htmlEscapeValues: false);
-    final packageNameConfig = packageNameConfigTemplate.renderString(packageNameConfigMapValues);
-    final packageNameConfigPath = _workingDirectory(configPathPackagePath);
-    File(packageNameConfigPath).writeAsStringSync(packageNameConfig);
-    _logger
-      ..success('✓ Written successfully to $packageNameConfigPath')
-      ..info('- Prepare config for $configureDartDefinePath');
+
+    await Process.start(
+      'make',
+      ['generate-package-config'],
+      workingDirectory: workingDirectoryPath,
+      runInShell: true,
+      environment: {
+        'ANDROID_APP_NAME': application.name ?? '',
+        'PACKAGE_NAME': application.androidPlatformId ?? '',
+        'IOS_APP_NAME': application.name ?? '',
+        'BUNDLE_ID': application.iosPlatformId ?? '',
+      },
+    );
 
     try {
-      _configurePhoneEnv(application, phoneEnvironmentOverrideKeystoreFields, theme, projectKeystoreDirectoryPath);
+      _configurePhoneEnv(application, theme, projectKeystoreDirectoryPath);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
     }
 
-    try {
-      _logger.info('Attempting to get app config directory...');
-      final appConfigDirectory = await _getKeystoreAppConfigDirectory(keystorePath, applicationId);
-      if (appConfigDirectory != null) {
-        _logger.info('App config directory found: ${appConfigDirectory.path}');
-        final appConfigPath = _workingDirectory(assetThemeFolderPath);
-        final targetDirectory = Directory(appConfigPath);
-
-        if (!targetDirectory.existsSync()) {
-          _logger.info('Target directory does not exist. Creating: $appConfigPath');
-          targetDirectory.createSync(recursive: true);
-        } else {
-          _logger.info('Target directory already exists: $appConfigPath');
-        }
-
-        await for (final entity in appConfigDirectory.list()) {
-          if (entity is File) {
-            final newFilePath = path.join(appConfigPath, path.basename(entity.path));
-            _logger.info('Copying file from ${entity.path} to $newFilePath');
-            await entity.copy(newFilePath);
-          }
-        }
-        _logger.info('All files copied successfully.');
-      } else {
-        _logger.err('appConfigDirectory is null');
-      }
-    } catch (e) {
-      _logger.err('Error during copying app config files: ${e.toString()}');
-    }
     return ExitCode.success.code;
   }
 
@@ -419,136 +382,91 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   // and writing them to a Dart define file.
   void _configurePhoneEnv(
     ApplicationDTO application,
-    Map<String, dynamic> phoneEnvironmentOverrideKeystoreFields,
     ThemeDTO theme,
     String projectKeystoreDirectoryPath,
   ) {
-    final httpsPrefix = application.coreUrl!.startsWith('https://') || application.coreUrl!.startsWith('http://');
-    final url = httpsPrefix ? application.coreUrl! : 'https://${application.coreUrl!}';
-    _logger.info('- Use $url as core');
-
-    final isAppSalesEmailAvailable = (application.contactInfo?.appSalesEmail ?? '').isNotEmpty;
-    final isDemoFlow = _publisherAppDemoFlag || application.demo;
-    final isClassicFlow = _publisherAppClassicFlag && !application.demo;
-
-    final dartDefineTemplate = DartDefineTemplate(
-      demoFlow: isDemoFlow,
-      url: url,
-      termsAndConditionsUrl: application.termsConditionsUrl!,
-      salesEmail: isAppSalesEmailAvailable ? application.contactInfo?.appSalesEmail : '',
-      appName: application.name!,
-      appGreening: theme.texts?.greeting,
-      appDescription: theme.texts?.greeting ?? '',
-      keyStorePath: projectKeystoreDirectoryPath,
-    );
-
-    final dartDefine = dartDefineTemplate.toJson(phoneEnvironmentOverrideKeystoreFields).toJson();
-
     final dartDefinePath = _workingDirectory(configureDartDefinePath);
-    File(dartDefinePath).writeAsStringSync(dartDefine);
+    final applicationEnvironment = application.environment;
+
+    // Create a mutable copy if the environment is unmodifiable
+    final mutableEnvironment = Map<String, dynamic>.from(applicationEnvironment ?? {});
+
+    mutableEnvironment['WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH'] = projectKeystoreDirectoryPath;
+
+    // Convert the updated environment to a JSON string
+    final env = mutableEnvironment.toStringifyJson();
+    File(dartDefinePath).writeAsStringSync(env);
     _logger
-      ..success('✓ Written successfully to $dartDefinePath')
-      ..info('- dart define appSalesEmailAvailable:$isClassicFlow')
-      ..info('- dart define demo flow:$isDemoFlow')
-      ..info('- dart define classic flow:$isClassicFlow')
+      ..info('- Phone environment: $env')
       ..success('✓ Written successfully to $dartDefinePath');
   }
 
-  // TODO(Serdun): Migrate to app config
-  // Retrieves and decodes the application environment configuration from a specified keystore path and application ID.
-  // Returns an empty map if the configuration file does not exist.
-  Future<Map<String, dynamic>> _getApplicationEnvKeystoreConfig(String keystorePath, String applicationId) async {
-    final configFilePath = path.join(keystorePath, applicationId, 'application_env_config.json');
-    final applicationEnvConfigFile = File(configFilePath);
-
-    if (!applicationEnvConfigFile.existsSync()) {
-      _logger.info('“Keystore configuration lacks application environment override fields');
-      return {};
-    }
-
-    final contents = await applicationEnvConfigFile.readAsString();
-    return json.decode(contents) as Map<String, dynamic>;
+  Future<void> _configureTheme(ThemeDTO theme) async {
+    await _writeColorSchemeConfig(theme);
+    await _writePageLightConfig(theme);
+    await _writeWidgetsLightConfig(theme);
+    await _writeAppConfig(theme);
   }
 
-  Future<Directory?> _getKeystoreAppConfigDirectory(String keystorePath, String applicationId) async {
-    final configDirectoryPath = path.join(keystorePath, applicationId, 'app_config');
-    final appConfigDirectory = Directory(configDirectoryPath);
-
-    if (!appConfigDirectory.existsSync()) {
-      _logger.info('Keystore configuration lacks application environment override fields');
-      return null;
-    }
-
-    return appConfigDirectory;
+  Future<void> _writeColorSchemeConfig(ThemeDTO theme) async {
+    await _writeJsonToFile(_workingDirectory(assetLightColorSchemePath), theme.colorSchemeConfig.toJson());
+    // TODO(Serdun): Change scheme to dark when it will be implemented
+    await _writeJsonToFile(_workingDirectory(assetDarkColorSchemePath), theme.colorSchemeConfig.toJson());
   }
 
-  void _configureTheme(ThemeDTO theme) {
-    final colors = theme.colors;
-    final gradientTabColor = theme.colors?.gradientTabColor;
+  Future<void> _writePageLightConfig(ThemeDTO theme) async {
+    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), theme.themePageConfig.toJson());
+    // TODO(Serdun): Change scheme to dark when it will be implemented
+    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), theme.themePageConfig.toJson());
+  }
 
-    final gradientColorTemplate = Template(StringifyAssets.appThemeGradientTemplate, htmlEscapeValues: false);
-    final gradientColor = gradientTabColor?.map((it) => gradientColorTemplate.renderString({'color': it})).join(', ');
+  Future<void> _writeWidgetsLightConfig(ThemeDTO theme) async {
+    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), theme.themeWidgetConfig.toJson());
+    // TODO(Serdun): Change scheme to dark when it will be implemented
+    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), theme.themeWidgetConfig.toJson());
+  }
 
-    final data = {
-      'seedColor': colors?.primary,
-      'primary': colors?.primary,
-      'onPrimary': colors?.onPrimary,
-      'primaryContainer': colors?.primaryContainer,
-      'onPrimaryContainer': colors?.onPrimaryContainer,
-      'primaryFixed': colors?.primaryFixed,
-      'primaryFixedDim': colors?.primaryFixedDim,
-      'onPrimaryFixed': colors?.onPrimaryFixed,
-      'onPrimaryFixedVariant': colors?.onPrimaryFixedVariant,
-      'secondary': colors?.secondary,
-      'onSecondary': colors?.onSecondary,
-      'secondaryContainer': colors?.secondaryContainer,
-      'onSecondaryContainer': colors?.onSecondaryContainer,
-      'secondaryFixed': colors?.secondaryFixed,
-      'secondaryFixedDim': colors?.secondaryFixedDim,
-      'onSecondaryFixed': colors?.onSecondaryFixed,
-      'onSecondaryFixedVariant': colors?.onSecondaryFixedVariant,
-      'tertiary': colors?.tertiary,
-      'onTertiary': colors?.onTertiary,
-      'tertiaryContainer': colors?.tertiaryContainer,
-      'onTertiaryContainer': colors?.onTertiaryContainer,
-      'tertiaryFixed': colors?.tertiaryFixed,
-      'tertiaryFixedDim': colors?.tertiaryFixedDim,
-      'onTertiaryFixed': colors?.onTertiaryFixed,
-      'onTertiaryFixedVariant': colors?.onTertiaryFixedVariant,
-      'error': colors?.error,
-      'onError': colors?.onError,
-      'errorContainer': colors?.errorContainer,
-      'onErrorContainer': colors?.onErrorContainer,
-      'outline': colors?.outline,
-      'outlineVariant': colors?.outlineVariant,
-      'surface': colors?.surface,
-      'onSurface': colors?.onSurface,
-      'surfaceDim': colors?.surfaceDim,
-      'surfaceBright': colors?.surfaceBright,
-      'surfaceContainerLowest': colors?.surfaceContainerLowest,
-      'surfaceContainerLow': colors?.surfaceContainerLow,
-      'surfaceContainer': colors?.surfaceContainer,
-      'surfaceContainerHigh': colors?.surfaceContainerHigh,
-      'surfaceContainerHighest': colors?.surfaceContainerHighest,
-      'onSurfaceVariant': colors?.onSurfaceVariant,
-      'inverseSurface': colors?.inverseSurface,
-      'onInverseSurface': colors?.onInverseSurface,
-      'inversePrimary': colors?.inversePrimary,
-      'shadow': colors?.shadow,
-      'scrim': colors?.scrim,
-      'surfaceTint': colors?.surfaceTint,
-      'fontFamily': theme.fontFamily,
-      'primaryOnboardingLogo': theme.images?.primaryOnboardingLogo,
-      'secondaryOnboardingLogo': theme.images?.secondaryOnboardingLogo,
-      'primaryGradientColors': '[$gradientColor]',
-    };
+  Future<void> _writeJsonToFile(String path, Map<String, dynamic> jsonContent) async {
+    File(path).writeAsStringSync(jsonContent.toStringifyJson());
+    _logger.success('✓ Written successfully to $path');
+  }
 
-    final appThemeTemplate = Template(StringifyAssets.appThemeTemplate, htmlEscapeValues: false);
-    final appTheme = appThemeTemplate.renderAndCleanJson(data);
+  Future<void> _writeAppConfig(ThemeDTO theme) async {
+    final appConfigPath = _workingDirectory(assetAppConfigPath);
+    final appConfig = theme.appConfig;
 
-    final appThemePath = _workingDirectory(assetThemePath);
-    File(appThemePath).writeAsStringSync(appTheme.toJson());
-    _logger.success('✓ Written successfully to $appThemePath');
+    final assetUrlMappings = <int, Uri>{};
+    for (final value in appConfig.embeddedResources) {
+      if (value.uriOrNull?.queryParameters['type'] == 'download' && value.uriOrNull != null) {
+        await _handleDownloadAsset(value, assetUrlMappings);
+      }
+    }
+
+    final updatedEmbeddedResources = _updateEmbeddedResources(appConfig.embeddedResources, assetUrlMappings);
+    await _writeJsonToFile(appConfigPath, appConfig.copyWith(embeddedResources: updatedEmbeddedResources).toJson());
+  }
+
+  Future<void> _handleDownloadAsset(EmbeddedResource value, Map<int, Uri> assetUrlMappings) async {
+    final url = value.uriOrNull.toString();
+    final fileName = '${value.id}.html';
+    final downloadPath = _workingDirectory('assets/themes/$fileName');
+
+    final file = await _httpClient.getBytes(url);
+    if (file != null) {
+      await File(downloadPath).writeAsBytes(file);
+      _logger.success('✓ Written successfully to $downloadPath');
+
+      final changeUrlToUri = 'asset://assets/themes/$fileName';
+      assetUrlMappings[value.id] = Uri.parse(changeUrlToUri);
+    }
+  }
+
+  List<EmbeddedResource> _updateEmbeddedResources(
+      List<EmbeddedResource> resources, Map<int, Uri> changeUrlAssetsToURIEmbedddeds) {
+    return resources.map((e) {
+      final uri = changeUrlAssetsToURIEmbedddeds[e.id] ?? e.uriOrNull;
+      return e.copyWith(uri: uri.toString());
+    }).toList();
   }
 
   Future<void> _configureTranslations(String applicationId) async {

@@ -1,6 +1,7 @@
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
+import 'package:data/datasource/datasource.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:pub_updater/pub_updater.dart';
 
@@ -25,11 +26,20 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   /// {@macro webtrit_phone_tools_command_runner}
   WebtritPhoneToolsCommandRunner({
     Logger? logger,
+    ConfiguratorBackandDatasource? datasource,
     HttpClient? httpClient,
     KeystoreReadmeUpdater? keystoreReadmeUpdater,
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
+        _datasource = datasource ??
+            ConfiguratorBackandDatasource(
+              Dio(BaseOptions(
+                baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1',
+                // headers: {'Authorization': 'Bearer $configuratorToken'},
+              )),
+              UnauthorizedInterceptor(),
+            ),
         _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
@@ -50,6 +60,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(ConfiguratorGetResourcesCommand(
       logger: _logger,
       httpClient: _httpClient,
+      datasource: _datasource,
     ));
     addCommand(ConfiguratorGenerateCommand(logger: _logger));
     addCommand(KeystoreInitCommand(
@@ -68,7 +79,9 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   void printUsage() => _logger.info(usage);
 
   final Logger _logger;
+  final ConfiguratorBackandDatasource _datasource;
   final HttpClient _httpClient;
+
   final KeystoreReadmeUpdater _keystoreReadmeUpdater;
   final PubUpdater _pubUpdater;
 
