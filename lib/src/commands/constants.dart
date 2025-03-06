@@ -4,23 +4,29 @@ const parameterIndent = '  ';
 const parameterDelimiter = ' - ';
 
 // Environment APIs
-const configuratorStageApiUrl = 'https://us-central1-webtrit-configurator-stage.cloudfunctions.net';
-const configuratorProdApiUrl = 'https://us-central1-webtrit-configurator.cloudfunctions.net';
-const configuratorApiUrl = configuratorProdApiUrl;
+const _configuratorProdApiUrl = 'https://us-central1-webtrit-configurator.cloudfunctions.net';
+const configuratorApiUrl = _configuratorProdApiUrl;
 
-// Phone environment
 const configureDartDefinePath = 'dart_define.json';
+const assetThemeFolderPath = 'assets/themes/';
 
 // Phone theme assets
-const assetThemePath = 'assets/themes/original.json';
+const assetLightColorSchemePath = 'assets/themes/original.color_scheme.light.config.json';
+const assetDarkColorSchemePath = 'assets/themes/original.color_scheme.dark.config.json';
+const assetPageLightConfig = 'assets/themes/original.page.light.config.json';
+const assetPageDarkConfig = 'assets/themes/original.page.dark.config.json';
+const assetWidgetsLightConfig = 'assets/themes/original.widget.light.config.json';
+const assetWidgetsDarkConfig = 'assets/themes/original.widget.dark.config.json';
+const assetAppConfigPath = 'assets/themes/app.config.json';
 const assetImagePrimaryOnboardingLogoPath = 'assets/primary_onboardin_logo.svg';
 const assetImageSecondaryOnboardingLogoPath = 'assets/secondary_onboardin_logo.svg';
 const assetIconIosNotificationTemplateImagePath = 'assets/callkeep/ios_icon_template_image.png';
-const assetSplashIconPath = 'assets/native_splash/image.png';
-const assetLauncherIconAdaptiveForegroundPath = 'assets/launcher_icons/ic_foreground.png';
-const assetLauncherAndroidIconPath = 'assets/launcher_icons/android.png';
-const assetLauncherIosIconPath = 'assets/launcher_icons/ios.png';
-const assetLauncherWebIconPath = 'assets/launcher_icons/web.png';
+
+const assetSplashIconPath = 'tool/assets/native_splash/image.png';
+const assetLauncherIconAdaptiveForegroundPath = 'tool/assets/launcher_icons/ic_foreground.png';
+const assetLauncherAndroidIconPath = 'tool/assets/launcher_icons/android.png';
+const assetLauncherIosIconPath = 'tool/assets/launcher_icons/ios.png';
+const assetLauncherWebIconPath = 'tool/assets/launcher_icons/web.png';
 
 // Phone translations arb path
 const translationsArbPath = 'lib/l10n/arb';
@@ -28,16 +34,6 @@ const translationsArbPath = 'lib/l10n/arb';
 // SSL certificate
 const assetSSLCertificate = 'assets/certificates';
 const assetSSLCertificateCredentials = 'credentials.json';
-
-// Config for external plugins
-const configPathSplashTemplatePath = 'assets/flutter_native_splash_template.yaml';
-const configPathSplashPath = 'flutter_native_splash.yaml';
-
-const configPathPackageTemplatePath = 'assets/package_rename_config_template.yaml';
-const configPathPackagePath = 'package_rename_config.yaml';
-
-const configPathLaunchTemplatePath = 'assets/flutter_launcher_icons_template.yaml';
-const configPathLaunchPath = 'flutter_launcher_icons.yaml';
 
 // Cache session data
 const bundleIdAndroidField = 'bundleIdAndroid';

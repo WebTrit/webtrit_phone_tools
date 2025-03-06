@@ -9,7 +9,7 @@ class KeystoreReadmeUpdater {
   final Logger _logger;
 
   static const _readmeFileName = 'README.md';
-  static const _keystoreFoldersSectionStart = '## Keystore folders\n';
+  static const _keystoreFoldersSectionStart = '# Keystore accounts\n';
   static const _separator = '\n---';
 
   Future<void> addApplicationRecord(

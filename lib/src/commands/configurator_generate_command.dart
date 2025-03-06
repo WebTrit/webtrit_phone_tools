@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -175,17 +176,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info(firebaseDependencyProgress.stdout.toString())
       ..err(firebaseDependencyProgress.stderr.toString())
       ..info('Package renaming finished with: ${firebaseDependencyProgress.exitCode}');
-
-    final packageRenameDependencyProgress = await Process.run(
-      'dart',
-      ['pub', 'add', 'package_rename'],
-      workingDirectory: workingDirectory,
-    );
-
-    _logger
-      ..info(packageRenameDependencyProgress.stdout.toString())
-      ..err(packageRenameDependencyProgress.stderr.toString())
-      ..info('Package renaming finished with: ${packageRenameDependencyProgress.exitCode}');
   }
 
   Future<void> _configureFirebase(
@@ -196,56 +186,79 @@ class ConfiguratorGenerateCommand extends Command<int> {
   ) async {
     final workingDirectory = _workingDirectory();
 
-    _logger.info('Configure $firebaseAccountId google services');
-
-    final process = await Process.run(
-      'flutterfire',
-      [
-        'configure',
-        '--yes',
-        '--project=$firebaseAccountId',
-        '--android-package-name=$bundleIdAndroid',
-        '--ios-bundle-id=$bundleIdIos',
-        '--macos-bundle-id=',
-        '--web-app-id=',
-        '--windows-app-id=',
-        '--service-account=$firebaseServiceAccountPath',
-        '--platforms',
-        'android,ios',
-      ],
-      workingDirectory: workingDirectory,
-    );
-
     _logger
-      ..info(process.stdout.toString())
-      ..err(process.stderr.toString())
-      ..info('flutterfire finished with: ${process.exitCode}');
+      ..info('Starting Firebase configuration for account: $firebaseAccountId')
+      ..info('Working directory: $workingDirectory')
+      ..info('Android bundle ID: $bundleIdAndroid')
+      ..info('iOS bundle ID: $bundleIdIos')
+      ..info('Service account path: $firebaseServiceAccountPath');
+
+    try {
+      _logger.info('Running flutterfire configure process...');
+
+      final process = await Process.start(
+        'flutterfire',
+        [
+          'configure',
+          '--yes',
+          '--project=$firebaseAccountId',
+          '--android-package-name=${bundleIdAndroid ?? ''}',
+          '--ios-bundle-id=${bundleIdIos ?? ''}',
+          '--service-account=$firebaseServiceAccountPath',
+          '--platforms',
+          'android,ios',
+        ],
+        workingDirectory: workingDirectory,
+        runInShell: true,
+      );
+
+      process.stdout.transform(utf8.decoder).listen((data) {
+        _logger.info('stdout: $data');
+      });
+
+      process.stderr.transform(utf8.decoder).listen((data) {
+        _logger.err('stderr: $data');
+      });
+
+      final exitCode = await process.exitCode;
+      _logger.info('flutterfire finished with exit code: $exitCode');
+
+      if (exitCode != 0) {
+        _logger.err('Flutterfire process failed with exit code $exitCode. Please check the logs above for details.');
+        throw Exception('Flutterfire configuration failed with exit code $exitCode');
+      }
+    } catch (e, stackTrace) {
+      _logger
+        ..err('Error during Firebase configuration: $e')
+        ..err('StackTrace: $stackTrace');
+      rethrow; // Rethrow to allow higher-level error handling if needed
+    }
   }
 
   Future<void> _configureSplash(String workingDirectory) async {
-    final nativeSplashProcess = await Process.run(
-      'dart',
-      ['run', 'flutter_native_splash:create'],
+    final packageRenameProcess = await Process.run(
+      'make',
+      ['generate-native-splash'],
       workingDirectory: workingDirectory,
     );
 
     _logger
-      ..info(nativeSplashProcess.stdout.toString())
-      ..err(nativeSplashProcess.stderr.toString())
-      ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
+      ..info(packageRenameProcess.stdout.toString())
+      ..err(packageRenameProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
   }
 
   Future<void> _configureLaunchIcons(String workingDirectory) async {
-    final flutterIconsProcess = await Process.run(
-      'flutter',
-      ['pub', 'run', 'flutter_launcher_icons'],
+    final packageRenameProcess = await Process.run(
+      'make',
+      ['generate-launcher-icons'],
       workingDirectory: workingDirectory,
     );
 
     _logger
-      ..info(flutterIconsProcess.stdout.toString())
-      ..err(flutterIconsProcess.stderr.toString())
-      ..info('Flutter icons generation finished with: ${flutterIconsProcess.exitCode}');
+      ..info(packageRenameProcess.stdout.toString())
+      ..err(packageRenameProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
   }
 
   Future<void> _configureAssets(String workingDirectory) async {
@@ -276,8 +289,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
   Future<void> _configurePlatformsIdentifiers(String workingDirectory) async {
     final packageRenameProcess = await Process.run(
-      'dart',
-      ['run', 'package_rename'],
+      'make',
+      ['rename-package'],
       workingDirectory: workingDirectory,
     );
 
