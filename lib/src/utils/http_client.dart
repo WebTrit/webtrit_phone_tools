@@ -15,10 +15,6 @@ class HttpClient {
     return '$baseUrl/api/v1/applications/$applicationId';
   }
 
-  String _themeUrl(String applicationId, String themeId) {
-    return '$baseUrl/api/v1/applications/$applicationId/themes/$themeId';
-  }
-
   String _translationsUrl(String applicationId) {
     return '$baseUrl/api/v1/translations/compose-arb/$applicationId';
   }

@@ -4,7 +4,6 @@ const parameterIndent = '  ';
 const parameterDelimiter = ' - ';
 
 // Environment APIs
-const _configuratorStageApiUrl = 'https://us-central1-webtrit-configurator-stage.cloudfunctions.net/newapi/v1';
 const _configuratorProdApiUrl = 'https://us-central1-webtrit-configurator.cloudfunctions.net';
 const configuratorApiUrl = _configuratorProdApiUrl;
 

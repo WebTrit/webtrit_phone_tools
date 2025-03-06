@@ -186,11 +186,12 @@ class ConfiguratorGenerateCommand extends Command<int> {
   ) async {
     final workingDirectory = _workingDirectory();
 
-    _logger.info('Starting Firebase configuration for account: $firebaseAccountId');
-    _logger.info('Working directory: $workingDirectory');
-    _logger.info('Android bundle ID: $bundleIdAndroid');
-    _logger.info('iOS bundle ID: $bundleIdIos');
-    _logger.info('Service account path: $firebaseServiceAccountPath');
+    _logger
+      ..info('Starting Firebase configuration for account: $firebaseAccountId')
+      ..info('Working directory: $workingDirectory')
+      ..info('Android bundle ID: $bundleIdAndroid')
+      ..info('iOS bundle ID: $bundleIdIos')
+      ..info('Service account path: $firebaseServiceAccountPath');
 
     try {
       _logger.info('Running flutterfire configure process...');
@@ -227,8 +228,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
         throw Exception('Flutterfire configuration failed with exit code $exitCode');
       }
     } catch (e, stackTrace) {
-      _logger.err('Error during Firebase configuration: $e');
-      _logger.err('StackTrace: $stackTrace');
+      _logger
+        ..err('Error during Firebase configuration: $e')
+        ..err('StackTrace: $stackTrace');
       rethrow; // Rethrow to allow higher-level error handling if needed
     }
   }

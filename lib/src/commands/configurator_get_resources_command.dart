@@ -5,13 +5,11 @@ import 'package:args/command_runner.dart';
 import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
-import 'package:mustache_template/mustache.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
-import 'package:webtrit_phone_tools/src/gen/assets.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 const _applicationId = 'applicationId';
