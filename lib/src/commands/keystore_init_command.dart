@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:data/dto/application/application.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:mustache_template/mustache.dart';
 
-import 'package:dto/application/application.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/commands/keystore_generate_command.dart';
@@ -133,7 +133,7 @@ class KeystoreInitCommand extends Command<int> {
     final credentialsIOS = credentialsIOSTemplate.renderAndCleanJson(credentialsIOSMapValues);
     final iosCredentialsFilePath = path.join(keystoreProjectPath, '$iosCredentials.incomplete');
 
-    File(iosCredentialsFilePath).writeAsStringSync(credentialsIOS.toJson());
+    File(iosCredentialsFilePath).writeAsStringSync(credentialsIOS.toStringifyJson());
     _existsKeystoreFiles.add(iosCredentials);
 
     // Create incomplete files which still need attention

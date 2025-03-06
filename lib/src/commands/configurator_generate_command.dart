@@ -176,17 +176,6 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info(firebaseDependencyProgress.stdout.toString())
       ..err(firebaseDependencyProgress.stderr.toString())
       ..info('Package renaming finished with: ${firebaseDependencyProgress.exitCode}');
-
-    final packageRenameDependencyProgress = await Process.run(
-      'dart',
-      ['pub', 'add', 'package_rename'],
-      workingDirectory: workingDirectory,
-    );
-
-    _logger
-      ..info(packageRenameDependencyProgress.stdout.toString())
-      ..err(packageRenameDependencyProgress.stderr.toString())
-      ..info('Package renaming finished with: ${packageRenameDependencyProgress.exitCode}');
   }
 
   Future<void> _configureFirebase(
@@ -245,29 +234,29 @@ class ConfiguratorGenerateCommand extends Command<int> {
   }
 
   Future<void> _configureSplash(String workingDirectory) async {
-    final nativeSplashProcess = await Process.run(
-      'dart',
-      ['run', 'flutter_native_splash:create'],
+    final packageRenameProcess = await Process.run(
+      'make',
+      ['generate-native-splash'],
       workingDirectory: workingDirectory,
     );
 
     _logger
-      ..info(nativeSplashProcess.stdout.toString())
-      ..err(nativeSplashProcess.stderr.toString())
-      ..info('Native splash generation finished with: ${nativeSplashProcess.exitCode}');
+      ..info(packageRenameProcess.stdout.toString())
+      ..err(packageRenameProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
   }
 
   Future<void> _configureLaunchIcons(String workingDirectory) async {
-    final flutterIconsProcess = await Process.run(
-      'flutter',
-      ['pub', 'run', 'flutter_launcher_icons'],
+    final packageRenameProcess = await Process.run(
+      'make',
+      ['generate-launcher-icons'],
       workingDirectory: workingDirectory,
     );
 
     _logger
-      ..info(flutterIconsProcess.stdout.toString())
-      ..err(flutterIconsProcess.stderr.toString())
-      ..info('Flutter icons generation finished with: ${flutterIconsProcess.exitCode}');
+      ..info(packageRenameProcess.stdout.toString())
+      ..err(packageRenameProcess.stderr.toString())
+      ..info('Package renaming finished with: ${packageRenameProcess.exitCode}');
   }
 
   Future<void> _configureAssets(String workingDirectory) async {
@@ -298,8 +287,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
   Future<void> _configurePlatformsIdentifiers(String workingDirectory) async {
     final packageRenameProcess = await Process.run(
-      'dart',
-      ['run', 'package_rename'],
+      'make',
+      ['rename-package'],
       workingDirectory: workingDirectory,
     );
 

@@ -4,7 +4,7 @@ version: 0.0.1
 publish_to: none
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   args: ^2.4.2
@@ -17,8 +17,9 @@ dependencies:
   http: ^1.1.0
   archive: ^3.6.0
 
-  dto:
-    path: ../webtrit_phone_configurator_common/packages/dto
+  data:
+    path: ../webtrit_phone_configurator/packages/data
+
   yaml: ^3.1.2
 
 dev_dependencies:
@@ -29,6 +30,8 @@ dev_dependencies:
   test: ^1.25.2
   webtrit_analysis:
     git: https://github.com/WebTrit/webtrit_analysis.git
+  logging: ^1.2.0
+  logging_appenders: ^1.2.0
 
 executables:
   webtrit_phone_tools:
