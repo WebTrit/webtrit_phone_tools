@@ -1,0 +1,80 @@
+# This is a shared makefile for WebTrit projects
+# Do not modify this file inside individual projects
+# Source: https://github.com/WebTrit/webtrit_phone_tools/...
+
+# ===========================
+# Version-based flavor handling
+# ===========================
+
+VERSION := $(shell jq -r '.__VERSION // ""' dart_define.json)
+
+ifeq ($(strip $(VERSION)),)
+    VERSION_STAGE := legacy
+else ifeq ($(VERSION),0.0.0)
+    VERSION_STAGE := legacy
+else ifeq ($(shell printf "0.0.1\n$(VERSION)" | sort -C -V && echo yes || echo no),no)
+    VERSION_STAGE := legacy
+else ifeq ($(shell printf "0.0.2\n$(VERSION)" | sort -C -V && echo yes || echo no),no)
+    VERSION_STAGE := v0.0.1
+else
+    VERSION_STAGE := v0.0.2+
+endif
+
+# ===========================
+# Flavor compute macros
+# ===========================
+
+define compute-deeplink-flavor
+  $(eval DEEPLINK_DOMAIN := $(shell jq -r '.WEBTRIT_APP_LINK_DOMAIN // ""' dart_define.json))
+  $(if $(strip $(DEEPLINK_DOMAIN)),\
+    $(eval DEEPLINK_FLAVOR := deeplinks),\
+    $(eval DEEPLINK_FLAVOR := deeplinksDisabled))
+endef
+
+define compute-sms-flavor
+  $(eval CALL_TRIGGER_SMS := $(shell jq -r '.CALL_TRIGGER_SMS // "false"' dart_define.json))
+  $(if $(strip $(filter true,$(CALL_TRIGGER_SMS))),\
+    $(eval SMS_FLAVOR := smsReceiver),\
+    $(eval SMS_FLAVOR := smsReceiverDisabled))
+endef
+
+# Wrapper function to compute FLAVOR_ARG based on VERSION_STAGE
+define compute-flavor-arg
+  ifeq ($(VERSION_STAGE),legacy)
+    FLAVOR_ARG :=
+  else ifeq ($(VERSION_STAGE),v0.0.1)
+    $(call compute-deeplink-flavor)
+    FLAVOR_ARG := --flavor $(DEEPLINK_FLAVOR)
+  else ifeq ($(VERSION_STAGE),v0.0.2+)
+    $(call compute-deeplink-flavor)
+    $(call compute-sms-flavor)
+    FLAVOR_ARG := --flavor $(DEEPLINK_FLAVOR)$(SMS_FLAVOR)
+  endif
+endef
+
+# Evaluate the logic at Makefile load time
+$(eval $(call compute-flavor-arg))
+
+# ===========================
+# Flutter build macro
+# ===========================
+
+DART_DEFINE_FILE ?= --dart-define-from-file=dart_define.json
+FLUTTER_FLAGS := --no-tree-shake-icons
+
+FLUTTER_BUILD_COMMAND = flutter build $(1) $(DART_DEFINE_FILE) $(FLUTTER_FLAGS) $(FLAVOR_ARG) $(2)
+
+define build-target
+build-$(1):
+	$(call FLUTTER_BUILD_COMMAND,$(1),$(2))
+endef
+
+# Declare common targets using the macro
+$(eval $(call build-target,apk,))
+$(eval $(call build-target,appbundle,))
+$(eval $(call build-target,ios,))
+$(eval $(call build-target,ios-config-only,--config-only))
+
+# Generic build entry point
+build:
+	$(call FLUTTER_BUILD_COMMAND,$(BUILD_PLATFORM),)
