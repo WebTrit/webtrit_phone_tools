@@ -1,12 +1,16 @@
-# This is a shared makefile for WebTrit projects
-# Do not modify this file inside individual projects
-# Source: https://github.com/WebTrit/webtrit_phone_tools/...
+phone_project_path ?= .
 
 # ===========================
-# Version-based flavor handling
+# Build config
 # ===========================
 
-VERSION := $(shell jq -r '.__VERSION // ""' dart_define.json)
+BUILD_CONFIG_FILE := $(phone_project_path)/build.config
+
+ifeq ($(wildcard $(BUILD_CONFIG_FILE)),)
+  VERSION := 0.0.0
+else
+  VERSION := $(shell grep '^VERSION=' $(BUILD_CONFIG_FILE) | cut -d '=' -f2)
+endif
 
 ifeq ($(strip $(VERSION)),)
     VERSION_STAGE := legacy
@@ -21,24 +25,33 @@ else
 endif
 
 # ===========================
+# Dart defines path
+# ===========================
+
+DART_DEFINE_PATH ?= $(phone_project_path)/dart_define.json
+
+# ===========================
 # Flavor compute macros
 # ===========================
 
 define compute-deeplink-flavor
-  $(eval DEEPLINK_DOMAIN := $(shell jq -r '.WEBTRIT_APP_LINK_DOMAIN // ""' dart_define.json))
+  $(eval DEEPLINK_DOMAIN := $(shell jq -r '.WEBTRIT_APP_LINK_DOMAIN // ""' $(DART_DEFINE_PATH)))
   $(if $(strip $(DEEPLINK_DOMAIN)),\
     $(eval DEEPLINK_FLAVOR := deeplinks),\
     $(eval DEEPLINK_FLAVOR := deeplinksDisabled))
 endef
 
 define compute-sms-flavor
-  $(eval CALL_TRIGGER_SMS := $(shell jq -r '.CALL_TRIGGER_SMS // "false"' dart_define.json))
+  $(eval CALL_TRIGGER_SMS := $(shell jq -r '.WEBTRIT_CALL_TRIGGER_MECHANISM_SMS // "false"' $(DART_DEFINE_PATH)))
   $(if $(strip $(filter true,$(CALL_TRIGGER_SMS))),\
     $(eval SMS_FLAVOR := smsReceiver),\
     $(eval SMS_FLAVOR := smsReceiverDisabled))
 endef
 
-# Wrapper function to compute FLAVOR_ARG based on VERSION_STAGE
+# ===========================
+# Compute FLAVOR_ARG
+# ===========================
+
 define compute-flavor-arg
   ifeq ($(VERSION_STAGE),legacy)
     FLAVOR_ARG :=
@@ -52,29 +65,83 @@ define compute-flavor-arg
   endif
 endef
 
-# Evaluate the logic at Makefile load time
 $(eval $(call compute-flavor-arg))
 
 # ===========================
-# Flutter build macro
+# Common Flutter CLI flags
 # ===========================
 
-DART_DEFINE_FILE ?= --dart-define-from-file=dart_define.json
-FLUTTER_FLAGS := --no-tree-shake-icons
+FLUTTER_COMMAND_PREFIX := cd $(phone_project_path) && flutter
+DART_DEFINE_FILE_ARG := --dart-define-from-file=$(DART_DEFINE_PATH)
+COMMON_FLAGS := $(DART_DEFINE_FILE_ARG)
+COMMON_BUILD_FLAGS := $(COMMON_FLAGS) --no-tree-shake-icons
+BUILD_NAME_ARG := $(if $(build_name),--build-name=$(build_name))
+BUILD_NUMBER_ARG := $(if $(build_number),--build-number=$(build_number))
+RELEASE_ARG := $(if $(release),--release)
+NO_CODESIGN_ARG := $(if $(no_codesign),--no-codesign)
+CONFIG_ONLY_ARG := $(if $(config_only),--config-only)
 
-FLUTTER_BUILD_COMMAND = flutter build $(1) $(DART_DEFINE_FILE) $(FLUTTER_FLAGS) $(FLAVOR_ARG) $(2)
+OPTIONAL_BUILD_ARGS := \
+	$(BUILD_NAME_ARG) \
+	$(BUILD_NUMBER_ARG) \
+	$(RELEASE_ARG) \
+	$(NO_CODESIGN_ARG) \
+	$(CONFIG_ONLY_ARG)
+
+# ===========================
+# Build command macro
+# ===========================
+
+define FLUTTER_BUILD_COMMAND
+	$(FLUTTER_COMMAND_PREFIX) build $(1) \
+		$(COMMON_BUILD_FLAGS) \
+		$(if $(filter ios ios-config-only,$(1)),,$(FLAVOR_ARG)) \
+		$(OPTIONAL_BUILD_ARGS) \
+		$(2)
+endef
+
+# ===========================
+# Run command macro
+# ===========================
+
+define FLUTTER_RUN_COMMAND
+	$(FLUTTER_COMMAND_PREFIX) run \
+		$(COMMON_FLAGS) \
+		$(if $(filter ios,$(1)),,$(FLAVOR_ARG)) \
+		$(2)
+endef
+
+# ===========================
+# Build targets
+# ===========================
 
 define build-target
 build-$(1):
 	$(call FLUTTER_BUILD_COMMAND,$(1),$(2))
 endef
 
-# Declare common targets using the macro
 $(eval $(call build-target,apk,))
 $(eval $(call build-target,appbundle,))
 $(eval $(call build-target,ios,))
-$(eval $(call build-target,ios-config-only,--config-only))
 
-# Generic build entry point
 build:
 	$(call FLUTTER_BUILD_COMMAND,$(BUILD_PLATFORM),)
+
+build-ios-config-only:
+	$(FLUTTER_COMMAND_PREFIX) build ios \
+		$(COMMON_BUILD_FLAGS) \
+		$(OPTIONAL_BUILD_ARGS) \
+		--config-only
+
+# ===========================
+# Run targets
+# ===========================
+
+run:
+	$(call FLUTTER_RUN_COMMAND,$(BUILD_PLATFORM),)
+
+run-ios:
+	$(call FLUTTER_RUN_COMMAND,ios,)
+
+run-apk:
+	$(call FLUTTER_RUN_COMMAND,apk,)
