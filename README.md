@@ -69,9 +69,12 @@ These commands are for developers familiar with the `configurator` tool used int
 
 ## Providing Assets for Builds
 
-In the Dart CLI, there isn't a mechanism like in Flutter where you can directly store files in executed builds. Instead, we need to stringify assets before creating the build. This ensures that assets are properly embedded into the Dart code.
+In the Dart CLI, there isn't a mechanism like in Flutter where you can directly store files in executed builds. Instead,
+we need to stringify assets before creating the build. This ensures that assets are properly embedded into the Dart
+code.
 
-To stringify assets, use the `stringify_assets.sh` script. This script converts asset files into Dart code that can be included in your build.
+To stringify assets, use the `stringify_assets.sh` script. This script converts asset files into Dart code that can be
+included in your build.
 
 **Example Usage:**
 
@@ -79,8 +82,13 @@ To stringify assets, use the `stringify_assets.sh` script. This script converts 
 ./stringify_assets.sh assets lib/src/gen/stringify_assets.dart
 ```
 
-This command takes all files in the `assets` directory and converts them into a Dart file located at `lib/src/gen/stringify_assets.dart`.
+This command takes all files in the `assets` directory and converts them into a Dart file located at
+`lib/src/gen/stringify_assets.dart`.
 
 Make sure to run this script before creating a build to ensure all assets are properly included.
+
+## 📄 Related Documentation
+
+See [Shared Makefile Reference](docs/shared_makefile_reference.md) for build flavor logic and usage via Makefile.
 
 [very_good_cli_link]: https://github.com/VeryGoodOpenSource/very_good_cli
