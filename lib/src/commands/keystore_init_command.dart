@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:data/datasource/configurator_backend/configurator_bakcend.dart';
 import 'package:data/dto/application/application.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:mustache_template/mustache.dart';
-
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/commands/keystore_generate_command.dart';
@@ -17,23 +17,32 @@ import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 const _applicationIdOptionName = 'applicationId';
 const _directoryParameterName = '<directory>';
+const _token = 'token';
 
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
     required Logger logger,
     required HttpClient httpClient,
+    required ConfiguratorBackandDatasource datasource,
     required KeystoreReadmeUpdater keystoreReadmeUpdater,
   })  : _logger = logger,
         _httpClient = httpClient,
         _readmeUpdater = keystoreReadmeUpdater,
+        _datasource = datasource,
         _commandRunner = CommandRunner<int>('tool', 'A tool to manage keystore')
           ..addCommand(KeystoreGenerateCommand(logger: logger))
           ..addCommand(AssetlinksGenerateCommand(logger: logger)) {
-    argParser.addOption(
-      _applicationIdOptionName,
-      help: 'Application ID to initialize the keystore project.',
-      mandatory: true,
-    );
+    argParser
+      ..addOption(
+        _applicationIdOptionName,
+        help: 'Application ID to initialize the keystore project.',
+        mandatory: true,
+      )
+      ..addOption(
+        _token,
+        help: 'JWT token for  configurator API.',
+        mandatory: true,
+      );
   }
 
   @override
@@ -46,6 +55,7 @@ class KeystoreInitCommand extends Command<int> {
   final Logger _logger;
 
   final HttpClient _httpClient;
+  final ConfiguratorBackandDatasource _datasource;
 
   final KeystoreReadmeUpdater _readmeUpdater;
 
@@ -73,6 +83,13 @@ class KeystoreInitCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    final jwtToken = commandArgResults[_token] as String;
+    final authHeader = {'Authorization': 'Bearer $jwtToken'};
+    if (jwtToken.isEmpty) {
+      _logger.err('Option "$_token" can not be empty.');
+      return ExitCode.usage.code;
+    }
+
     final applicationId = commandArgResults[_applicationIdOptionName] as String;
     if (applicationId.isEmpty) {
       _logger.err('Option "$_applicationIdOptionName" cannot be empty.');
@@ -81,7 +98,10 @@ class KeystoreInitCommand extends Command<int> {
 
     ApplicationDTO application;
     try {
-      application = await _httpClient.getApplication(applicationId);
+      application = await _datasource.getApplication(
+        applicationId: applicationId,
+        headers: authHeader,
+      );
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;

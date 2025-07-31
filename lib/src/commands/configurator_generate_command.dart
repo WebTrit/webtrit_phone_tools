@@ -14,7 +14,7 @@ const _keystorePath = 'keystore-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 
 const _directoryParameterName = '<directory>';
-const _firebaseServiceAccountFileName = 'push_notifications/firebase-service-account.json';
+const _firebaseServiceAccountFileName = 'build/google-play-service-account.json';
 
 class ConfiguratorGenerateCommand extends Command<int> {
   ConfiguratorGenerateCommand({
@@ -120,6 +120,8 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
     final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
+    _logger.info('- Firebase service account path: $firebaseServiceAccountPath');
+    _logger.info('- Firebase service account: $firebaseServiceAccount');
     final firebaseAccountId = firebaseServiceAccount[projectIdField] as String;
 
     final workingDirectory = _workingDirectory();
@@ -194,7 +196,7 @@ class ConfiguratorGenerateCommand extends Command<int> {
       ..info('Service account path: $firebaseServiceAccountPath');
 
     try {
-      _logger.info('Running flutterfire configure process...');
+      _logger.info('Running flutterfire configure process, with service account: $firebaseServiceAccountPath');
 
       final process = await Process.start(
         'flutterfire',
