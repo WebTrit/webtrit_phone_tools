@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:args/command_runner.dart';
 import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
+import 'package:webtrit_appearance_theme/models/models.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
@@ -115,6 +115,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       return ExitCode.usage.code;
     }
 
+    _datasource.addInterceptor(HeadersInterceptor(authHeader));
+
     final keystoreDirectoryPath = _workingDirectory(keystorePath);
     if (Directory(keystoreDirectoryPath).existsSync()) {
       _logger.info('- Keystores directory path: $keystoreDirectoryPath');
@@ -160,6 +162,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         themeId: application.theme!,
         headers: authHeader,
       );
+
+      _logger.info('- Fetched theme with id: ${theme.id} for application: $applicationId');
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -233,7 +237,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     File(buildConfigPath).writeAsStringSync(buildConfig.toStringifyJson());
     _logger.success('✓ Written successfully to $buildConfigPath');
 
-    final adaptiveIconBackground = await _httpClient.getBytes(theme.splashAssets.pictureUrl);
+    final splash = await _datasource.getSplashAsset(applicationId: applicationId, themeId: theme.id!);
+    final adaptiveIconBackground = await _httpClient.getBytes(splash.splashUrl);
     final adaptiveIconBackgroundPath = _workingDirectory(assetSplashIconPath);
     if (adaptiveIconBackground != null) {
       File(adaptiveIconBackgroundPath).writeAsBytesSync(adaptiveIconBackground);
@@ -242,7 +247,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $adaptiveIconBackgroundPath with $adaptiveIconBackground');
     }
 
-    final androidLauncherIcon = await _httpClient.getBytes(theme.launchAssets.androidLauncherIconUrl);
+    final launchIcons = await _datasource.getLaunchAssetsByTheme(applicationId: applicationId, themeId: theme.id!);
+    final androidLauncherIcon = await _httpClient.getBytes(launchIcons.androidLegacyUrl);
     final androidLauncherIconPath = _workingDirectory(assetLauncherAndroidIconPath);
     if (androidLauncherIcon != null) {
       File(androidLauncherIconPath).writeAsBytesSync(androidLauncherIcon);
@@ -252,7 +258,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     // TODO(Serdun): Re check structure of naming
-    final adaptiveIconForeground = await _httpClient.getBytes(theme.launchAssets.adaptiveIconBackgroundUrl);
+    final adaptiveIconForeground = await _httpClient.getBytes(launchIcons.androidAdaptiveForegroundUrl);
     final adaptiveIconForegroundPath = _workingDirectory(assetLauncherIconAdaptiveForegroundPath);
     if (adaptiveIconForeground != null) {
       File(adaptiveIconForegroundPath).writeAsBytesSync(adaptiveIconForeground);
@@ -261,7 +267,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $adaptiveIconForegroundPath with $adaptiveIconForeground');
     }
 
-    final webLauncherIcon = await _httpClient.getBytes(theme.launchAssets.webLauncherIconUrl);
+    final webLauncherIcon = await _httpClient.getBytes(launchIcons.webUrl);
     final webLauncherIconPath = _workingDirectory(assetLauncherWebIconPath);
     if (webLauncherIcon != null) {
       File(webLauncherIconPath).writeAsBytesSync(webLauncherIcon);
@@ -270,7 +276,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $webLauncherIconPath with $webLauncherIcon');
     }
 
-    final iosLauncherIcon = await _httpClient.getBytes(theme.launchAssets.iosLauncherIconUrl);
+    final iosLauncherIcon = await _httpClient.getBytes(launchIcons.iosUrl);
     final iosLauncherIconPath = _workingDirectory(assetLauncherIosIconPath);
     if (iosLauncherIcon != null) {
       File(iosLauncherIconPath).writeAsBytesSync(iosLauncherIcon);
@@ -278,18 +284,21 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     } else {
       _logger.err('✗ Failed to write $iosLauncherIconPath with $iosLauncherIcon');
     }
+    //
+    // final notificationLogo = await _httpClient.getBytes(theme.launchAssets.notificationLogoUrl);
+    // final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
+    // if (notificationLogo != null) {
+    //   File(notificationLogoPath).writeAsBytesSync(notificationLogo);
+    //   _logger.success('✓ Written successfully to $notificationLogoPath');
+    // } else {
+    //   _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
+    // }
 
-    final notificationLogo = await _httpClient.getBytes(theme.launchAssets.notificationLogoUrl);
-    final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
-    if (notificationLogo != null) {
-      File(notificationLogoPath).writeAsBytesSync(notificationLogo);
-      _logger.success('✓ Written successfully to $notificationLogoPath');
-    } else {
-      _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
-    }
+    final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
+        applicationId: applicationId, themeId: theme.id!, variant: 'light');
+    final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
 
-    final metadataPrimaryOnboardingLogoUrl = theme.themeWidgetConfig.imageAssets.primaryOnboardingLogo.metadata
-        .getString(ImageAssetsConfig.metadataPrimaryOnboardingLogoUrl);
+    final metadataPrimaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.primaryOnboardingLogo.imageSource?.uri;
     final primaryOnboardingLogo = await _httpClient.getBytes(metadataPrimaryOnboardingLogoUrl);
     final primaryOnboardingLogoPath = _workingDirectory(assetImagePrimaryOnboardingLogoPath);
     if (primaryOnboardingLogo != null) {
@@ -299,8 +308,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $primaryOnboardingLogoPath with $primaryOnboardingLogo');
     }
 
-    final metadataSecondaryOnboardingLogoUrl = theme.themeWidgetConfig.imageAssets.secondaryOnboardingLogo.metadata
-        .getString(ImageAssetsConfig.metadataSecondaryOnboardingLogoUrl);
+    final metadataSecondaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
     final secondaryOnboardingLogo = await _httpClient.getBytes(metadataSecondaryOnboardingLogoUrl);
     final secondaryOnboardingLogoPath = _workingDirectory(assetImageSecondaryOnboardingLogoPath);
     if (secondaryOnboardingLogo != null) {
@@ -311,7 +319,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
 
     try {
-      await _configureTheme(theme);
+      await _configureTheme(applicationId, theme.id!);
     } catch (e) {
       _logger.err(e.toString());
       return ExitCode.usage.code;
@@ -319,7 +327,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     _logger.info('- Prepare config for flutter_launcher_icons_template');
 
-    if (theme.launchAssets.backgroundColor != null) {
+    if (launchIcons.entity.source?.backgroundColorHex != null) {
       await Process.start(
         'make',
         ['generate-launcher-icons-config'],
@@ -327,18 +335,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         runInShell: true,
         environment: {
           'LAUNCHER_ICON_IMAGE_ANDROID': assetLauncherAndroidIconPath,
-          'ICON_BACKGROUND_COLOR': theme.launchAssets.backgroundColor ?? '',
+          'ICON_BACKGROUND_COLOR': splash.source?.backgroundColorHex ?.toHex6WithHash() ?? '',
           'LAUNCHER_ICON_FOREGROUND': assetLauncherIconAdaptiveForegroundPath,
           'LAUNCHER_ICON_IMAGE_IOS': assetLauncherIosIconPath,
           'LAUNCHER_ICON_IMAGE_WEB': assetLauncherWebIconPath,
-          'THEME_COLOR': theme.launchAssets.backgroundColor ?? '',
+          'THEME_COLOR': launchIcons.entity.source?.backgroundColorHex ?.toHex6WithHash() ?? '',
         },
       );
     } else {
-      _logger.warn('adaptiveIconBackground: ${theme.launchAssets.backgroundColor} adaptiveIconBackground');
+      _logger.warn('backgroundColorHex is null in splash source');
     }
 
-    if (theme.splashAssets.color != null) {
+    if (splash.source?.backgroundColorHex != null) {
       _logger.info('- Prepare config for flutter_native_splash_template');
       await Process.start(
         'make',
@@ -346,11 +354,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         workingDirectory: workingDirectoryPath,
         runInShell: true,
         environment: {
-          'SPLASH_COLOR': theme.splashAssets.color ?? '',
+          'SPLASH_COLOR': splash.source?.backgroundColorHex?.toHex6WithHash() ?? '',
           'SPLASH_IMAGE': assetSplashIconPath,
-          'ANDROID_12_SPLASH_COLOR': theme.splashAssets.color ?? '',
+          'ANDROID_12_SPLASH_COLOR': splash.source?.backgroundColorHex?.toHex6WithHash() ?? '',
         },
       );
+    } else {
+      _logger.warn('backgroundColorHex is null in splash source');
     }
 
     _logger.info('- Prepare config for package_rename_config_template');
@@ -401,29 +411,37 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $dartDefinePath');
   }
 
-  Future<void> _configureTheme(ThemeDTO theme) async {
-    await _writeColorSchemeConfig(theme);
-    await _writePageLightConfig(theme);
-    await _writeWidgetsLightConfig(theme);
-    await _writeAppConfig(theme);
+  Future<void> _configureTheme(String applicationId, String themeId) async {
+    await _writeColorSchemeConfig(applicationId, themeId);
+    await _writePageLightConfig(applicationId, themeId);
+    await _writeWidgetsLightConfig(applicationId, themeId);
+    await _writeAppConfig(applicationId, themeId);
   }
 
-  Future<void> _writeColorSchemeConfig(ThemeDTO theme) async {
-    await _writeJsonToFile(_workingDirectory(assetLightColorSchemePath), theme.colorSchemeConfig.toJson());
+  Future<void> _writeColorSchemeConfig(String applicationId, String themeId) async {
+    final colorSchemeDTO =
+        await _datasource.getColorSchemeByVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
+
+    await _writeJsonToFile(_workingDirectory(assetLightColorSchemePath), colorSchemeDTO.config);
     // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetDarkColorSchemePath), theme.colorSchemeConfig.toJson());
+    await _writeJsonToFile(_workingDirectory(assetDarkColorSchemePath), colorSchemeDTO.config);
   }
 
-  Future<void> _writePageLightConfig(ThemeDTO theme) async {
-    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), theme.themePageConfig.toJson());
+  Future<void> _writePageLightConfig(String applicationId, String themeId) async {
+    final pageConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
+        applicationId: applicationId, themeId: themeId, variant: 'light');
+
+    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), pageConfigDTO.config);
     // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), theme.themePageConfig.toJson());
+    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), pageConfigDTO.config);
   }
 
-  Future<void> _writeWidgetsLightConfig(ThemeDTO theme) async {
-    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), theme.themeWidgetConfig.toJson());
+  Future<void> _writeWidgetsLightConfig(String applicationId, String themeId) async {
+    final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
+        applicationId: applicationId, themeId: themeId, variant: 'light');
+    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), widgetsConfigDTO.config);
     // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), theme.themeWidgetConfig.toJson());
+    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), widgetsConfigDTO.config);
   }
 
   Future<void> _writeJsonToFile(String path, Map<String, dynamic> jsonContent) async {
@@ -431,46 +449,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.success('✓ Written successfully to $path');
   }
 
-  Future<void> _writeAppConfig(ThemeDTO theme) async {
+  Future<void> _writeAppConfig(String applicationId, String themeId) async {
+    final appConfigDTO = await _datasource.getFeatureAccessByTheme(applicationId: applicationId, themeId: themeId);
+
     final appConfigPath = _workingDirectory(assetAppConfigPath);
-    final appConfig = theme.appConfig;
 
-    final assetUrlMappings = <int, Uri>{};
-    for (final value in appConfig.embeddedResources) {
-      if (value.uriOrNull?.queryParameters['type'] == 'download' && value.uriOrNull != null) {
-        await _handleDownloadAsset(value, assetUrlMappings);
-      }
-    }
-
-    final updatedEmbeddedResources = _updateEmbeddedResources(appConfig.embeddedResources, assetUrlMappings);
-    await _writeJsonToFile(appConfigPath, appConfig.copyWith(embeddedResources: updatedEmbeddedResources).toJson());
-  }
-
-  Future<void> _handleDownloadAsset(EmbeddedResource value, Map<int, Uri> assetUrlMappings) async {
-    final url = value.uriOrNull.toString();
-    final fileName = '${value.id}.html';
-    final downloadPath = _workingDirectory('assets/themes/$fileName');
-
-    final file = await _httpClient.getBytes(url);
-    if (file != null) {
-      await File(downloadPath).writeAsBytes(file);
-      _logger.success('✓ Written successfully to $downloadPath');
-
-      final changeUrlToUri = 'asset://assets/themes/$fileName';
-      assetUrlMappings[value.id] = Uri.parse(changeUrlToUri);
-    }
-  }
-
-  List<EmbeddedResource> _updateEmbeddedResources(
-      List<EmbeddedResource> resources, Map<int, Uri> changeUrlAssetsToURIEmbedddeds) {
-    return resources.map((e) {
-      final uri = changeUrlAssetsToURIEmbedddeds[e.id] ?? e.uriOrNull;
-      return e.copyWith(uri: uri.toString());
-    }).toList();
+    await _writeJsonToFile(appConfigPath, appConfigDTO.config);
   }
 
   Future<void> _configureTranslations(String applicationId) async {
-    // Read and parse the localizely.yml file
     final configFile = File(_workingDirectory('localizely.yml'));
     if (!configFile.existsSync()) {
       _logger.warn('localizely.yml file not found in the working directory.');
@@ -501,7 +488,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       // TODO(Serdun): Add filtration of translations to API
       // Check if the locale code is in the list of desired locale codes
       if (localeCodes.contains(localeCode)) {
-        final data = file.content as Uint8List;
+        final data = file.content;
         final outPath = _workingDirectory('$translationsArbPath/app_$filename');
         await File(outPath).writeAsBytes(data);
 
@@ -515,4 +502,20 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   String _workingDirectory(String relativePath) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
+}
+
+extension HexSanitizer on String {
+  String toHex6() {
+    final hex = replaceAll('#', '').toUpperCase();
+
+    if (hex.length == 8) {
+      return hex.substring(2);
+    } else if (hex.length == 6) {
+      return hex;
+    } else {
+      throw FormatException('Invalid hex color string: $this');
+    }
+  }
+
+  String toHex6WithHash() => '#${toHex6()}';
 }
