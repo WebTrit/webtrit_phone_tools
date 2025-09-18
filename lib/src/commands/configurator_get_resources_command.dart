@@ -335,11 +335,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         runInShell: true,
         environment: {
           'LAUNCHER_ICON_IMAGE_ANDROID': assetLauncherAndroidIconPath,
-          'ICON_BACKGROUND_COLOR': splash.source?.backgroundColorHex ?.toHex6WithHash() ?? '',
+          'ICON_BACKGROUND_COLOR': splash.source?.backgroundColorHex?.toHex6WithHash() ?? '',
           'LAUNCHER_ICON_FOREGROUND': assetLauncherIconAdaptiveForegroundPath,
           'LAUNCHER_ICON_IMAGE_IOS': assetLauncherIosIconPath,
           'LAUNCHER_ICON_IMAGE_WEB': assetLauncherWebIconPath,
-          'THEME_COLOR': launchIcons.entity.source?.backgroundColorHex ?.toHex6WithHash() ?? '',
+          'THEME_COLOR': launchIcons.entity.source?.backgroundColorHex?.toHex6WithHash() ?? '',
         },
       );
     } else {
@@ -428,8 +428,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   }
 
   Future<void> _writePageLightConfig(String applicationId, String themeId) async {
-    final pageConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
-        applicationId: applicationId, themeId: themeId, variant: 'light');
+    final pageConfigDTO =
+        await _datasource.getPageConfigByThemeVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
 
     await _writeJsonToFile(_workingDirectory(assetPageLightConfig), pageConfigDTO.config);
     // TODO(Serdun): Change scheme to dark when it will be implemented
