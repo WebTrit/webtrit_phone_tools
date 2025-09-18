@@ -308,6 +308,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Failed to write $primaryOnboardingLogoPath with $primaryOnboardingLogo');
     }
 
+    // @Default(ImageAssetConfig(imageSource: ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg')))
+    // ImageAssetConfig primaryOnboardingLogo,
+    // @Default(ImageAssetConfig(imageSource: ImageSource(uri: 'asset://assets/secondary_onboardin_logo.svg')))
+
     final metadataSecondaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
     final secondaryOnboardingLogo = await _httpClient.getBytes(metadataSecondaryOnboardingLogoUrl);
     final secondaryOnboardingLogoPath = _workingDirectory(assetImageSecondaryOnboardingLogoPath);
@@ -388,6 +392,40 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return ExitCode.success.code;
   }
 
+  ThemeWidgetConfig _patchOnboardingLogoUris(ThemeWidgetConfig cfg) {
+    final primary = cfg.imageAssets.primaryOnboardingLogo;
+    final secondary = cfg.imageAssets.secondaryOnboardingLogo;
+
+    return cfg.copyWith(
+      imageAssets: cfg.imageAssets.copyWith(
+        primaryOnboardingLogo: primary.copyWith(
+          imageSource: (primary.imageSource?.copyWith(
+                uri: 'asset://assets/primary_onboardin_logo.svg',
+              )) ??
+              const ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg'),
+        ),
+        secondaryOnboardingLogo: secondary.copyWith(
+          imageSource: (secondary.imageSource?.copyWith(
+                uri: 'asset://assets/secondary_onboardin_logo.svg',
+              )) ??
+              const ImageSource(uri: 'asset://assets/secondary_onboardin_logo.svg'),
+        ),
+      ),
+    );
+  }
+
+  ThemePageConfig _patchPageLightConfigUris(ThemePageConfig cfg) {
+    final loginImage = cfg.login.imageSource;
+
+    return cfg.copyWith(
+        login: cfg.login.copyWith(
+      imageSource: (loginImage?.copyWith(
+            uri: 'asset://assets/primary_onboardin_logo.svg',
+          )) ??
+          const ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg'),
+    ));
+  }
+
   // Configures the phone environment for the application by setting environment variables
   // and writing them to a Dart define file.
   void _configurePhoneEnv(
@@ -430,18 +468,22 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   Future<void> _writePageLightConfig(String applicationId, String themeId) async {
     final pageConfigDTO =
         await _datasource.getPageConfigByThemeVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
-
-    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), pageConfigDTO.config);
+    final themePageConfig = ThemePageConfig.fromJson(pageConfigDTO.config);
+    final assetConfig = _patchPageLightConfigUris(themePageConfig);
+    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), assetConfig.toJson());
     // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), pageConfigDTO.config);
+    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), assetConfig.toJson());
   }
 
   Future<void> _writeWidgetsLightConfig(String applicationId, String themeId) async {
     final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
         applicationId: applicationId, themeId: themeId, variant: 'light');
-    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), widgetsConfigDTO.config);
+    final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
+
+    final assetConfig = _patchOnboardingLogoUris(themeWidgetConfig);
+    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), assetConfig.toJson());
     // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), widgetsConfigDTO.config);
+    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), assetConfig.toJson());
   }
 
   Future<void> _writeJsonToFile(String path, Map<String, dynamic> jsonContent) async {
