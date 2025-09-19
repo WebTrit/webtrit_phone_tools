@@ -288,23 +288,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     //   _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
     // }
 
-    final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
-        applicationId: applicationId, themeId: theme.id!, variant: 'light');
-    final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
-
-    final metadataPrimaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.primaryOnboardingLogo.imageSource?.uri;
-    await _downloadAndSave(
-      url: metadataPrimaryOnboardingLogoUrl,
-      relativePath: assetImagePrimaryOnboardingLogoPath,
-      assetLabel: 'primary onboarding logo',
-    );
-
-    final metadataSecondaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
-    await _downloadAndSave(
-      url: metadataSecondaryOnboardingLogoUrl,
-      relativePath: assetImageSecondaryOnboardingLogoPath,
-      assetLabel: 'secondary onboarding logo',
-    );
+    // Widget config and onboarding logos are handled in _writeWidgetsLightConfig to avoid duplicate requests.
 
     try {
       await _configureTheme(applicationId, theme.id!);
@@ -472,8 +456,26 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   /// Writes widgets config for light (and temporary dark copy).
   Future<void> _writeWidgetsLightConfig(String applicationId, String themeId) async {
     final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
-        applicationId: applicationId, themeId: themeId, variant: 'light');
+      applicationId: applicationId,
+      themeId: themeId,
+      variant: 'light',
+    );
     final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
+
+    // Download onboarding logos once here to avoid duplicate API calls.
+    final primaryLogoUrl = themeWidgetConfig.imageAssets.primaryOnboardingLogo.imageSource?.uri;
+    await _downloadAndSave(
+      url: primaryLogoUrl,
+      relativePath: assetImagePrimaryOnboardingLogoPath,
+      assetLabel: 'primary onboarding logo',
+    );
+
+    final secondaryLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
+    await _downloadAndSave(
+      url: secondaryLogoUrl,
+      relativePath: assetImageSecondaryOnboardingLogoPath,
+      assetLabel: 'secondary onboarding logo',
+    );
 
     final assetConfig = _patchOnboardingLogoUris(themeWidgetConfig);
     await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), assetConfig.toJson());
