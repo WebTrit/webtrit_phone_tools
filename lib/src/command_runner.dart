@@ -34,10 +34,14 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
         _datasource = datasource ??
             ConfiguratorBackandDatasource(
-              Dio(BaseOptions(
-                baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1',
-                // headers: {'Authorization': 'Bearer $configuratorToken'},
-              )),
+              Dio(BaseOptions(baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1'))
+                ..interceptors.add(
+                  LogInterceptor(
+                    requestBody: true,
+                    responseBody: true,
+                    logPrint: (obj) => print(obj),
+                  ),
+                ),
               UnauthorizedInterceptor(),
             ),
         _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
