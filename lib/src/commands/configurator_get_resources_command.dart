@@ -20,6 +20,13 @@ const _cacheSessionDataPath = 'cache-session-data-path';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
+/// Fetches resources from Configurator and prepares local assets/configs.
+///
+/// Responsibilities:
+/// - Validates input/options and working directory
+/// - Fetches application, theme, and assets via backend datasource
+/// - Writes theme configs, images, translations, and build cache
+/// - Prepares Make-based configs for icons/splash/package rename
 class ConfiguratorGetResourcesCommand extends Command<int> {
   ConfiguratorGetResourcesCommand({
     required Logger logger,
@@ -58,10 +65,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   final ConfiguratorBackandDatasource _datasource;
 
   @override
+
+  /// Short command description and optional directory argument.
   String get description {
     final buffer = StringBuffer()
       ..writeln(
-        'Get resources for customize application',
+        'Get resources to customize application',
       )
       ..write(parameterIndent)
       ..write(_directoryParameterDescriptionName)
@@ -238,52 +247,37 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.success('✓ Written successfully to $buildConfigPath');
 
     final splash = await _datasource.getSplashAsset(applicationId: applicationId, themeId: theme.id!);
-    final adaptiveIconBackground = await _httpClient.getBytes(splash.splashUrl);
-    final adaptiveIconBackgroundPath = _workingDirectory(assetSplashIconPath);
-    if (adaptiveIconBackground != null) {
-      File(adaptiveIconBackgroundPath).writeAsBytesSync(adaptiveIconBackground);
-      _logger.success('✓ Written successfully to $adaptiveIconBackgroundPath');
-    } else {
-      _logger.err('✗ Failed to write $adaptiveIconBackgroundPath with $adaptiveIconBackground');
-    }
+    await _downloadAndSave(
+      url: splash.splashUrl,
+      relativePath: assetSplashIconPath,
+      assetLabel: 'splash image',
+    );
 
     final launchIcons = await _datasource.getLaunchAssetsByTheme(applicationId: applicationId, themeId: theme.id!);
-    final androidLauncherIcon = await _httpClient.getBytes(launchIcons.androidLegacyUrl);
-    final androidLauncherIconPath = _workingDirectory(assetLauncherAndroidIconPath);
-    if (androidLauncherIcon != null) {
-      File(androidLauncherIconPath).writeAsBytesSync(androidLauncherIcon);
-      _logger.success('✓ Written successfully to $androidLauncherIconPath');
-    } else {
-      _logger.err('✗ Failed to write $androidLauncherIconPath with $androidLauncherIcon');
-    }
+    await _downloadAndSave(
+      url: launchIcons.androidLegacyUrl,
+      relativePath: assetLauncherAndroidIconPath,
+      assetLabel: 'android launcher icon',
+    );
 
     // TODO(Serdun): Re check structure of naming
-    final adaptiveIconForeground = await _httpClient.getBytes(launchIcons.androidAdaptiveForegroundUrl);
-    final adaptiveIconForegroundPath = _workingDirectory(assetLauncherIconAdaptiveForegroundPath);
-    if (adaptiveIconForeground != null) {
-      File(adaptiveIconForegroundPath).writeAsBytesSync(adaptiveIconForeground);
-      _logger.success('✓ Written successfully to $adaptiveIconForegroundPath');
-    } else {
-      _logger.err('✗ Failed to write $adaptiveIconForegroundPath with $adaptiveIconForeground');
-    }
+    await _downloadAndSave(
+      url: launchIcons.androidAdaptiveForegroundUrl,
+      relativePath: assetLauncherIconAdaptiveForegroundPath,
+      assetLabel: 'android adaptive foreground icon',
+    );
 
-    final webLauncherIcon = await _httpClient.getBytes(launchIcons.webUrl);
-    final webLauncherIconPath = _workingDirectory(assetLauncherWebIconPath);
-    if (webLauncherIcon != null) {
-      File(webLauncherIconPath).writeAsBytesSync(webLauncherIcon);
-      _logger.success('✓ Written successfully to $webLauncherIconPath');
-    } else {
-      _logger.err('✗ Failed to write $webLauncherIconPath with $webLauncherIcon');
-    }
+    await _downloadAndSave(
+      url: launchIcons.webUrl,
+      relativePath: assetLauncherWebIconPath,
+      assetLabel: 'web launcher icon',
+    );
 
-    final iosLauncherIcon = await _httpClient.getBytes(launchIcons.iosUrl);
-    final iosLauncherIconPath = _workingDirectory(assetLauncherIosIconPath);
-    if (iosLauncherIcon != null) {
-      File(iosLauncherIconPath).writeAsBytesSync(iosLauncherIcon);
-      _logger.success('✓ Written successfully to $iosLauncherIconPath');
-    } else {
-      _logger.err('✗ Failed to write $iosLauncherIconPath with $iosLauncherIcon');
-    }
+    await _downloadAndSave(
+      url: launchIcons.iosUrl,
+      relativePath: assetLauncherIosIconPath,
+      assetLabel: 'ios launcher icon',
+    );
     //
     // final notificationLogo = await _httpClient.getBytes(theme.launchAssets.notificationLogoUrl);
     // final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
@@ -299,28 +293,18 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
 
     final metadataPrimaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.primaryOnboardingLogo.imageSource?.uri;
-    final primaryOnboardingLogo = await _httpClient.getBytes(metadataPrimaryOnboardingLogoUrl);
-    final primaryOnboardingLogoPath = _workingDirectory(assetImagePrimaryOnboardingLogoPath);
-    if (primaryOnboardingLogo != null) {
-      File(primaryOnboardingLogoPath).writeAsBytesSync(primaryOnboardingLogo);
-      _logger.success('✓ Written successfully to $primaryOnboardingLogoPath');
-    } else {
-      _logger.err('✗ Failed to write $primaryOnboardingLogoPath with $primaryOnboardingLogo');
-    }
-
-    // @Default(ImageAssetConfig(imageSource: ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg')))
-    // ImageAssetConfig primaryOnboardingLogo,
-    // @Default(ImageAssetConfig(imageSource: ImageSource(uri: 'asset://assets/secondary_onboardin_logo.svg')))
+    await _downloadAndSave(
+      url: metadataPrimaryOnboardingLogoUrl,
+      relativePath: assetImagePrimaryOnboardingLogoPath,
+      assetLabel: 'primary onboarding logo',
+    );
 
     final metadataSecondaryOnboardingLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
-    final secondaryOnboardingLogo = await _httpClient.getBytes(metadataSecondaryOnboardingLogoUrl);
-    final secondaryOnboardingLogoPath = _workingDirectory(assetImageSecondaryOnboardingLogoPath);
-    if (secondaryOnboardingLogo != null) {
-      File(secondaryOnboardingLogoPath).writeAsBytesSync(secondaryOnboardingLogo);
-      _logger.success('✓ Written successfully to $secondaryOnboardingLogoPath');
-    } else {
-      _logger.err('✗ Failed to write $secondaryOnboardingLogoPath with $secondaryOnboardingLogo');
-    }
+    await _downloadAndSave(
+      url: metadataSecondaryOnboardingLogoUrl,
+      relativePath: assetImageSecondaryOnboardingLogoPath,
+      assetLabel: 'secondary onboarding logo',
+    );
 
     try {
       await _configureTheme(applicationId, theme.id!);
@@ -347,7 +331,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         },
       );
     } else {
-      _logger.warn('backgroundColorHex is null in splash source');
+      _logger.warn('backgroundColorHex is null in launch icons source');
     }
 
     if (splash.source?.backgroundColorHex != null) {
@@ -392,6 +376,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return ExitCode.success.code;
   }
 
+  /// Updates image URIs in the page light config to reference local asset files.
+  /// The original config stores remote URLs for easier management and downloading.
+  /// During the build process, all images are downloaded to local assets and the config is rewritten to use local asset URIs.
+  /// This approach is not flexible for future changes and should be refactored later.
   ThemeWidgetConfig _patchOnboardingLogoUris(ThemeWidgetConfig cfg) {
     final primary = cfg.imageAssets.primaryOnboardingLogo;
     final secondary = cfg.imageAssets.secondaryOnboardingLogo;
@@ -414,6 +402,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     );
   }
 
+  /// Updates image URIs in the page light config to reference local asset files.
+  /// The original config stores remote URLs for easier management and downloading.
+  /// During the build process, all images are downloaded to local assets and the config is rewritten to use local asset URIs.
+  /// This approach is not flexible for future changes and should be refactored later.
   ThemePageConfig _patchPageLightConfigUris(ThemePageConfig cfg) {
     final loginImage = cfg.login.imageSource;
 
@@ -426,8 +418,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     ));
   }
 
-  // Configures the phone environment for the application by setting environment variables
-  // and writing them to a Dart define file.
+  /// Writes phone environment define file with required variables.
   void _configurePhoneEnv(
     ApplicationDTO application,
     ThemeDTO theme,
@@ -449,6 +440,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $dartDefinePath');
   }
 
+  /// Fetches theme configs and writes them to asset files.
   Future<void> _configureTheme(String applicationId, String themeId) async {
     await _writeColorSchemeConfig(applicationId, themeId);
     await _writePageLightConfig(applicationId, themeId);
@@ -456,6 +448,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeAppConfig(applicationId, themeId);
   }
 
+  /// Writes color scheme (light and temporary dark copy).
   Future<void> _writeColorSchemeConfig(String applicationId, String themeId) async {
     final colorSchemeDTO =
         await _datasource.getColorSchemeByVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
@@ -465,6 +458,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeJsonToFile(_workingDirectory(assetDarkColorSchemePath), colorSchemeDTO.config);
   }
 
+  /// Writes page config for light (and temporary dark copy).
   Future<void> _writePageLightConfig(String applicationId, String themeId) async {
     final pageConfigDTO =
         await _datasource.getPageConfigByThemeVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
@@ -475,6 +469,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), assetConfig.toJson());
   }
 
+  /// Writes widgets config for light (and temporary dark copy).
   Future<void> _writeWidgetsLightConfig(String applicationId, String themeId) async {
     final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
         applicationId: applicationId, themeId: themeId, variant: 'light');
@@ -486,11 +481,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), assetConfig.toJson());
   }
 
+  /// Writes a JSON map to a file with success logging.
   Future<void> _writeJsonToFile(String path, Map<String, dynamic> jsonContent) async {
     File(path).writeAsStringSync(jsonContent.toStringifyJson());
     _logger.success('✓ Written successfully to $path');
   }
 
+  /// Writes application feature access config.
   Future<void> _writeAppConfig(String applicationId, String themeId) async {
     final appConfigDTO = await _datasource.getFeatureAccessByTheme(applicationId: applicationId, themeId: themeId);
 
@@ -499,6 +496,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeJsonToFile(appConfigPath, appConfigDTO.config);
   }
 
+  /// Downloads translations and writes only locales declared in `localizely.yml`.
   Future<void> _configureTranslations(String applicationId) async {
     final configFile = File(_workingDirectory('localizely.yml'));
     if (!configFile.existsSync()) {
@@ -541,11 +539,38 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
   }
 
+  /// Resolves an absolute path within the working directory.
   String _workingDirectory(String relativePath) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
+
+  /// Downloads bytes from [url] and writes them to [relativePath].
+  /// Logs success or a descriptive error without throwing.
+  Future<void> _downloadAndSave({
+    required String? url,
+    required String relativePath,
+    String? assetLabel,
+  }) async {
+    if (url == null || url.isEmpty) {
+      _logger.warn('Skip ${assetLabel ?? 'asset'}: empty URL');
+      return;
+    }
+    try {
+      final bytes = await _httpClient.getBytes(url);
+      final outPath = _workingDirectory(relativePath);
+      if (bytes != null) {
+        File(outPath).writeAsBytesSync(bytes);
+        _logger.success('✓ Written successfully to $outPath');
+      } else {
+        _logger.err('✗ Failed to download ${assetLabel ?? 'asset'} from $url');
+      }
+    } catch (e) {
+      _logger.err('✗ Error while downloading ${assetLabel ?? 'asset'}: $e');
+    }
+  }
 }
 
+/// Hex color helpers used to normalize values for configs.
 extension HexSanitizer on String {
   String toHex6() {
     final hex = replaceAll('#', '').toUpperCase();
