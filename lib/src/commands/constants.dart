@@ -18,6 +18,7 @@ const assetPageDarkConfig = 'assets/themes/original.page.dark.config.json';
 const assetWidgetsLightConfig = 'assets/themes/original.widget.light.config.json';
 const assetWidgetsDarkConfig = 'assets/themes/original.widget.dark.config.json';
 const assetAppConfigPath = 'assets/themes/app.config.json';
+const assetAppConfigEmbeddedsPath = 'assets/themes/app.embedded.config.json';
 const assetImagePrimaryOnboardingLogoPath = 'assets/primary_onboardin_logo.svg';
 const assetImageSecondaryOnboardingLogoPath = 'assets/secondary_onboardin_logo.svg';
 const assetIconIosNotificationTemplateImagePath = 'assets/callkeep/ios_icon_template_image.png';
