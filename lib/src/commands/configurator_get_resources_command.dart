@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:crypto/crypto.dart';
 import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:webtrit_appearance_theme/models/models.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
@@ -21,12 +22,10 @@ const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
 
 /// Fetches resources from Configurator and prepares local assets/configs.
-///
-/// Responsibilities:
-/// - Validates input/options and working directory
-/// - Fetches application, theme, and assets via backend datasource
-/// - Writes theme configs, images, translations, and build cache
-/// - Prepares Make-based configs for icons/splash/package rename
+/// Includes a generic JSON migration that:
+/// - finds image URLs (http/https) across the config (ImageSource.uri, plain `uri`, any `*Url` key)
+/// - downloads them to assets/images
+/// - rewrites the config to `asset://assets/images/<file>`
 class ConfiguratorGetResourcesCommand extends Command<int> {
   ConfiguratorGetResourcesCommand({
     required Logger logger,
@@ -53,8 +52,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       )
       ..addOption(
         _cacheSessionDataPath,
-        help: 'Path to file which cache temporarily stores user session data to enhance performance '
-            'and maintain state across different processes.',
+        help:
+            'Path to file which cache temporarily stores user session data to enhance performance and maintain state across different processes.',
       );
   }
 
@@ -65,13 +64,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   final ConfiguratorBackandDatasource _datasource;
 
   @override
-
-  /// Short command description and optional directory argument.
   String get description {
     final buffer = StringBuffer()
-      ..writeln(
-        'Get resources to customize application',
-      )
+      ..writeln('Get resources to customize application')
       ..write(parameterIndent)
       ..write(_directoryParameterDescriptionName)
       ..write(parameterDelimiter)
@@ -87,6 +82,16 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   final Logger _logger;
 
   late String workingDirectoryPath;
+
+  // --- Asset migration settings ---
+  // Where files are saved on disk (relative to working dir)
+  static const _imagesAssetDiskDir = 'assets/images';
+
+  // How URIs are written into configs
+  static const _imagesAssetLogicalPrefix = 'asset://assets/images';
+
+  // Single-flight cache for URL → logical URI
+  final Map<String, String> _assetCache = <String, String>{};
 
   @override
   Future<int> run() async {
@@ -171,7 +176,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         themeId: application.theme!,
         headers: authHeader,
       );
-
       _logger.info('- Fetched theme with id: ${theme.id} for application: $applicationId');
     } catch (e) {
       _logger.err(e.toString());
@@ -227,18 +231,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('Option "$_applicationId" cannot be empty: iOS version build name or build number is missing.');
       return ExitCode.usage.code;
     }
-    // Prepare files for generating Google services or another file in the next command, such as `configurator_generate_command`.
-    // This ensures a continuous flow of execution for multiple commands.
+
+    // Prepare build cache
     final buildConfig = {
-      // Android build configuration
       bundleIdAndroidField: application.androidPlatformId,
       buildNameAndroidField: application.androidVersion?.buildName,
       buildNumberAndroidField: application.androidVersion?.buildNumber,
-      // IOS build configuration
       bundleIdIosField: application.iosPlatformId,
       buildNameIOSField: application.iosVersion?.buildName,
       buildNumberIOSField: application.iosVersion?.buildNumber,
-      // Path to keystore
       keystorePathField: projectKeystoreDirectoryPath,
     };
 
@@ -246,6 +247,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     File(buildConfigPath).writeAsStringSync(buildConfig.toStringifyJson());
     _logger.success('✓ Written successfully to $buildConfigPath');
 
+    // Splash & launch icons (kept as-is; these are special-cased)
     final splash = await _datasource.getSplashAsset(applicationId: applicationId, themeId: theme.id!);
     await _downloadAndSave(
       url: splash.splashUrl,
@@ -259,36 +261,21 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       relativePath: assetLauncherAndroidIconPath,
       assetLabel: 'android launcher icon',
     );
-
-    // TODO(Serdun): Re check structure of naming
     await _downloadAndSave(
       url: launchIcons.androidAdaptiveForegroundUrl,
       relativePath: assetLauncherIconAdaptiveForegroundPath,
       assetLabel: 'android adaptive foreground icon',
     );
-
     await _downloadAndSave(
       url: launchIcons.webUrl,
       relativePath: assetLauncherWebIconPath,
       assetLabel: 'web launcher icon',
     );
-
     await _downloadAndSave(
       url: launchIcons.iosUrl,
       relativePath: assetLauncherIosIconPath,
       assetLabel: 'ios launcher icon',
     );
-    //
-    // final notificationLogo = await _httpClient.getBytes(theme.launchAssets.notificationLogoUrl);
-    // final notificationLogoPath = _workingDirectory(assetIconIosNotificationTemplateImagePath);
-    // if (notificationLogo != null) {
-    //   File(notificationLogoPath).writeAsBytesSync(notificationLogo);
-    //   _logger.success('✓ Written successfully to $notificationLogoPath');
-    // } else {
-    //   _logger.err('✗ Failed to write $notificationLogoPath with $notificationLogo');
-    // }
-
-    // Widget config and onboarding logos are handled in _writeWidgetsLightConfig to avoid duplicate requests.
 
     try {
       await _configureTheme(applicationId, theme.id!);
@@ -360,145 +347,80 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return ExitCode.success.code;
   }
 
-  /// Updates image URIs in the page light config to reference local asset files.
-  /// The original config stores remote URLs for easier management and downloading.
-  /// During the build process, all images are downloaded to local assets and the config is rewritten to use local asset URIs.
-  /// This approach is not flexible for future changes and should be refactored later.
-  ThemeWidgetConfig _patchOnboardingLogoUris(ThemeWidgetConfig cfg) {
-    final primary = cfg.imageAssets.primaryOnboardingLogo;
-    final secondary = cfg.imageAssets.secondaryOnboardingLogo;
+  // -------------------- THEME PIPE --------------------
 
-    return cfg.copyWith(
-      imageAssets: cfg.imageAssets.copyWith(
-        primaryOnboardingLogo: primary.copyWith(
-          imageSource: (primary.imageSource?.copyWith(
-                uri: 'asset://assets/primary_onboardin_logo.svg',
-              )) ??
-              const ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg'),
-        ),
-        secondaryOnboardingLogo: secondary.copyWith(
-          imageSource: (secondary.imageSource?.copyWith(
-                uri: 'asset://assets/secondary_onboardin_logo.svg',
-              )) ??
-              const ImageSource(uri: 'asset://assets/secondary_onboardin_logo.svg'),
-        ),
-      ),
-    );
-  }
-
-  /// Updates image URIs in the page light config to reference local asset files.
-  /// The original config stores remote URLs for easier management and downloading.
-  /// During the build process, all images are downloaded to local assets and the config is rewritten to use local asset URIs.
-  /// This approach is not flexible for future changes and should be refactored later.
-  ThemePageConfig _patchPageLightConfigUris(ThemePageConfig cfg) {
-    final loginImage = cfg.login.imageSource;
-
-    return cfg.copyWith(
-        login: cfg.login.copyWith(
-      imageSource: (loginImage?.copyWith(
-            uri: 'asset://assets/primary_onboardin_logo.svg',
-          )) ??
-          const ImageSource(uri: 'asset://assets/primary_onboardin_logo.svg'),
-    ));
-  }
-
-  /// Writes phone environment define file with required variables.
-  void _configurePhoneEnv(
-    ApplicationDTO application,
-    ThemeDTO theme,
-    String projectKeystoreDirectoryPath,
-  ) {
-    final dartDefinePath = _workingDirectory(configureDartDefinePath);
-    final applicationEnvironment = application.environment;
-
-    // Create a mutable copy if the environment is unmodifiable
-    final mutableEnvironment = Map<String, dynamic>.from(applicationEnvironment ?? {});
-
-    mutableEnvironment['WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH'] = projectKeystoreDirectoryPath;
-
-    // Convert the updated environment to a JSON string
-    final env = mutableEnvironment.toStringifyJson();
-    File(dartDefinePath).writeAsStringSync(env);
-    _logger
-      ..info('- Phone environment: $env')
-      ..success('✓ Written successfully to $dartDefinePath');
-  }
-
-  /// Fetches theme configs and writes them to asset files.
   Future<void> _configureTheme(String applicationId, String themeId) async {
     await _writeColorSchemeConfig(applicationId, themeId);
     await _writePageLightConfig(applicationId, themeId);
     await _writeWidgetsLightConfig(applicationId, themeId);
-    await _writeAppConfig(applicationId, themeId);
+    await _writeAppConfig(applicationId, themeId); // Updated method here
   }
 
-  /// Writes color scheme (light and temporary dark copy).
   Future<void> _writeColorSchemeConfig(String applicationId, String themeId) async {
     final colorSchemeDTO =
         await _datasource.getColorSchemeByVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
 
     await _writeJsonToFile(_workingDirectory(assetLightColorSchemePath), colorSchemeDTO.config);
-    // TODO(Serdun): Change scheme to dark when it will be implemented
+    // TODO: switch to real dark when available
     await _writeJsonToFile(_workingDirectory(assetDarkColorSchemePath), colorSchemeDTO.config);
   }
 
-  /// Writes page config for light (and temporary dark copy).
   Future<void> _writePageLightConfig(String applicationId, String themeId) async {
     final pageConfigDTO =
         await _datasource.getPageConfigByThemeVariant(applicationId: applicationId, themeId: themeId, variant: 'light');
-    final themePageConfig = ThemePageConfig.fromJson(pageConfigDTO.config);
-    final assetConfig = _patchPageLightConfigUris(themePageConfig);
-    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), assetConfig.toJson());
-    // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), assetConfig.toJson());
+
+    // MIGRATION: rewrite all URLs to asset://assets/images and download them
+    final migrated = await _migrateUrisInJson(pageConfigDTO.config);
+
+    // Optionally validate with model:
+    // final model = ThemePageConfig.fromJson(migrated);
+    // await _writeJsonToFile(_workingDirectory(assetPageLightConfig), model.toJson());
+
+    await _writeJsonToFile(_workingDirectory(assetPageLightConfig), migrated);
+    await _writeJsonToFile(_workingDirectory(assetPageDarkConfig), migrated);
   }
 
-  /// Writes widgets config for light (and temporary dark copy).
   Future<void> _writeWidgetsLightConfig(String applicationId, String themeId) async {
     final widgetsConfigDTO = await _datasource.getWidgetConfigByThemeVariant(
       applicationId: applicationId,
       themeId: themeId,
       variant: 'light',
     );
-    final themeWidgetConfig = ThemeWidgetConfig.fromJson(widgetsConfigDTO.config);
 
-    // Download onboarding logos once here to avoid duplicate API calls.
-    final primaryLogoUrl = themeWidgetConfig.imageAssets.primaryOnboardingLogo.imageSource?.uri;
-    await _downloadAndSave(
-      url: primaryLogoUrl,
-      relativePath: assetImagePrimaryOnboardingLogoPath,
-      assetLabel: 'primary onboarding logo',
-    );
+    // MIGRATION: rewrite all URLs to asset://assets/images and download them
+    final migrated = await _migrateUrisInJson(widgetsConfigDTO.config);
 
-    final secondaryLogoUrl = themeWidgetConfig.imageAssets.secondaryOnboardingLogo.imageSource?.uri;
-    await _downloadAndSave(
-      url: secondaryLogoUrl,
-      relativePath: assetImageSecondaryOnboardingLogoPath,
-      assetLabel: 'secondary onboarding logo',
-    );
-
-    final assetConfig = _patchOnboardingLogoUris(themeWidgetConfig);
-    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), assetConfig.toJson());
-    // TODO(Serdun): Change scheme to dark when it will be implemented
-    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), assetConfig.toJson());
+    await _writeJsonToFile(_workingDirectory(assetWidgetsLightConfig), migrated);
+    await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), migrated);
   }
 
-  /// Writes a JSON map to a file with success logging.
-  Future<void> _writeJsonToFile(String path, Map<String, dynamic> jsonContent) async {
-    File(path).writeAsStringSync(jsonContent.toStringifyJson());
-    _logger.success('✓ Written successfully to $path');
-  }
-
-  /// Writes application feature access config.
+  /// Updated method: now creates app.config.json and app.config.embeddeds.json
   Future<void> _writeAppConfig(String applicationId, String themeId) async {
-    final appConfigDTO = await _datasource.getFeatureAccessByTheme(applicationId: applicationId, themeId: themeId);
+    // Get both data sources
+    final featureAccessDto = await _datasource.getFeatureAccessByTheme(applicationId: applicationId, themeId: themeId);
+    final embeds = await _datasource.getEmbeds(applicationId);
 
+    // Process and write the main app.config.json
+    // Run URI migration only for feature config
+    final migratedAppConfig = await _migrateUrisInJson(featureAccessDto.config);
     final appConfigPath = _workingDirectory(assetAppConfigPath);
+    await _writeJsonToFile(appConfigPath, migratedAppConfig);
 
-    await _writeJsonToFile(appConfigPath, appConfigDTO.config);
+    // Process and write the separate app.config.embeddeds.json
+    // Convert DTO to a JSON list
+    final embedsList = embeds.map((e) => e.toJson()).toList();
+
+    // We do NOT run _migrateUrisInJson on embedsList,
+    // because the original code was designed to skip
+    // migration for 'embeddedResources' (which is the correct behavior
+    // for external URIs).
+
+    final embedsConfigPath = _workingDirectory(assetAppConfigEmbeddedsPath); // Using the new constant
+    await _writeJsonToFile(embedsConfigPath, embedsList);
   }
 
-  /// Downloads translations and writes only locales declared in `localizely.yml`.
+  // -------------------- TRANSLATIONS --------------------
+
   Future<void> _configureTranslations(String applicationId) async {
     final configFile = File(_workingDirectory('localizely.yml'));
     if (!configFile.existsSync()) {
@@ -509,31 +431,23 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     final configContent = await configFile.readAsString();
     final config = loadYaml(configContent);
 
-    // Extract the download locale codes
     // ignore: dynamic_invocation, avoid_dynamic_calls
     final downloadFiles = config['download']['files'] as List;
     // ignore: dynamic_invocation, avoid_dynamic_calls
     final localeCodes = downloadFiles.map((file) => file['locale_code']).toList();
 
-    // Display the locale codes before starting downloading
     _logger.info('Locales to be downloaded: ${localeCodes.join(', ')}');
 
-    // Fetch the translation files
     final translationsZip = await _httpClient.getTranslationFiles(applicationId);
     _logger.info('Locales downloaded: ${translationsZip.map((file) => file.name).join(', ')}');
 
-    // Write the translation files to the working directory
     for (final file in translationsZip) {
       final filename = file.name;
-      final localeCode = filename.split('.').first; // assuming the file name is in the format localeCode.arb
+      final localeCode = filename.split('.').first; // expected "<locale>.arb"
 
-      // TODO(Serdun): Add filtration of translations to API
-      // Check if the locale code is in the list of desired locale codes
       if (localeCodes.contains(localeCode)) {
-        final data = file.content;
         final outPath = _workingDirectory('$translationsArbPath/app_$filename');
-        await File(outPath).writeAsBytes(data);
-
+        await File(outPath).writeAsBytes(file.content);
         _logger.success('✓ Written successfully to $outPath');
       } else {
         _logger.info('Locale $localeCode is not in the list of desired locales, skipping.');
@@ -541,13 +455,43 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
   }
 
-  /// Resolves an absolute path within the working directory.
+  // -------------------- ENV & IO --------------------
+
+  void _configurePhoneEnv(
+    ApplicationDTO application,
+    ThemeDTO theme,
+    String projectKeystoreDirectoryPath,
+  ) {
+    final dartDefinePath = _workingDirectory(configureDartDefinePath);
+    final applicationEnvironment = application.environment;
+
+    // Make mutable copy
+    final mutableEnvironment = Map<String, dynamic>.from(applicationEnvironment ?? {});
+    mutableEnvironment['WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH'] = projectKeystoreDirectoryPath;
+
+    final env = mutableEnvironment.toStringifyJson();
+    File(dartDefinePath).writeAsStringSync(env);
+    _logger
+      ..info('- Phone environment: $env')
+      ..success('✓ Written successfully to $dartDefinePath');
+  }
+
+  /// Updated method: now accepts `dynamic` for writing a List or a Map
+  Future<void> _writeJsonToFile(String pathStr, dynamic jsonContent) async {
+    // Use the standard encoder, which works for both Map and List.
+    // .withIndent('  ') makes "pretty-print" JSON,
+    // which is likely what your toStringifyJson() method did.
+    final jsonString = const JsonEncoder.withIndent('  ').convert(jsonContent);
+
+    // Now we pass the correct String to writeAsStringSync
+    File(pathStr).writeAsStringSync(jsonString);
+    _logger.success('✓ Written successfully to $pathStr');
+  }
+
   String _workingDirectory(String relativePath) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
   }
 
-  /// Downloads bytes from [url] and writes them to [relativePath].
-  /// Logs success or a descriptive error without throwing.
   Future<void> _downloadAndSave({
     required String? url,
     required String relativePath,
@@ -561,6 +505,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final bytes = await _httpClient.getBytes(url);
       final outPath = _workingDirectory(relativePath);
       if (bytes != null) {
+        File(outPath).createSync(recursive: true);
         File(outPath).writeAsBytesSync(bytes);
         _logger.success('✓ Written successfully to $outPath');
       } else {
@@ -570,20 +515,187 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       _logger.err('✗ Error while downloading ${assetLabel ?? 'asset'}: $e');
     }
   }
+
+  // -------------------- URL → ASSET MIGRATION --------------------
+
+  Future<Map<String, dynamic>> _migrateUrisInJson(Map<String, dynamic> json) async {
+    final rewriter = _JsonUriRewriter(
+      fetchBytes: _httpClient.getBytes,
+      assetsRootOnDisk: _workingDirectory(_imagesAssetDiskDir),
+      assetLogicalPrefix: _imagesAssetLogicalPrefix,
+      deriveFilename: _deriveFilenameFromUrl,
+      sniffExt: _sniffImageExt,
+      cache: _assetCache,
+      info: _logger.info,
+      warn: _logger.warn,
+      err: _logger.err,
+    );
+
+    final transformed = await rewriter.transform(json);
+    return Map<String, dynamic>.from(transformed as Map);
+  }
+
+  // Stable filename = sanitized basename + short sha1(url|query) + extension
+  String _deriveFilenameFromUrl(String url, {String? fallbackExt}) {
+    final uri = Uri.tryParse(url);
+    final last = (uri?.pathSegments.isNotEmpty ?? false) ? uri!.pathSegments.last : '';
+    final base = last.isEmpty ? 'image' : last;
+
+    String sanitize(String name) =>
+        name.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9_\-]'), '_').replaceAll(RegExp('_+'), '_');
+
+    String? guessExt(String basename) {
+      final ext = path.extension(basename).toLowerCase().replaceFirst('.', '');
+      const known = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp', 'ico', 'avif'};
+      return ext.isEmpty ? null : (known.contains(ext) ? ext : null);
+    }
+
+    final q = uri?.query ?? '';
+    final hash = sha1.convert(utf8.encode('$url|$q')).toString().substring(0, 10);
+
+    final ext = guessExt(base) ?? fallbackExt ?? 'bin';
+    final stem = sanitize(base.replaceAll(RegExp(r'\.[A-Za-z0-9]+$'), ''));
+    return '${stem.isEmpty ? 'image' : stem}_$hash.$ext';
+  }
+
+  String? _sniffImageExt(List<int> bytes) {
+    if (bytes.length >= 8) {
+      if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return 'png';
+      if (bytes[0] == 0xFF && bytes[1] == 0xD8) return 'jpg';
+      if (bytes[0] == 0x52 &&
+          bytes[1] == 0x49 &&
+          bytes[2] == 0x46 &&
+          bytes[3] == 0x46 &&
+          bytes.length >= 12 &&
+          bytes[8] == 0x57 &&
+          bytes[9] == 0x45 &&
+          bytes[10] == 0x42 &&
+          bytes[11] == 0x50) {
+        return 'webp';
+      }
+      if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) return 'gif';
+      if (bytes[0] == 0x42 && bytes[1] == 0x4D) return 'bmp';
+      if (bytes[0] == 0x00 && bytes[1] == 0x00 && bytes[2] == 0x01 && bytes[3] == 0x00) return 'ico';
+    }
+    try {
+      final head = utf8.decode(bytes.take(200).toList(), allowMalformed: true).toLowerCase();
+      if (head.contains('<svg')) return 'svg';
+    } catch (_) {}
+    if (bytes.length >= 12 &&
+        bytes[4] == 0x66 &&
+        bytes[5] == 0x74 &&
+        bytes[6] == 0x79 &&
+        bytes[7] == 0x70 &&
+        String.fromCharCodes(bytes.sublist(8, 12)) == 'avif') return 'avif';
+    return null;
+  }
 }
 
-/// Hex color helpers used to normalize values for configs.
+/// Internal, schema-agnostic JSON rewriter.
+/// Rewrites any URL-looking value under keys: `uri`, `url`, `*Url`, `*URL`,
+/// and also `imageSource: { uri: ... }`.
+class _JsonUriRewriter {
+  _JsonUriRewriter({
+    required this.fetchBytes,
+    required this.assetsRootOnDisk,
+    required this.assetLogicalPrefix,
+    required this.deriveFilename,
+    required this.sniffExt,
+    required this.cache,
+    required this.info,
+    required this.warn,
+    required this.err,
+  });
+
+  final Future<List<int>?> Function(String url) fetchBytes;
+  final String assetsRootOnDisk;
+  final String assetLogicalPrefix;
+  final String Function(String url, {String? fallbackExt}) deriveFilename;
+  final String? Function(List<int> bytes) sniffExt;
+  final Map<String, String> cache;
+  final void Function(String) info;
+  final void Function(String) warn;
+  final void Function(String) err;
+
+  bool _looksUrl(Object? v) => v is String && (v.startsWith('http://') || v.startsWith('https://'));
+
+  bool _insideEmbeddedResources(List<String> path) {
+    // If the path already contains the key 'embeddedResources' — skip the entire branch without changes
+    return path.contains('embeddedResources');
+  }
+
+  Future<dynamic> transform(dynamic node, {List<String> path = const []}) async {
+    // If we are inside embeddedResources — do not change anything at all
+    if (_insideEmbeddedResources(path)) {
+      return node;
+    }
+
+    if (node is Map) {
+      final result = <String, dynamic>{};
+      for (final entry in node.entries) {
+        final k = entry.key.toString();
+        final v = entry.value;
+
+        // Typical keys with URLs
+        final urlish = k == 'uri' || k == 'url' || k.endsWith('Url') || k.endsWith('URL');
+
+        if (urlish && _looksUrl(v)) {
+          result[k] = await _downloadAndMakeAssetUri(v as String);
+          continue;
+        }
+
+        // Common case: { imageSource: { uri: ... } }
+        if (k == 'imageSource' && v is Map && _looksUrl(v['uri'])) {
+          final newUri = await _downloadAndMakeAssetUri(v['uri'] as String);
+          final newImageSource = Map<String, dynamic>.from(v)..['uri'] = newUri;
+          result[k] = newImageSource;
+          continue;
+        }
+
+        // Recursion with updated path
+        result[k] = await transform(v, path: [...path, k]);
+      }
+      return result;
+    } else if (node is List) {
+      final out = <dynamic>[];
+      for (var i = 0; i < node.length; i++) {
+        out.add(await transform(node[i], path: [...path, '[$i]']));
+      }
+      return out;
+    } else {
+      return node;
+    }
+  }
+
+  Future<String> _downloadAndMakeAssetUri(String url) async {
+    if (cache.containsKey(url)) return cache[url]!;
+
+    final bytes = await fetchBytes(url);
+    if (bytes == null) {
+      err('Failed to download: $url');
+      return url;
+    }
+
+    final ext = sniffExt(bytes) ?? 'bin';
+    final filename = deriveFilename(url, fallbackExt: ext);
+
+    final outDisk = path.normalize(path.join(assetsRootOnDisk, filename));
+    await File(outDisk).create(recursive: true);
+    await File(outDisk).writeAsBytes(bytes);
+
+    final logical = '$assetLogicalPrefix/$filename';
+    info('Saved $url → $logical');
+    cache[url] = logical;
+    return logical;
+  }
+}
+
 extension HexSanitizer on String {
   String toHex6() {
     final hex = replaceAll('#', '').toUpperCase();
-
-    if (hex.length == 8) {
-      return hex.substring(2);
-    } else if (hex.length == 6) {
-      return hex;
-    } else {
-      throw FormatException('Invalid hex color string: $this');
-    }
+    if (hex.length == 8) return hex.substring(2);
+    if (hex.length == 6) return hex;
+    throw FormatException('Invalid hex color string: $this');
   }
 
   String toHex6WithHash() => '#${toHex6()}';
