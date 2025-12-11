@@ -1,4 +1,3 @@
-// lib/src/commands/configurator_get_resources_command.dart
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,16 +7,11 @@ import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:webtrit_appearance_theme/models/models.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
-
-// --- Припустимо, що в 'constants.dart' додано: ---
-// const String assetAppConfigEmbeddedsPath = 'assets/cfg/app.config.embeddeds.json';
-// ----------------------------------------------------
 
 const _applicationId = 'applicationId';
 const _token = 'token';
@@ -359,7 +353,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeColorSchemeConfig(applicationId, themeId);
     await _writePageLightConfig(applicationId, themeId);
     await _writeWidgetsLightConfig(applicationId, themeId);
-    await _writeAppConfig(applicationId, themeId); // Змінений метод тут
+    await _writeAppConfig(applicationId, themeId); // Updated method here
   }
 
   Future<void> _writeColorSchemeConfig(String applicationId, String themeId) async {
@@ -400,32 +394,28 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await _writeJsonToFile(_workingDirectory(assetWidgetsDarkConfig), migrated);
   }
 
-  //
-  // *** ПОЧАТОК РЕФАКТОРИНГУ ***
-  //
-
-  /// Змінений метод: тепер створює app.config.json та app.config.embeddeds.json
+  /// Updated method: now creates app.config.json and app.config.embeddeds.json
   Future<void> _writeAppConfig(String applicationId, String themeId) async {
-    // 1. Отримуємо обидва джерела даних
+    // Get both data sources
     final featureAccessDto = await _datasource.getFeatureAccessByTheme(applicationId: applicationId, themeId: themeId);
     final embeds = await _datasource.getEmbeds(applicationId);
 
-    // 2. Обробляємо та записуємо основний app.config.json
-    // Запускаємо міграцію URIs лише для конфігурації функцій
+    // Process and write the main app.config.json
+    // Run URI migration only for feature config
     final migratedAppConfig = await _migrateUrisInJson(featureAccessDto.config);
     final appConfigPath = _workingDirectory(assetAppConfigPath);
     await _writeJsonToFile(appConfigPath, migratedAppConfig);
 
-    // 3. Обробляємо та записуємо окремий app.config.embeddeds.json
-    // Конвертуємо DTO в список JSON
+    // Process and write the separate app.config.embeddeds.json
+    // Convert DTO to a JSON list
     final embedsList = embeds.map((e) => e.toJson()).toList();
 
-    // Ми НЕ запускаємо _migrateUrisInJson для embedsList,
-    // оскільки оригінальний код був розроблений, щоб пропускати
-    // міграцію для 'embeddedResources' (що є правильною поведінкою
-    // для зовнішніх URI).
+    // We do NOT run _migrateUrisInJson on embedsList,
+    // because the original code was designed to skip
+    // migration for 'embeddedResources' (which is the correct behavior
+    // for external URIs).
 
-    final embedsConfigPath = _workingDirectory(assetAppConfigEmbeddedsPath); // Використовуємо нову константу
+    final embedsConfigPath = _workingDirectory(assetAppConfigEmbeddedsPath); // Using the new constant
     await _writeJsonToFile(embedsConfigPath, embedsList);
   }
 
@@ -486,21 +476,17 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       ..success('✓ Written successfully to $dartDefinePath');
   }
 
-  /// Змінений метод: тепер приймає `dynamic` для запису List або Map
+  /// Updated method: now accepts `dynamic` for writing a List or a Map
   Future<void> _writeJsonToFile(String pathStr, dynamic jsonContent) async {
-    // Використовуємо стандартний кодер, який працює і для Map, і для List.
-    // .withIndent('  ') робить "pretty-print" JSON,
-    // що, ймовірно, і робив ваш метод toStringifyJson().
-    final jsonString = JsonEncoder.withIndent('  ').convert(jsonContent);
+    // Use the standard encoder, which works for both Map and List.
+    // .withIndent('  ') makes "pretty-print" JSON,
+    // which is likely what your toStringifyJson() method did.
+    final jsonString = const JsonEncoder.withIndent('  ').convert(jsonContent);
 
-    // Тепер ми передаємо коректний String у writeAsStringSync
+    // Now we pass the correct String to writeAsStringSync
     File(pathStr).writeAsStringSync(jsonString);
     _logger.success('✓ Written successfully to $pathStr');
   }
-
-  //
-  // *** КІНЕЦЬ РЕФАКТОРИНГУ ***
-  //
 
   String _workingDirectory(String relativePath) {
     return path.normalize(path.join(workingDirectoryPath, relativePath));
@@ -634,12 +620,12 @@ class _JsonUriRewriter {
   bool _looksUrl(Object? v) => v is String && (v.startsWith('http://') || v.startsWith('https://'));
 
   bool _insideEmbeddedResources(List<String> path) {
-    // Якщо у шляху вже зустрічався ключ 'embeddedResources' — пропускаємо всю цю гілку без змін
+    // If the path already contains the key 'embeddedResources' — skip the entire branch without changes
     return path.contains('embeddedResources');
   }
 
   Future<dynamic> transform(dynamic node, {List<String> path = const []}) async {
-    // Якщо ми всередині embeddedResources — нічого не міняємо взагалі
+    // If we are inside embeddedResources — do not change anything at all
     if (_insideEmbeddedResources(path)) {
       return node;
     }
@@ -650,7 +636,7 @@ class _JsonUriRewriter {
         final k = entry.key.toString();
         final v = entry.value;
 
-        // Типові ключі з урлами
+        // Typical keys with URLs
         final urlish = k == 'uri' || k == 'url' || k.endsWith('Url') || k.endsWith('URL');
 
         if (urlish && _looksUrl(v)) {
@@ -658,7 +644,7 @@ class _JsonUriRewriter {
           continue;
         }
 
-        // Поширений випадок: { imageSource: { uri: ... } }
+        // Common case: { imageSource: { uri: ... } }
         if (k == 'imageSource' && v is Map && _looksUrl(v['uri'])) {
           final newUri = await _downloadAndMakeAssetUri(v['uri'] as String);
           final newImageSource = Map<String, dynamic>.from(v)..['uri'] = newUri;
@@ -666,7 +652,7 @@ class _JsonUriRewriter {
           continue;
         }
 
-        // Рекурсія з оновленим шляхом
+        // Recursion with updated path
         result[k] = await transform(v, path: [...path, k]);
       }
       return result;
