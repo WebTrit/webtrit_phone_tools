@@ -6,7 +6,6 @@ import 'dart:typed_data';
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:yaml/yaml.dart';
 
 import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
@@ -22,7 +21,6 @@ const _argCacheSessionDataPath = 'cache-session-data-path';
 const _paramDirectory = '<directory>';
 const _descDirectory = '$_paramDirectory (optional)';
 
-/// Fetches resources from Configurator and prepares local assets/configs.
 class ConfiguratorGetResourcesCommand extends Command<int> {
   ConfiguratorGetResourcesCommand({
     required Logger logger,
@@ -101,7 +99,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final (application, theme) = await _fetchApplicationData(context);
 
       await _processCertificates(context);
-      await _processTranslations(context);
+
+      await TranslationProcessor(
+        httpClient: _httpClient,
+        logger: _logger,
+      ).process(
+        applicationId: context.applicationId,
+        resolvePath: context.resolvePath,
+      );
+
       await _writeBuildCache(context, application);
 
       final splashInfo = await _processSplashAssets(context, theme.id!);
@@ -234,29 +240,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     if (credsFile.existsSync()) {
       await credsFile.copy(path.join(targetDir.path, assetSSLCertificateCredentials));
       _logger.info('  Copy: Credentials file.');
-    }
-  }
-
-  Future<void> _processTranslations(CommandContext context) async {
-    final configFile = File(context.resolvePath('localizely.yml'));
-    if (!configFile.existsSync()) return;
-
-    final config = loadYaml(await configFile.readAsString());
-    final localeCodes = (config['download']['files'] as List).map((e) => e['locale_code']).toSet();
-
-    _logger.info('Downloading translations for: ${localeCodes.join(', ')}');
-    final zipFiles = await _httpClient.getTranslationFiles(context.applicationId);
-
-    for (final file in zipFiles) {
-      final locale = file.name.split('.').first;
-      if (localeCodes.contains(locale)) {
-        final outFile = File(context.resolvePath('$translationsArbPath/app_${file.name}'));
-        if (!outFile.parent.existsSync()) {
-          await outFile.parent.create(recursive: true);
-        }
-        await outFile.writeAsBytes(file.content);
-        _logger.success('  Saved: ${outFile.path}');
-      }
     }
   }
 

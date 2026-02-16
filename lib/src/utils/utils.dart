@@ -6,3 +6,4 @@ export 'http_client.dart';
 export 'json_utils.dart';
 export 'keystore_readme_updater.dart';
 export 'password_generator.dart';
+export 'translation_processor.dart';
