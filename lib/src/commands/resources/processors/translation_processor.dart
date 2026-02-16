@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
@@ -34,9 +35,16 @@ class TranslationProcessor {
     final zipFiles = await httpClient.getTranslationFiles(applicationId);
 
     for (final file in zipFiles) {
-      final locale = file.name.split('.').first;
+      final fileName = p.basename(file.name);
+
+      if (fileName.isEmpty || fileName != file.name) {
+        logger.detail('Skipping suspicious file path: ${file.name}');
+        continue;
+      }
+
+      final locale = fileName.split('.').first;
       if (localeCodes.contains(locale)) {
-        final outFile = File(resolvePath('$translationsArbPath/app_${file.name}'));
+        final outFile = File(resolvePath('$translationsArbPath/app_$fileName'));
         if (!outFile.parent.existsSync()) {
           await outFile.parent.create(recursive: true);
         }
