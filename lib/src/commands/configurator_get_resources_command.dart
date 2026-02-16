@@ -106,8 +106,23 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
       await _writeBuildCache(context, application);
 
-      final splashInfo = await _processSplashAssets(context, theme.id!);
-      final launchIcons = await _processLaunchIcons(context, theme.id!);
+      final assetProcessor = AssetProcessor(
+        httpClient: _httpClient,
+        datasource: _datasource,
+        logger: _logger,
+      );
+
+      final splashInfo = await assetProcessor.processSplashAssets(
+        applicationId: context.applicationId,
+        themeId: theme.id!,
+        resolvePath: context.resolvePath,
+      );
+
+      final launchIcons = await assetProcessor.processLaunchIcons(
+        applicationId: context.applicationId,
+        themeId: theme.id!,
+        resolvePath: context.resolvePath,
+      );
 
       await ThemeConfigProcessor(
         httpClient: _httpClient,
@@ -254,26 +269,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     await writeJsonToFile(context.resolvePath(cachePathArg), config, logger: _logger);
   }
 
-  Future<SplashAssetDto> _processSplashAssets(CommandContext context, String themeId) async {
-    final splash = await _datasource.getSplashAsset(applicationId: context.applicationId, themeId: themeId);
-    await _downloadAsset(context, splash.splashUrl, assetSplashIconPath, 'splash image');
-    return splash;
-  }
-
-  Future<LaunchAssetsEnvelopeDto> _processLaunchIcons(CommandContext context, String themeId) async {
-    final icons = await _datasource.getLaunchAssetsByTheme(applicationId: context.applicationId, themeId: themeId);
-
-    await Future.wait([
-      _downloadAsset(context, icons.androidLegacyUrl, assetLauncherAndroidIconPath, 'android legacy icon'),
-      _downloadAsset(context, icons.androidAdaptiveForegroundUrl, assetLauncherIconAdaptiveForegroundPath,
-          'android adaptive icon'),
-      _downloadAsset(context, icons.webUrl, assetLauncherWebIconPath, 'web icon'),
-      _downloadAsset(context, icons.iosUrl, assetLauncherIosIconPath, 'ios icon'),
-    ]);
-
-    return icons;
-  }
-
   Future<void> _runExternalGenerators({
     required CommandContext context,
     required ApplicationDTO application,
@@ -314,29 +309,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     await file.writeAsString(jsonEncode(env));
     _logger.success('✓ Environment config written to ${file.path}');
-  }
-
-  Future<void> _downloadAsset(CommandContext context, String? url, String relativePath, String label) async {
-    if (url == null || url.isEmpty) {
-      _logger.warn('Skip $label: empty URL');
-      return;
-    }
-
-    try {
-      final bytes = await _httpClient.getBytes(url);
-      if (bytes != null) {
-        final file = File(context.resolvePath(relativePath));
-        if (!file.parent.existsSync()) {
-          await file.parent.create(recursive: true);
-        }
-        await file.writeAsBytes(bytes);
-        _logger.success('✓ Downloaded $label');
-      } else {
-        _logger.err('✗ Failed to download $label from $url');
-      }
-    } catch (e) {
-      _logger.err('✗ Error downloading $label: $e');
-    }
   }
 
   Future<void> _runMakeCommand(CommandContext context, String target, Map<String, String> environment) async {

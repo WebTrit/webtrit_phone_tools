@@ -1,6 +1,7 @@
 export 'app_config_factory.dart';
 export 'asset_migration_utils.dart';
 export 'asset_migrator.dart';
+export 'asset_processor.dart';
 export 'command_context.dart';
 export 'http_client.dart';
 export 'json_utils.dart';
