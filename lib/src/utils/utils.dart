@@ -1,15 +1,8 @@
 export 'app_config_factory.dart';
 export 'asset_migration_utils.dart';
 export 'asset_migrator.dart';
-export 'asset_processor.dart';
-export 'certificate_processor.dart';
-export 'command_context.dart';
-export 'external_generator_runner.dart';
+export 'command_help_formatter.dart';
 export 'http_client.dart';
 export 'json_utils.dart';
 export 'keystore_readme_updater.dart';
 export 'password_generator.dart';
-export 'theme_config_processor.dart';
-export 'translation_processor.dart';
-export 'local_config_processor.dart';
-export 'application_data_fetcher.dart';

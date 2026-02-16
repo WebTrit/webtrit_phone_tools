@@ -6,7 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 
 import 'package:data/dto/dto.dart';
 
-import 'app_config_factory.dart';
+import '../../../utils/app_config_factory.dart';
 
 class ExternalGeneratorRunner {
   const ExternalGeneratorRunner({required this.logger});

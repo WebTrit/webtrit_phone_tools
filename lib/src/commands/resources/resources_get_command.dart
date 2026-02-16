@@ -9,7 +9,10 @@ import 'package:data/datasource/datasource.dart';
 
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
-import 'constants.dart';
+import 'models/models.dart';
+import 'processors/processors.dart';
+import 'runners/external_generator_runner.dart';
+import 'services/services.dart';
 
 const _argApplicationId = 'applicationId';
 const _argToken = 'token';
@@ -53,17 +56,12 @@ class ResourcesGetCommand extends Command<int> {
   String get name => 'configurator-resources';
 
   @override
-  String get description {
-    final buffer = StringBuffer()
-      ..writeln('Get resources to customize application')
-      ..write(parameterIndent)
-      ..write(_descDirectory)
-      ..write(parameterDelimiter)
-      ..writeln('Specify the directory for creating keystore and metadata files.')
-      ..write(' ' * (parameterIndent.length + _descDirectory.length + parameterDelimiter.length))
-      ..write('Defaults to the current working directory if not provided.');
-    return buffer.toString();
-  }
+  String get description => CommandHelpFormatter.formatDescription(
+        title: 'Get resources to customize application',
+        parameter: _descDirectory,
+        description: 'Specify the directory for creating keystore and metadata files.',
+        note: 'Defaults to the current working directory if not provided.',
+      );
 
   @override
   String get invocation => '${super.invocation} [$_paramDirectory]';
