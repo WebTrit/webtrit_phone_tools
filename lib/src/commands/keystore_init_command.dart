@@ -22,11 +22,9 @@ const _token = 'token';
 class KeystoreInitCommand extends Command<int> {
   KeystoreInitCommand({
     required Logger logger,
-    required HttpClient httpClient,
     required ConfiguratorBackandDatasource datasource,
     required KeystoreReadmeUpdater keystoreReadmeUpdater,
   })  : _logger = logger,
-        _httpClient = httpClient,
         _readmeUpdater = keystoreReadmeUpdater,
         _datasource = datasource,
         _commandRunner = CommandRunner<int>('tool', 'A tool to manage keystore')
@@ -54,7 +52,6 @@ class KeystoreInitCommand extends Command<int> {
 
   final Logger _logger;
 
-  final HttpClient _httpClient;
   final ConfiguratorBackandDatasource _datasource;
 
   final KeystoreReadmeUpdater _readmeUpdater;

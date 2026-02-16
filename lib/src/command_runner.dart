@@ -69,7 +69,6 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(ConfiguratorGenerateCommand(logger: _logger));
     addCommand(KeystoreInitCommand(
       logger: _logger,
-      httpClient: _httpClient,
       datasource: _datasource,
       keystoreReadmeUpdater: _keystoreReadmeUpdater,
     ));
