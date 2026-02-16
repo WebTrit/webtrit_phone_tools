@@ -6,7 +6,6 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:data/datasource/datasource.dart';
-import 'package:data/dto/dto.dart';
 
 import '../utils/utils.dart';
 import 'constants.dart';
@@ -91,7 +90,13 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         authHeader: args.authHeader,
       );
 
-      final (application, theme) = await _fetchApplicationData(context);
+      final (application, theme) = await ApplicationDataFetcher(
+        datasource: _datasource,
+        logger: _logger,
+      ).fetch(
+        applicationId: context.applicationId,
+        authHeader: context.authHeader,
+      );
 
       await CertificateProcessor(logger: _logger).process(
         projectKeystorePath: context.projectKeystorePath,
@@ -217,25 +222,5 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     _logger.info('- Project keystore directory: ${projectKeystoreDir.path}');
 
     return projectKeystoreDir.path;
-  }
-
-  Future<(ApplicationDTO, ThemeDTO)> _fetchApplicationData(CommandContext context) async {
-    final application = await _datasource.getApplication(
-      applicationId: context.applicationId,
-      headers: context.authHeader,
-    );
-
-    if (application.theme == null) {
-      throw Exception('Application ${context.applicationId} does not have a default theme.');
-    }
-
-    final theme = await _datasource.getTheme(
-      applicationId: context.applicationId,
-      themeId: application.theme!,
-      headers: context.authHeader,
-    );
-
-    _logger.info('- Fetched theme: ${theme.id}');
-    return (application, theme);
   }
 }
