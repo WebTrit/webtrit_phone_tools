@@ -14,14 +14,15 @@ extension StringExtensions on String {
   /// Handles alpha channel stripping if present (8 chars).
   String toHex6WithHash() {
     final hex = replaceAll('#', '').toUpperCase();
+
     if (hex.length == 8) {
       return '#${hex.substring(2)}';
     }
+
     if (hex.length == 6) {
       return '#$hex';
     }
-    // Fallback: return as is with hash if it fits reasonable criteria,
-    // or just ensure hash prefix.
-    return '#$hex';
+
+    throw FormatException('Invalid hex color string: "$this"');
   }
 }

@@ -1,4 +1,3 @@
-export 'app_config_factory.dart';
 export 'asset_migrator.dart';
 export 'command_help_formatter.dart';
 export 'http_client.dart';

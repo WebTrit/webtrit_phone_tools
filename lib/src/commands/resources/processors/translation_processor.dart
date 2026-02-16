@@ -21,7 +21,11 @@ class TranslationProcessor {
     required String Function(String) resolvePath,
   }) async {
     final configFile = File(resolvePath('localizely.yml'));
-    if (!configFile.existsSync()) return;
+
+    if (!configFile.existsSync()) {
+      logger.warn('localizely.yml file not found in the working directory.');
+      return;
+    }
 
     final config = loadYaml(await configFile.readAsString());
     final localeCodes = (config['download']['files'] as List).map((e) => e['locale_code']).toSet();

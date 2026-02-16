@@ -8,6 +8,8 @@ import 'package:data/dto/dto.dart';
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
+import '../utils/utils.dart';
+
 class LocalConfigProcessor {
   const LocalConfigProcessor({required this.logger});
 

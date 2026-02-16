@@ -6,7 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 
 import 'package:data/dto/dto.dart';
 
-import '../../../utils/app_config_factory.dart';
+import '../utils/app_config_factory.dart';
 
 class ExternalGeneratorRunner {
   const ExternalGeneratorRunner({required this.logger});
@@ -20,16 +20,19 @@ class ExternalGeneratorRunner {
     required LaunchAssetsEnvelopeDto launchIcons,
   }) async {
     final launchBgColor = launchIcons.entity.source?.backgroundColorHex;
+    final splashBgColor = splashInfo.source?.backgroundColorHex;
 
     if (launchBgColor != null) {
       logger.info('- Running: generate-launcher-icons-config');
-      final env = AppConfigFactory.createLauncherIconsEnv(launchBgColor);
+      final env = AppConfigFactory.createLauncherIconsEnv(
+        launchBackgroundColorHex: launchBgColor,
+        splashBackgroundColorHex: splashBgColor ?? launchBgColor,
+      );
       await _runMakeCommand(workingDirectoryPath, 'generate-launcher-icons-config', env);
     } else {
       logger.warn('Skipping launcher generation: backgroundColorHex is null.');
     }
 
-    final splashBgColor = splashInfo.source?.backgroundColorHex;
     if (splashBgColor != null) {
       logger.info('- Running: generate-native-splash-config');
       final env = AppConfigFactory.createNativeSplashEnv(splashBgColor);
