@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -8,8 +8,8 @@ import 'package:path/path.dart' as path;
 import 'package:data/datasource/datasource.dart';
 import 'package:data/dto/dto.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
-import 'package:webtrit_phone_tools/src/utils/utils.dart';
+import '../utils/utils.dart';
+import 'constants.dart';
 
 const _argApplicationId = 'applicationId';
 const _argToken = 'token';
@@ -106,7 +106,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         resolvePath: context.resolvePath,
       );
 
-      await _writeBuildCache(context, application);
+      final localConfigProcessor = LocalConfigProcessor(logger: _logger);
+
+      await localConfigProcessor.writeBuildCache(
+        application: application,
+        projectKeystorePath: context.projectKeystorePath,
+        cachePathArg: argResults![_argCacheSessionDataPath] as String?,
+        resolvePath: context.resolvePath,
+      );
 
       final assetProcessor = AssetProcessor(
         httpClient: _httpClient,
@@ -143,7 +150,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         launchIcons: launchIcons,
       );
 
-      await _configureEnvironment(context, application);
+      await localConfigProcessor.writeEnvironmentConfig(
+        application: application,
+        projectKeystorePath: context.projectKeystorePath,
+        resolvePath: context.resolvePath,
+      );
 
       return ExitCode.success.code;
     } catch (e, s) {
@@ -205,15 +216,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     _logger.info('- Project keystore directory: ${projectKeystoreDir.path}');
 
-    final cachePathArg = argResults![_argCacheSessionDataPath] as String?;
-    final cachePath = cachePathArg ?? defaultCacheSessionDataPath;
-    final cacheDir = Directory(path.dirname(cachePath));
-
-    if (cacheDir.path != '.' && !cacheDir.existsSync()) {
-      _logger.err('Cache directory does not exist: ${cacheDir.path}');
-      return null;
-    }
-
     return projectKeystoreDir.path;
   }
 
@@ -235,24 +237,5 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     _logger.info('- Fetched theme: ${theme.id}');
     return (application, theme);
-  }
-
-  Future<void> _writeBuildCache(CommandContext context, ApplicationDTO application) async {
-    final config = AppConfigFactory.createBuildCacheConfig(application, context.projectKeystorePath);
-
-    final cachePathArg = argResults![_argCacheSessionDataPath] as String? ?? defaultCacheSessionDataPath;
-    await writeJsonToFile(context.resolvePath(cachePathArg), config, logger: _logger);
-  }
-
-  Future<void> _configureEnvironment(CommandContext context, ApplicationDTO application) async {
-    final env = AppConfigFactory.createDartDefineEnv(application, context.projectKeystorePath);
-
-    final file = File(context.resolvePath(configureDartDefinePath));
-    if (!file.parent.existsSync()) {
-      await file.parent.create(recursive: true);
-    }
-
-    await file.writeAsString(jsonEncode(env));
-    _logger.success('✓ Environment config written to ${file.path}');
   }
 }

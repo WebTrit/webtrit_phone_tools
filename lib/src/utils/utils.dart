@@ -11,3 +11,4 @@ export 'keystore_readme_updater.dart';
 export 'password_generator.dart';
 export 'theme_config_processor.dart';
 export 'translation_processor.dart';
+export 'local_config_processor.dart';
