@@ -28,8 +28,34 @@ class TranslationProcessor {
       return;
     }
 
-    final config = loadYaml(await configFile.readAsString());
-    final localeCodes = (config['download']['files'] as List).map((e) => e['locale_code']).toSet();
+    final localeCodes = <String>{};
+
+    try {
+      final yamlString = await configFile.readAsString();
+      final config = loadYaml(yamlString) as YamlMap;
+      final downloadConfig = config['download'] as YamlMap;
+      final filesConfig = downloadConfig['files'] as YamlList;
+
+      for (final item in filesConfig.cast<YamlMap>()) {
+        final localeCode = item['locale_code'] as String?;
+        if (localeCode != null && localeCode.isNotEmpty) {
+          localeCodes.add(localeCode);
+        } else {
+          logger.warn('Skipping file entry: missing or invalid "locale_code".');
+        }
+      }
+    } on YamlException catch (e) {
+      logger.err('Failed to parse localizely.yml: ${e.message}');
+      return;
+    } catch (e) {
+      logger.err('Invalid structure in localizely.yml: $e');
+      return;
+    }
+
+    if (localeCodes.isEmpty) {
+      logger.warn('No valid locale codes found to download.');
+      return;
+    }
 
     logger.info('Downloading translations for: ${localeCodes.join(', ')}');
     final zipFiles = await httpClient.getTranslationFiles(applicationId);
