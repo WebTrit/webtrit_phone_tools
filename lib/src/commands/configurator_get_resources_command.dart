@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -94,7 +93,10 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
       final (application, theme) = await _fetchApplicationData(context);
 
-      await _processCertificates(context);
+      await CertificateProcessor(logger: _logger).process(
+        projectKeystorePath: context.projectKeystorePath,
+        resolvePath: context.resolvePath,
+      );
 
       await TranslationProcessor(
         httpClient: _httpClient,
@@ -134,8 +136,8 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
         resolvePath: context.resolvePath,
       );
 
-      await _runExternalGenerators(
-        context: context,
+      await ExternalGeneratorRunner(logger: _logger).runGenerators(
+        workingDirectoryPath: context.workingDirectoryPath,
         application: application,
         splashInfo: splashInfo,
         launchIcons: launchIcons,
@@ -235,68 +237,11 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return (application, theme);
   }
 
-  Future<void> _processCertificates(CommandContext context) async {
-    final sslDir = Directory(path.join(context.projectKeystorePath, kSSLCertificatePath));
-
-    if (!sslDir.existsSync()) {
-      _logger.warn('- Project SSL certificates directory does not exist.');
-      return;
-    }
-
-    _logger.info('- Processing SSL certificates...');
-    final targetDir = Directory(context.resolvePath(assetSSLCertificate));
-    if (!targetDir.existsSync()) await targetDir.create(recursive: true);
-
-    await for (final entity in sslDir.list()) {
-      if (entity is! File) continue;
-
-      final newPath = path.join(targetDir.path, path.basename(entity.path));
-      await entity.copy(newPath);
-      _logger.info('  Copy: ${entity.path} -> $newPath');
-    }
-
-    final credsFile = File(path.join(context.projectKeystorePath, kSSLCertificateCredentialPath));
-    if (credsFile.existsSync()) {
-      await credsFile.copy(path.join(targetDir.path, assetSSLCertificateCredentials));
-      _logger.info('  Copy: Credentials file.');
-    }
-  }
-
   Future<void> _writeBuildCache(CommandContext context, ApplicationDTO application) async {
     final config = AppConfigFactory.createBuildCacheConfig(application, context.projectKeystorePath);
 
     final cachePathArg = argResults![_argCacheSessionDataPath] as String? ?? defaultCacheSessionDataPath;
     await writeJsonToFile(context.resolvePath(cachePathArg), config, logger: _logger);
-  }
-
-  Future<void> _runExternalGenerators({
-    required CommandContext context,
-    required ApplicationDTO application,
-    required SplashAssetDto splashInfo,
-    required LaunchAssetsEnvelopeDto launchIcons,
-  }) async {
-    final launchBgColor = launchIcons.entity.source?.backgroundColorHex;
-
-    if (launchBgColor != null) {
-      _logger.info('- Running: generate-launcher-icons-config');
-      final env = AppConfigFactory.createLauncherIconsEnv(launchBgColor);
-      await _runMakeCommand(context, 'generate-launcher-icons-config', env);
-    } else {
-      _logger.warn('Skipping launcher generation: backgroundColorHex is null.');
-    }
-
-    final splashBgColor = splashInfo.source?.backgroundColorHex;
-    if (splashBgColor != null) {
-      _logger.info('- Running: generate-native-splash-config');
-      final env = AppConfigFactory.createNativeSplashEnv(splashBgColor);
-      await _runMakeCommand(context, 'generate-native-splash-config', env);
-    } else {
-      _logger.warn('Skipping splash generation: backgroundColorHex is null.');
-    }
-
-    _logger.info('- Running: generate-package-config');
-    final packageEnv = AppConfigFactory.createPackageConfigEnv(application);
-    await _runMakeCommand(context, 'generate-package-config', packageEnv);
   }
 
   Future<void> _configureEnvironment(CommandContext context, ApplicationDTO application) async {
@@ -309,28 +254,5 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     await file.writeAsString(jsonEncode(env));
     _logger.success('✓ Environment config written to ${file.path}');
-  }
-
-  Future<void> _runMakeCommand(CommandContext context, String target, Map<String, String> environment) async {
-    _logger.info('Running generator: $target...');
-
-    final process = await Process.start(
-      'make',
-      [target],
-      workingDirectory: context.workingDirectoryPath,
-      runInShell: true,
-      environment: environment,
-    );
-
-    final stdoutFuture = process.stdout.transform(utf8.decoder).forEach((data) => _logger.detail(data.trim()));
-    final stderrFuture = process.stderr.transform(utf8.decoder).forEach((data) => _logger.warn(data.trim()));
-
-    await Future.wait([stdoutFuture, stderrFuture]);
-    final exitCode = await process.exitCode;
-
-    if (exitCode != 0) {
-      throw Exception('Command "make $target" failed with exit code $exitCode');
-    }
-    _logger.success('✓ Generator $target completed');
   }
 }
