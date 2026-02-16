@@ -7,7 +7,8 @@ import 'package:path/path.dart' as path;
 
 import 'package:data/datasource/datasource.dart';
 
-import '../utils/utils.dart';
+import 'package:webtrit_phone_tools/src/utils/utils.dart';
+
 import 'constants.dart';
 
 const _argApplicationId = 'applicationId';
@@ -74,21 +75,9 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   @override
   Future<int> run() async {
     try {
-      final args = _parseArguments();
-      _datasource.addInterceptor(HeadersInterceptor(args.authHeader));
+      final context = _buildContext();
 
-      final projectKeystorePath = _validateDirectories(
-        workingDirectoryPath: args.workingDirectoryPath,
-        applicationId: args.applicationId,
-      );
-      if (projectKeystorePath == null) return ExitCode.data.code;
-
-      final context = CommandContext(
-        workingDirectoryPath: args.workingDirectoryPath,
-        applicationId: args.applicationId,
-        projectKeystorePath: projectKeystorePath,
-        authHeader: args.authHeader,
-      );
+      _datasource.addInterceptor(HeadersInterceptor(context.authHeader));
 
       final (application, theme) = await ApplicationDataFetcher(
         datasource: _datasource,
@@ -116,7 +105,7 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       await localConfigProcessor.writeBuildCache(
         application: application,
         projectKeystorePath: context.projectKeystorePath,
-        cachePathArg: argResults![_argCacheSessionDataPath] as String?,
+        cachePathArg: context.cachePathArg,
         resolvePath: context.resolvePath,
       );
 
@@ -170,17 +159,14 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     }
   }
 
-  ({String workingDirectoryPath, String applicationId, Map<String, String> authHeader}) _parseArguments() {
-    String workingDirectoryPath;
+  CommandContext _buildContext() {
     final rest = argResults!.rest;
 
-    if (rest.isEmpty) {
-      workingDirectoryPath = Directory.current.path;
-    } else if (rest.length == 1) {
-      workingDirectoryPath = rest[0];
-    } else {
-      throw UsageException('Only one "$_paramDirectory" parameter can be passed.', usage);
-    }
+    final workingDirectoryPath = rest.isEmpty
+        ? Directory.current.path
+        : rest.length == 1
+            ? rest[0]
+            : throw UsageException('Only one "$_paramDirectory" parameter can be passed.', usage);
 
     final applicationId = argResults![_argApplicationId] as String;
     final token = argResults![_argToken] as String;
@@ -189,17 +175,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       throw UsageException('Application ID and Token must not be empty.', usage);
     }
 
-    return (
-      workingDirectoryPath: workingDirectoryPath,
-      applicationId: applicationId,
-      authHeader: {'Authorization': 'Bearer $token'},
-    );
-  }
-
-  String? _validateDirectories({
-    required String workingDirectoryPath,
-    required String applicationId,
-  }) {
     final keystoreArg = argResults![_argKeystoresPath] as String;
 
     final keystoreDirPath = path.isAbsolute(keystoreArg)
@@ -221,6 +196,12 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
 
     _logger.info('- Project keystore directory: ${projectKeystoreDir.path}');
 
-    return projectKeystoreDir.path;
+    return CommandContext(
+      workingDirectoryPath: workingDirectoryPath,
+      applicationId: applicationId,
+      projectKeystorePath: projectKeystoreDir.path,
+      authHeader: {'Authorization': 'Bearer $token'},
+      cachePathArg: argResults![_argCacheSessionDataPath] as String?,
+    );
   }
 }
