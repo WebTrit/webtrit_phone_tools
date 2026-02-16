@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
@@ -74,9 +73,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
   final HttpClient _httpClient;
   final ConfiguratorBackandDatasource _datasource;
 
-  static const _imagesAssetDiskDir = 'assets/images';
-  static const _imagesAssetLogicalPrefix = 'asset://assets/images';
-
   @override
   Future<int> run() async {
     try {
@@ -113,7 +109,15 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       final splashInfo = await _processSplashAssets(context, theme.id!);
       final launchIcons = await _processLaunchIcons(context, theme.id!);
 
-      await _configureThemeFiles(context, theme.id!);
+      await ThemeConfigProcessor(
+        httpClient: _httpClient,
+        datasource: _datasource,
+        logger: _logger,
+      ).process(
+        applicationId: context.applicationId,
+        themeId: theme.id!,
+        resolvePath: context.resolvePath,
+      );
 
       await _runExternalGenerators(
         context: context,
@@ -270,79 +274,6 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
     return icons;
   }
 
-  Future<void> _configureThemeFiles(CommandContext context, String themeId) async {
-    await _writeColorScheme(context, themeId);
-    await _writePageConfig(context, themeId);
-    await _writeWidgetConfig(context, themeId);
-    await _writeAppConfigs(context, themeId);
-  }
-
-  Future<void> _writeColorScheme(CommandContext context, String themeId) async {
-    final lightDto = await _datasource.getColorSchemeByVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'light',
-    );
-    await writeJsonToFile(context.resolvePath(assetLightColorSchemePath), lightDto.config, logger: _logger);
-
-    final darkDto = await _datasource.getColorSchemeByVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'dark',
-    );
-    await writeJsonToFile(context.resolvePath(assetDarkColorSchemePath), darkDto.config, logger: _logger);
-  }
-
-  Future<void> _writePageConfig(CommandContext context, String themeId) async {
-    final lightDto = await _datasource.getPageConfigByThemeVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'light',
-    );
-    final migratedLight = await _migrateAssetsInJson(context, lightDto.config);
-    await writeJsonToFile(context.resolvePath(assetPageLightConfig), migratedLight, logger: _logger);
-
-    final darkDto = await _datasource.getPageConfigByThemeVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'dark',
-    );
-    final migratedDark = await _migrateAssetsInJson(context, darkDto.config);
-    await writeJsonToFile(context.resolvePath(assetPageDarkConfig), migratedDark, logger: _logger);
-  }
-
-  Future<void> _writeWidgetConfig(CommandContext context, String themeId) async {
-    final lightDto = await _datasource.getWidgetConfigByThemeVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'light',
-    );
-    final migratedLight = await _migrateAssetsInJson(context, lightDto.config);
-    await writeJsonToFile(context.resolvePath(assetWidgetsLightConfig), migratedLight, logger: _logger);
-
-    final darkDto = await _datasource.getWidgetConfigByThemeVariant(
-      applicationId: context.applicationId,
-      themeId: themeId,
-      variant: 'dark',
-    );
-    final migratedDark = await _migrateAssetsInJson(context, darkDto.config);
-    await writeJsonToFile(context.resolvePath(assetWidgetsDarkConfig), migratedDark, logger: _logger);
-  }
-
-  Future<void> _writeAppConfigs(CommandContext context, String themeId) async {
-    final featureDto = await _datasource.getFeatureAccessByTheme(
-      applicationId: context.applicationId,
-      themeId: themeId,
-    );
-    final embedsDto = await _datasource.getEmbeds(context.applicationId);
-
-    final migratedFeatures = await _migrateAssetsInJson(context, featureDto.config);
-    await writeJsonToFile(context.resolvePath(assetAppConfigPath), migratedFeatures, logger: _logger);
-
-    final embedsList = embedsDto.map((e) => e.toJson()).toList();
-    await writeJsonToFile(context.resolvePath(assetAppConfigEmbeddedsPath), embedsList, logger: _logger);
-  }
-
   Future<void> _runExternalGenerators({
     required CommandContext context,
     required ApplicationDTO application,
@@ -429,22 +360,5 @@ class ConfiguratorGetResourcesCommand extends Command<int> {
       throw Exception('Command "make $target" failed with exit code $exitCode');
     }
     _logger.success('✓ Generator $target completed');
-  }
-
-  Future<Map<String, dynamic>> _migrateAssetsInJson(CommandContext context, Map<String, dynamic> json) async {
-    Future<Uint8List?> fetchBytesAdapter(String url) async {
-      final List<int>? bytes = await _httpClient.getBytes(url);
-      return bytes is Uint8List ? bytes : (bytes != null ? Uint8List.fromList(bytes) : null);
-    }
-
-    final migrator = JsonAssetMigrator(
-      fetchBytes: fetchBytesAdapter,
-      assetsRootOnDisk: context.resolvePath(_imagesAssetDiskDir),
-      assetLogicalPrefix: _imagesAssetLogicalPrefix,
-      logger: _logger,
-    );
-
-    final result = await migrator.transform(json);
-    return Map<String, dynamic>.from(result as Map);
   }
 }
