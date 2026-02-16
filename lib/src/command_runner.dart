@@ -61,7 +61,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
       );
 
     // Add sub commands
-    addCommand(ConfiguratorGetResourcesCommand(
+    addCommand(ResourcesGetCommand(
       logger: _logger,
       httpClient: _httpClient,
       datasource: _datasource,

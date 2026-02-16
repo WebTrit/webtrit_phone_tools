@@ -19,8 +19,8 @@ const _argCacheSessionDataPath = 'cache-session-data-path';
 const _paramDirectory = '<directory>';
 const _descDirectory = '$_paramDirectory (optional)';
 
-class ConfiguratorGetResourcesCommand extends Command<int> {
-  ConfiguratorGetResourcesCommand({
+class ResourcesGetCommand extends Command<int> {
+  ResourcesGetCommand({
     required Logger logger,
     required HttpClient httpClient,
     required ConfiguratorBackandDatasource datasource,
