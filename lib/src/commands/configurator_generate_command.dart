@@ -120,8 +120,9 @@ class ConfiguratorGenerateCommand extends Command<int> {
 
     final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
     final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
-    _logger.info('- Firebase service account path: $firebaseServiceAccountPath');
-    _logger.info('- Firebase service account: $firebaseServiceAccount');
+    _logger
+      ..info('- Firebase service account path: $firebaseServiceAccountPath')
+      ..info('- Firebase service account: $firebaseServiceAccount');
     final firebaseAccountId = firebaseServiceAccount[projectIdField] as String;
 
     final workingDirectory = _workingDirectory();

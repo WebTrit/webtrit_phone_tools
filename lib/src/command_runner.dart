@@ -39,7 +39,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
                   LogInterceptor(
                     requestBody: true,
                     responseBody: true,
-                    logPrint: (obj) => print(obj),
+                    logPrint: print,
                   ),
                 ),
               UnauthorizedInterceptor(),
