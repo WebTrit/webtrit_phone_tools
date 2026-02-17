@@ -16,8 +16,8 @@ const _cacheSessionDataPath = 'cache-session-data-path';
 const _directoryParameterName = '<directory>';
 const _firebaseServiceAccountFileName = 'build/google-play-service-account.json';
 
-class ConfiguratorGenerateCommand extends Command<int> {
-  ConfiguratorGenerateCommand({
+class AppConfigureCommand extends Command<int> {
+  AppConfigureCommand({
     required Logger logger,
   }) : _logger = logger {
     argParser
