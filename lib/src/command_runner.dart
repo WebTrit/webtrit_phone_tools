@@ -8,6 +8,7 @@ import 'package:pub_updater/pub_updater.dart';
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
+import 'commands/app_resources/interceptors/interceptors.dart';
 import 'commands/constants.dart';
 import 'utils/utils.dart';
 
@@ -32,18 +33,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
-        _datasource = datasource ??
-            ConfiguratorBackandDatasource(
-              Dio(BaseOptions(baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1'))
-                ..interceptors.add(
-                  LogInterceptor(
-                    requestBody: true,
-                    responseBody: true,
-                    logPrint: print,
-                  ),
-                ),
-              UnauthorizedInterceptor(),
-            ),
+        _datasource = datasource ?? _buildDefaultDatasource(),
         _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
@@ -77,6 +67,17 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(KeystoreVerifyCommand(logger: _logger));
     addCommand(AssetlinksGenerateCommand(logger: _logger));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
+  }
+
+  static ConfiguratorBackandDatasource _buildDefaultDatasource() {
+    final dio = Dio(BaseOptions(baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1'))
+      ..interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: print,
+      ));
+    dio.interceptors.add(RetryInterceptor(dio: dio));
+    return ConfiguratorBackandDatasource(dio, UnauthorizedInterceptor());
   }
 
   @override
