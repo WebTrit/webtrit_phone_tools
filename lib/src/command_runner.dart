@@ -9,7 +9,7 @@ import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
 import 'commands/app_resources/interceptors/interceptors.dart';
-import 'commands/constants.dart';
+import 'constants.dart';
 import 'utils/utils.dart';
 
 const executableName = 'webtrit_phone_tools';

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/models.dart';
 
 const _gitUserName = commonName;
 const _gitUserEmail = 'support@webtrit.com';

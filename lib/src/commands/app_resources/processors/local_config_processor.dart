@@ -5,7 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 
 import 'package:data/dto/dto.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 import '../utils/utils.dart';

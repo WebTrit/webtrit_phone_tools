@@ -4,7 +4,7 @@ import 'package:mason_logger/mason_logger.dart';
 
 import 'package:data/datasource/datasource.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 class ThemeConfigProcessor {

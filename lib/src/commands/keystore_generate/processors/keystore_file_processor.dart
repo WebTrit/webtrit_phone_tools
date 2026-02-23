@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/models/keystore_metadata.dart';
+import '../models/models.dart';
 
 const _keytoolLogFileName = 'keytool.log';
 const _keystoreMetadataFileName = 'upload-keystore-metadata.json';

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import '../constants/constants.dart';
 
 class CertificateProcessor {
   const CertificateProcessor({required this.logger});

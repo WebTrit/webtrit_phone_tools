@@ -4,7 +4,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:mustache_template/mustache.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/models.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 import 'package:webtrit_phone_tools/src/gen/assets.dart';
 

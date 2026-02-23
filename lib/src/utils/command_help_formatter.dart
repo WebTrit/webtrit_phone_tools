@@ -1,4 +1,4 @@
-import '../commands/constants.dart';
+import '../constants.dart';
 
 abstract class CommandHelpFormatter {
   /// Formats a command description with consistent indentation and delimiters.

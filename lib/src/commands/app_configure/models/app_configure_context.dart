@@ -5,7 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/app_resources/constants/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _bundleIdAndroid = 'bundleIdAndroid';

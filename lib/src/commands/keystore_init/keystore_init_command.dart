@@ -5,7 +5,7 @@ import 'package:data/datasource/configurator_backend/configurator_bakcend.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/models.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 import 'models/models.dart';

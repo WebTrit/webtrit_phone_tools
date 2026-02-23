@@ -1,6 +1,6 @@
 import 'package:data/dto/dto.dart';
 
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 class AppConfigFactory {

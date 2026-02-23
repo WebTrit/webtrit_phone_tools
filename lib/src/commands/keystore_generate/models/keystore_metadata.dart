@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:webtrit_phone_tools/src/commands/constants.dart';
+import 'keystore_constants.dart';
 import 'package:webtrit_phone_tools/src/utils/password_generator.dart';
 
 const _storeFileNameJKS = 'upload-keystore.jks';

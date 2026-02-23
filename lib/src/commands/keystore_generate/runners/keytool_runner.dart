@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:webtrit_phone_tools/src/models/keystore_metadata.dart';
+import '../models/models.dart';
 
 class KeytoolRunner {
   const KeytoolRunner({required this.logger});
