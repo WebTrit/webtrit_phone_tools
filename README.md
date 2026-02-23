@@ -65,3 +65,4 @@ $ webtrit_phone_tools assetlinks-generate --bundleId=<id> --appleTeamID=<id> --a
 - [CLI Commands Conventions](.rules/commands.rules.md)
 - [Global Coding Standards](.rules/global.rules.md)
 - [Shared Makefile Reference](docs/shared_makefile_reference.md)
+- [Splash Asset Pipeline](docs/splash_asset_pipeline.md)

@@ -43,11 +43,15 @@ class AppConfigFactory {
     };
   }
 
-  static Map<String, String> createNativeSplashEnv(String backgroundColorHex) {
+  static Map<String, String> createNativeSplashEnv(
+    String backgroundColorHex, {
+    bool hasAndroid12Splash = false,
+  }) {
     return {
       'SPLASH_COLOR': backgroundColorHex.toHex6WithHash(),
       'SPLASH_IMAGE': assetSplashIconPath,
       'ANDROID_12_SPLASH_COLOR': backgroundColorHex.toHex6WithHash(),
+      if (hasAndroid12Splash) 'ANDROID_12_SPLASH_IMAGE': assetAndroid12SplashIconPath,
     };
   }
 

@@ -35,7 +35,11 @@ class ExternalGeneratorRunner {
 
     if (splashBgColor != null) {
       logger.info('- Running: generate-native-splash-config');
-      final env = AppConfigFactory.createNativeSplashEnv(splashBgColor);
+      final hasAndroid12Splash = splashInfo.urls?['android12SplashUrl'] != null;
+      final env = AppConfigFactory.createNativeSplashEnv(
+        splashBgColor,
+        hasAndroid12Splash: hasAndroid12Splash,
+      );
       await _runMakeCommand(workingDirectoryPath, 'generate-native-splash-config', env);
     } else {
       logger.warn('Skipping splash generation: backgroundColorHex is null.');

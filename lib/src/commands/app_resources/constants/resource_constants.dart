@@ -15,6 +15,7 @@ const assetImageSecondaryOnboardingLogoPath = 'assets/secondary_onboardin_logo.s
 const assetIconIosNotificationTemplateImagePath = 'assets/callkeep/ios_icon_template_image.png';
 
 const assetSplashIconPath = 'tool/assets/native_splash/image.png';
+const assetAndroid12SplashIconPath = 'tool/assets/native_splash/android12image.png';
 const assetLauncherIconAdaptiveForegroundPath = 'tool/assets/launcher_icons/ic_foreground.png';
 const assetLauncherAndroidIconPath = 'tool/assets/launcher_icons/android.png';
 const assetLauncherIosIconPath = 'tool/assets/launcher_icons/ios.png';

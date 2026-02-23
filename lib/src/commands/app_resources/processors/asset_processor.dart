@@ -27,6 +27,12 @@ class AssetProcessor {
   }) async {
     final splash = await datasource.getSplashAsset(applicationId: applicationId, themeId: themeId);
     await _downloadAsset(splash.splashUrl, assetSplashIconPath, 'splash image', resolvePath);
+
+    final android12Url = splash.urls?['android12SplashUrl'];
+    if (android12Url != null && android12Url.isNotEmpty) {
+      await _downloadAsset(android12Url, assetAndroid12SplashIconPath, 'android 12 splash image', resolvePath);
+    }
+
     return splash;
   }
 
