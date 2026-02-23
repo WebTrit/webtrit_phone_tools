@@ -5,7 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
-import 'package:webtrit_phone_tools/src/commands/assetlinks_generate_command.dart';
+import 'package:webtrit_phone_tools/src/commands/assetlinks_generate/assetlinks_generate.dart';
 
 void main() {
   late Logger logger;

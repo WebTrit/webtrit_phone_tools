@@ -6,14 +6,14 @@ import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/constants.dart';
 
+import 'models/models.dart';
+import 'runners/runners.dart';
+
 const _bundleIdOptionName = 'bundleId';
 const _appendDirectoryFlagName = 'appendDirectory';
 const _executePushFlagName = 'executePush';
 const _directoryParameterName = '<directory>';
 const _directoryParameterDescriptionName = '$_directoryParameterName (optional)';
-
-const _gitUserName = commonName;
-const _gitUserEmail = 'support@webtrit.com';
 
 class KeystoreCommitCommand extends Command<int> {
   KeystoreCommitCommand({
@@ -62,11 +62,55 @@ class KeystoreCommitCommand extends Command<int> {
 
   @override
   Future<int> run() async {
+    try {
+      final context = _buildContext();
+
+      var workingDirectoryPath = context.workingDirectoryPath;
+      if (context.appendDirectory) {
+        workingDirectoryPath = path.join(workingDirectoryPath, context.bundleId);
+      }
+
+      if (!Directory(workingDirectoryPath).existsSync()) {
+        _logger.err('Directory does not exist: $workingDirectoryPath');
+        return ExitCode.data.code;
+      }
+
+      final gitRunner = GitRunner(logger: _logger);
+
+      final addResult = gitRunner.runAdd(workingDirectoryPath: workingDirectoryPath);
+      if (addResult.exitCode != 0) {
+        return ExitCode.software.code;
+      }
+
+      final commitResult = gitRunner.runCommit(
+        workingDirectoryPath: workingDirectoryPath,
+        bundleId: context.bundleId,
+      );
+      if (commitResult.exitCode != 0) {
+        return ExitCode.software.code;
+      }
+
+      if (context.executePush) {
+        final pushResult = gitRunner.runPush(workingDirectoryPath: workingDirectoryPath);
+        if (pushResult.exitCode != 0) {
+          return ExitCode.software.code;
+        }
+      }
+
+      return ExitCode.success.code;
+    } catch (e, s) {
+      _logger
+        ..err('Execution failed: $e')
+        ..detail('$s');
+      return ExitCode.software.code;
+    }
+  }
+
+  KeystoreCommitContext _buildContext() {
     final commandArgResults = argResults!;
     final bundleId = commandArgResults[_bundleIdOptionName] as String;
     if (bundleId.isEmpty) {
-      _logger.err('Option "$_bundleIdOptionName" can not be empty.');
-      return ExitCode.usage.code;
+      throw UsageException('Option "$_bundleIdOptionName" can not be empty.', usage);
     }
     final appendDirectory = commandArgResults[_appendDirectoryFlagName] as bool;
     final executePush = commandArgResults[_executePushFlagName] as bool;
@@ -77,81 +121,14 @@ class KeystoreCommitCommand extends Command<int> {
     } else if (commandArgResults.rest.length == 1) {
       workingDirectoryPath = commandArgResults.rest[0];
     } else {
-      _logger.err('Only one "$_directoryParameterName" parameter can be passed.');
-      return ExitCode.usage.code;
-    }
-    if (appendDirectory) {
-      workingDirectoryPath = path.join(workingDirectoryPath, bundleId);
+      throw UsageException('Only one "$_directoryParameterName" parameter can be passed.', usage);
     }
 
-    if (!Directory(workingDirectoryPath).existsSync()) {
-      _logger.err('Directory does not exist: $workingDirectoryPath');
-      return ExitCode.data.code;
-    }
-
-    _logger.info('Git adding keystore and associated metadata files from directory: $workingDirectoryPath');
-    final gitAddProcess = Process.runSync(
-      'git',
-      [
-        'add',
-        '.',
-      ],
-      workingDirectory: workingDirectoryPath,
-      runInShell: true,
+    return KeystoreCommitContext(
+      workingDirectoryPath: workingDirectoryPath,
+      bundleId: bundleId,
+      appendDirectory: appendDirectory,
+      executePush: executePush,
     );
-    if (gitAddProcess.exitCode != 0) {
-      _logger
-        ..info(gitAddProcess.stdout.toString())
-        ..err(gitAddProcess.stderr.toString());
-      return ExitCode.software.code;
-    }
-
-    _logger.info('Git committing keystore and associated metadata files');
-    final gitCommitProcess = Process.runSync(
-      'git',
-      [
-        'commit',
-        '-m',
-        commitMessage(bundleId),
-        '--author',
-        '$_gitUserName <$_gitUserEmail>',
-      ],
-      workingDirectory: workingDirectoryPath,
-      environment: {
-        'GIT_COMMITTER_NAME': _gitUserName,
-        'GIT_COMMITTER_EMAIL': _gitUserEmail,
-      },
-      runInShell: true,
-    );
-    if (gitCommitProcess.exitCode != 0) {
-      _logger
-        ..info(gitCommitProcess.stdout.toString())
-        ..err(gitCommitProcess.stderr.toString());
-      return ExitCode.software.code;
-    }
-
-    if (executePush) {
-      _logger.info('Git pushing keystore and associated metadata files');
-      final gitPushProcess = Process.runSync(
-        'git',
-        [
-          'push',
-        ],
-        workingDirectory: workingDirectoryPath,
-        runInShell: true,
-      );
-      if (gitPushProcess.exitCode != 0) {
-        _logger
-          ..info(gitPushProcess.stdout.toString())
-          ..err(gitPushProcess.stderr.toString());
-        return ExitCode.software.code;
-      }
-    }
-
-    return ExitCode.success.code;
   }
-}
-
-String commitMessage(String bundleId) {
-  return 'Add generated keystore with metadata for $bundleId';
 }
