@@ -1,16 +1,19 @@
+import 'dart:math';
+
 import 'package:data/datasource/datasource.dart';
 
 class RetryInterceptor extends Interceptor {
   RetryInterceptor({
     required Dio dio,
     int maxRetries = 3,
-    List<int> retryDelaysMs = const [2000, 4000, 8000],
+    List<int> retryDelaysMs = const [5000, 15000, 30000],
   })  : assert(retryDelaysMs.length >= maxRetries, 'retryDelaysMs must contain at least maxRetries entries'),
         _dio = dio,
         _maxRetries = maxRetries,
         _retryDelaysMs = retryDelaysMs;
 
   static const _retryCountKey = 'retryCount';
+  static final _random = Random();
 
   final Dio _dio;
   final int _maxRetries;
@@ -33,7 +36,7 @@ class RetryInterceptor extends Interceptor {
         return;
       }
 
-      await Future<void>.delayed(Duration(milliseconds: _retryDelaysMs[retryCount]));
+      await Future<void>.delayed(_delayWithJitter(_retryDelaysMs[retryCount]));
       err.requestOptions.extra[_retryCountKey] = retryCount + 1;
       handler.resolve(await _dio.fetch(err.requestOptions));
     } on DioException catch (e) {
@@ -54,6 +57,12 @@ class RetryInterceptor extends Interceptor {
       err.type == DioExceptionType.sendTimeout ||
       err.type == DioExceptionType.receiveTimeout ||
       err.type == DioExceptionType.connectionError;
+
+  /// Adds random jitter (0-50% of base delay) to spread parallel retries.
+  static Duration _delayWithJitter(int baseDelayMs) {
+    final jitter = _random.nextInt(baseDelayMs ~/ 2);
+    return Duration(milliseconds: baseDelayMs + jitter);
+  }
 
   DioException _buildUnauthorizedException(DioException err) => DioException(
         requestOptions: err.requestOptions,
