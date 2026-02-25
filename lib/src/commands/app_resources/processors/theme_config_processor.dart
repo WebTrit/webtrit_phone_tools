@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:mason_logger/mason_logger.dart';
 
 import 'package:data/datasource/datasource.dart';
+import 'package:webtrit_appearance_theme/webtrit_appearance_theme.dart';
 
 import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
@@ -51,36 +52,23 @@ class ThemeConfigProcessor {
 
   /// Determines which theme variants (light/dark) to fetch from the backend.
   ///
-  /// Parses the `config` JSON from `FeatureAccessDto.config` which mirrors
-  /// the `AppConfig.supported` model from `webtrit_appearance_theme`:
-  ///
-  /// - Model: `SupportedFeature.themeMode` (sealed union, discriminator `"type"`)
-  /// - Enum:  `ThemeModeConfig { system, light, dark }`
-  /// - Path:  `webtrit_phone/packages/webtrit_appearance_theme/lib/models/features_config/`
-  ///
-  /// Expected JSON shape:
-  /// ```json
-  /// {
-  ///   "supported": [
-  ///     { "type": "themeMode", "mode": "light" | "dark" | "system" },
-  ///     ...
-  ///   ]
-  /// }
-  /// ```
+  /// Deserialises [config] into [AppConfig] from `webtrit_appearance_theme`
+  /// and looks for [SupportedFeature.themeMode] in [AppConfig.supported].
+  /// The [ThemeModeConfig] enum (`system`, `light`, `dark`) drives the result.
   ///
   /// Returns:
-  /// - `["light", "dark"]` when `mode` is `"system"` — both variants exist on the backend.
-  /// - `["dark"]` when `mode` is `"dark"` — only dark variant exists; fetching light would 400.
-  /// - `["light"]` for `"light"`, missing entry, or missing `supported` array (default).
+  /// - `["light", "dark"]` when mode is [ThemeModeConfig.system].
+  /// - `["dark"]` when mode is [ThemeModeConfig.dark] — only dark exists on the backend.
+  /// - `["light"]` when mode is [ThemeModeConfig.light] or no themeMode entry found.
   List<String> _resolveVariants(Map<String, dynamic> config) {
-    final supported = config['supported'] as List<dynamic>?;
-    if (supported == null) return ['light'];
-    final themeEntry = supported.cast<Map<String, dynamic>>().where((e) => e['type'] == 'themeMode').firstOrNull;
-    if (themeEntry == null) return ['light'];
-    final mode = themeEntry['mode'] as String?;
-    if (mode == 'system') return ['light', 'dark'];
-    if (mode == 'dark') return ['dark'];
-    return ['light'];
+    final appConfig = AppConfig.fromJson(config);
+    final themeMode = appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
+    if (themeMode == null) return ['light'];
+    return switch (themeMode.mode) {
+      ThemeModeConfig.system => ['light', 'dark'],
+      ThemeModeConfig.dark => ['dark'],
+      ThemeModeConfig.light => ['light'],
+    };
   }
 
   Future<void> _writeColorScheme(
