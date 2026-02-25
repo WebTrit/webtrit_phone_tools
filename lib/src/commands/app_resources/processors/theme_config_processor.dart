@@ -41,8 +41,16 @@ class ThemeConfigProcessor {
     await writeJsonToFile(resolvePath(assetAppConfigEmbeddedsPath), embedsList, logger: logger);
 
     // 2. Resolve which theme variants to fetch based on themeMode
-    final variants = _resolveVariants(featureDto.config);
-    logger.detail('Resolved theme variants: $variants');
+    final appConfig = AppConfig.fromJson(featureDto.config);
+    final themeMode = appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
+    final variants = _resolveVariants(themeMode);
+
+    logger
+      ..info('Theme mode: ${themeMode?.mode.name ?? 'not set (defaulting to light)'}')
+      ..info('Variants to fetch: ${variants.join(', ')}');
+    if (variants.length == 1) {
+      logger.info('Single variant mode — ${variants.first} config will be written to both light and dark files');
+    }
 
     // 3. Write theme configs fetching only needed variants
     await _writeColorScheme(applicationId, themeId, resolvePath, variants);
@@ -50,19 +58,14 @@ class ThemeConfigProcessor {
     await _writeWidgetConfig(applicationId, themeId, resolvePath, variants);
   }
 
-  /// Determines which theme variants (light/dark) to fetch from the backend.
-  ///
-  /// Deserialises [config] into [AppConfig] from `webtrit_appearance_theme`
-  /// and looks for [SupportedFeature.themeMode] in [AppConfig.supported].
-  /// The [ThemeModeConfig] enum (`system`, `light`, `dark`) drives the result.
+  /// Determines which theme variants (light/dark) to fetch from the backend
+  /// based on [SupportedThemeMode] from [AppConfig.supported].
   ///
   /// Returns:
   /// - `["light", "dark"]` when mode is [ThemeModeConfig.system].
   /// - `["dark"]` when mode is [ThemeModeConfig.dark] — only dark exists on the backend.
-  /// - `["light"]` when mode is [ThemeModeConfig.light] or no themeMode entry found.
-  List<String> _resolveVariants(Map<String, dynamic> config) {
-    final appConfig = AppConfig.fromJson(config);
-    final themeMode = appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
+  /// - `["light"]` when mode is [ThemeModeConfig.light] or [themeMode] is null.
+  List<String> _resolveVariants(SupportedThemeMode? themeMode) {
     if (themeMode == null) return ['light'];
     return switch (themeMode.mode) {
       ThemeModeConfig.system => ['light', 'dark'],
