@@ -62,7 +62,7 @@ class KeystoreInitCommand extends Command<int> {
         authHeader: context.authHeader,
       );
 
-      final keystoreProjectPath = path.join(context.workingDirectoryPath, context.applicationId);
+      final keystoreProjectPath = path.join(context.workingDirectoryPath, 'applications', context.applicationId);
 
       final projectProcessor = KeystoreProjectProcessor(logger: _logger)
         ..createDirectoryStructure(

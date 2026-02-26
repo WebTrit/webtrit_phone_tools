@@ -31,13 +31,13 @@ Tools for managing signing keys and certificates.
 
 ```sh
 # Generate a new keystore
-$ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory ../keystores
+$ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory ../keystores/applications
 
 # Commit changes to the keystore repository
-$ webtrit_phone_tools keystore-commit --bundleId="com.webtrit.app" --appendDirectory ../keystores
+$ webtrit_phone_tools keystore-commit --bundleId="com.webtrit.app" --appendDirectory ../keystores/applications
 
 # Verify an existing keystore
-$ webtrit_phone_tools keystore-verify ../keystores/com.webtrit.app
+$ webtrit_phone_tools keystore-verify ../keystores/applications/com.webtrit.app
 
 ```
 
