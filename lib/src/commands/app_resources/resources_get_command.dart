@@ -186,7 +186,7 @@ class AppResourcesGetCommand extends Command<int> {
       throw UsageException('Invalid keystore path', usage);
     }
 
-    final projectKeystoreDir = Directory(path.join(keystoreDir.path, 'applications', applicationId));
+    final projectKeystoreDir = Directory(path.join(keystoreDir.path, applicationId));
     if (!projectKeystoreDir.existsSync()) {
       _logger.err('Project keystore directory path does not exist: ${projectKeystoreDir.path}');
       throw UsageException('Invalid project keystore path', usage);
