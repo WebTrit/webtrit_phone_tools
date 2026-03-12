@@ -13,6 +13,12 @@ const keystoreFiles = [
   androidUploadKeystoreP12,
 ];
 
+// Subdirectory mapping for keystore files (null means root)
+const keystoreFileSubdirectory = {
+  firebaseServiceAccount: 'push_notifications',
+  androidPlayServiceAccount: 'build',
+};
+
 // Firebase
 const firebaseServiceAccount = 'firebase-service-account.json';
 

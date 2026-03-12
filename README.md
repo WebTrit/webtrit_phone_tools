@@ -25,6 +25,41 @@ dart pub global activate --source=path <path_to_package>
 
 ## Usage
 
+### Keystore Project Initialization
+
+Initialize a full keystore project directory for a given application. Fetches application metadata
+from the Configurator API and generates the required folder structure, signing keys, deep link
+metadata, and template credential files.
+
+```sh
+$ webtrit_phone_tools keystore-init --applicationId=<id> --token=<jwt> [directory]
+```
+
+The command creates the following structure under `<directory>/applications/<applicationId>/`:
+
+```
+<applicationId>/
+├── assets/                              # Application assets (logos, icons, etc.)
+├── build/
+│   └── google-play-service-account.json # Google Play service account for CI publishing
+├── deep_links/
+│   └── .well-known/
+│       ├── apple-app-site-association.json
+│       └── assetlinks.json
+├── push_notifications/
+│   └── firebase-service-account.json    # Firebase service account for push notifications
+├── ssl_certificates/                    # SSL certificates for the application
+├── AuthKey_[key_id].p8                  # iOS APNs auth key
+├── Certificates.p12                     # iOS distribution certificate
+├── Provision.mobileprovision            # iOS provisioning profile
+├── upload-keystore.jks                  # Android upload keystore (JKS)
+├── upload-keystore.p12                  # Android upload keystore (P12)
+├── upload-keystore-metadata.json        # Android keystore metadata
+└── upload-store-connect-metadata.json   # App Store Connect credentials
+```
+
+Files that require manual completion are created with an `.incomplete` suffix.
+
 ### Android Keystore Signing
 
 Tools for managing signing keys and certificates.

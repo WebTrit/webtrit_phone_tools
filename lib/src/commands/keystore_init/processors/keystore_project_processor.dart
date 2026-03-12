@@ -21,6 +21,15 @@ class KeystoreProjectProcessor {
 
     logger.info('Creating ssl certificates directory: $keystoreProjectPath');
     Directory(path.join(keystoreProjectPath, 'ssl_certificates')).createSync(recursive: true);
+
+    logger.info('Creating push notifications directory: $keystoreProjectPath');
+    Directory(path.join(keystoreProjectPath, 'push_notifications')).createSync(recursive: true);
+
+    logger.info('Creating build directory: $keystoreProjectPath');
+    Directory(path.join(keystoreProjectPath, 'build')).createSync(recursive: true);
+
+    logger.info('Creating assets directory: $keystoreProjectPath');
+    Directory(path.join(keystoreProjectPath, 'assets')).createSync(recursive: true);
   }
 
   void writeIosCredentialsTemplate({
@@ -44,7 +53,10 @@ class KeystoreProjectProcessor {
   }) {
     for (final fileName in keystoreFiles) {
       if (!existingKeystoreFiles.contains(fileName)) {
-        final filePath = path.join(keystoreProjectPath, '$fileName.incomplete');
+        final subdirectory = keystoreFileSubdirectory[fileName];
+        final filePath = subdirectory != null
+            ? path.join(keystoreProjectPath, subdirectory, '$fileName.incomplete')
+            : path.join(keystoreProjectPath, '$fileName.incomplete');
         logger.info('Creating empty file: $filePath');
         File(filePath).createSync();
       }
