@@ -8,7 +8,8 @@ import 'package:pub_updater/pub_updater.dart';
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
-import 'commands/constants.dart';
+import 'commands/app_resources/interceptors/interceptors.dart';
+import 'constants.dart';
 import 'utils/utils.dart';
 
 const executableName = 'webtrit_phone_tools';
@@ -32,14 +33,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
-        _datasource = datasource ??
-            ConfiguratorBackandDatasource(
-              Dio(BaseOptions(
-                baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1',
-                // headers: {'Authorization': 'Bearer $configuratorToken'},
-              )),
-              UnauthorizedInterceptor(),
-            ),
+        _datasource = datasource ?? _buildDefaultDatasource(),
         _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
@@ -57,15 +51,15 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
       );
 
     // Add sub commands
-    addCommand(ConfiguratorGetResourcesCommand(
+    addCommand(AppResourcesGetCommand(
       logger: _logger,
       httpClient: _httpClient,
       datasource: _datasource,
     ));
-    addCommand(ConfiguratorGenerateCommand(logger: _logger));
+    addCommand(AppConfigureCommand(logger: _logger));
     addCommand(KeystoreInitCommand(
       logger: _logger,
-      httpClient: _httpClient,
+      datasource: _datasource,
       keystoreReadmeUpdater: _keystoreReadmeUpdater,
     ));
     addCommand(KeystoreGenerateCommand(logger: _logger));
@@ -73,6 +67,17 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(KeystoreVerifyCommand(logger: _logger));
     addCommand(AssetlinksGenerateCommand(logger: _logger));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
+  }
+
+  static ConfiguratorBackandDatasource _buildDefaultDatasource() {
+    final dio = Dio(BaseOptions(baseUrl: 'https://us-central1-webtrit-configurator.cloudfunctions.net/api/v1'))
+      ..interceptors.add(LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: print,
+      ));
+    dio.interceptors.add(RetryInterceptor(dio: dio));
+    return ConfiguratorBackandDatasource(dio, UnauthorizedInterceptor());
   }
 
   @override

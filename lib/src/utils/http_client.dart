@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:data/dto/application/application.dart';
@@ -7,6 +8,10 @@ import 'package:archive/archive.dart';
 
 class HttpClient {
   HttpClient(this.baseUrl, this.logger);
+
+  static const _maxRetries = 3;
+  static const _retryDelaysMs = [5000, 15000, 30000];
+  static final _random = Random();
 
   final String baseUrl;
   final Logger logger;
@@ -54,20 +59,47 @@ class HttpClient {
   ) async {
     final progress = logger.progress('Loading data from $url');
 
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        progress.complete('Data loaded successfully from $url');
-        return parseResponse(response);
-      } else {
-        final errorMessage = 'Failed to load data from $url: ${response.statusCode} ${response.reasonPhrase}';
+    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          progress.complete('Data loaded successfully from $url');
+          return parseResponse(response);
+        } else if (_isServerError(response.statusCode) && attempt < _maxRetries) {
+          final delay = _delayWithJitter(_retryDelaysMs[attempt]);
+          logger.detail('Retry ${attempt + 1}/$_maxRetries for $url (status ${response.statusCode}), waiting ${delay.inMilliseconds}ms');
+          await Future<void>.delayed(delay);
+          continue;
+        } else {
+          final errorMessage = 'Failed to load data from $url: ${response.statusCode} ${response.reasonPhrase}';
+          progress.fail(errorMessage);
+          throw Exception(errorMessage);
+        }
+      } on http.ClientException catch (e) {
+        if (attempt < _maxRetries) {
+          final delay = _delayWithJitter(_retryDelaysMs[attempt]);
+          logger.detail('Retry ${attempt + 1}/$_maxRetries for $url ($e), waiting ${delay.inMilliseconds}ms');
+          await Future<void>.delayed(delay);
+          continue;
+        }
+        final errorMessage = 'Failed to load data from $url: $e';
+        progress.fail(errorMessage);
+        throw Exception(errorMessage);
+      } catch (e) {
+        final errorMessage = 'Failed to load data from $url: $e';
         progress.fail(errorMessage);
         throw Exception(errorMessage);
       }
-    } catch (e) {
-      final errorMessage = 'Failed to load data from $url: $e';
-      progress.fail(errorMessage);
-      throw Exception(errorMessage);
     }
+
+    throw Exception('Failed to load data from $url after $_maxRetries retries');
   }
+
+  /// Adds random jitter (0-50% of base delay) to spread parallel retries.
+  static Duration _delayWithJitter(int baseDelayMs) {
+    final jitter = _random.nextInt(baseDelayMs ~/ 2);
+    return Duration(milliseconds: baseDelayMs + jitter);
+  }
+
+  static bool _isServerError(int statusCode) => statusCode >= 500;
 }
