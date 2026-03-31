@@ -1,0 +1,25 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.dart'
+      run: |
+        files=$(echo {staged_files} | tr ' ' '\n' | grep '\.dart$' | grep -vE '\.(g|freezed|gr)\.dart$' | tr '\n' ' ')
+        if [ -n "$files" ]; then
+          dart format --output=none --set-exit-if-changed $files
+        fi
+
+commit-msg:
+  commands:
+    commit-msg-check:
+      run: bash tool/scripts/commit-msg-check.sh {1}
+
+pre-push:
+  parallel: true
+  commands:
+    branch-name-check:
+      run: bash tool/scripts/branch-name-check.sh
+    analyze:
+      run: dart analyze
+    test:
+      run: dart test
