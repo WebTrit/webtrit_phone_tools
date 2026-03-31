@@ -1,0 +1,61 @@
+name: webtrit_build_phone_tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform for build'
+        required: true
+        default: 'windows' # or 'windows', 'linux', 'macos'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            output: webtrit_phone_tools
+          - os: macos-latest
+            platform: macos
+            output: webtrit_phone_tools
+          - os: windows-latest
+            platform: windows
+            output: webtrit_phone_tools.exe
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Build executable
+        run: |
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            dart compile exe bin/webtrit_phone_tools.dart -o build/${{ matrix.output }}
+          elif [ "${{ matrix.platform }}" == "linux" ]; then
+            dart compile exe bin/webtrit_phone_tools.dart -o build/${{ matrix.output }}
+          elif [ "${{ matrix.platform }}" == "macos" ]; then
+            dart compile exe bin/webtrit_phone_tools.dart -o build/${{ matrix.output }}
+          else
+            echo "Unsupported platform"
+            exit 1
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dart-cli-build-${{ matrix.platform }}
+          path: build/${{ matrix.output }}
+
+      - name: Provide download link
+        run: |
+          echo "Download the build artifact at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"

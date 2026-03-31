@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/serdun/Documents/work/webtrit/webtrit_phone_tools status)",
+      "Bash(git -C /Users/serdun/Documents/work/webtrit/webtrit_phone_tools diff)",
+      "Bash(git -C /Users/serdun/Documents/work/webtrit/webtrit_phone_tools log --oneline -5)",
+      "Bash(git -C /Users/serdun/Documents/work/webtrit/webtrit_phone_tools add README.md .github/copilot-instructions.md .rules.md .rules/)",
+      "Bash(git -C:*)",
+      "Bash(dart compile:*)",
+      "Bash(/tmp/webtrit_phone_tools_test:*)",
+      "Bash(dart test:*)",
+      "Bash(xargs ls -la)"
+    ]
+  }
+}
