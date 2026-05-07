@@ -14,10 +14,7 @@ class FlutterRunner {
       workingDirectory: workingDirectory,
     );
 
-    logger
-      ..info(flutterGenProcess.stdout.toString().trim())
-      ..err(flutterGenProcess.stderr.toString().trim())
-      ..info('Flutter gen activation finished with: ${flutterGenProcess.exitCode}');
+    _logProcess(flutterGenProcess, 'Flutter gen activation');
 
     final firebaseProcess = await Process.run(
       'dart',
@@ -25,10 +22,7 @@ class FlutterRunner {
       workingDirectory: workingDirectory,
     );
 
-    logger
-      ..info(firebaseProcess.stdout.toString().trim())
-      ..err(firebaseProcess.stderr.toString().trim())
-      ..info('Flutterfire CLI activation finished with: ${firebaseProcess.exitCode}');
+    _logProcess(firebaseProcess, 'Flutterfire CLI activation');
   }
 
   Future<void> configureLocalization(String workingDirectory) async {
@@ -38,10 +32,7 @@ class FlutterRunner {
       workingDirectory: workingDirectory,
     );
 
-    logger
-      ..info(process.stdout.toString().trim())
-      ..err(process.stderr.toString().trim())
-      ..info('Localization generation finished with: ${process.exitCode}');
+    _logProcess(process, 'Localization generation');
   }
 
   Future<void> configureAssets(String workingDirectory) async {
@@ -51,9 +42,16 @@ class FlutterRunner {
       workingDirectory: workingDirectory,
     );
 
-    logger
-      ..info(process.stdout.toString().trim())
-      ..err(process.stderr.toString().trim())
-      ..info('Flutter gen finished with: ${process.exitCode}');
+    _logProcess(process, 'Flutter gen');
+  }
+
+  void _logProcess(ProcessResult process, String label) {
+    final stdout = process.stdout.toString().trim();
+    final stderr = process.stderr.toString().trim();
+    if (stdout.isNotEmpty) logger.info(stdout);
+    if (stderr.isNotEmpty) {
+      process.exitCode != 0 ? logger.err(stderr) : logger.detail(stderr);
+    }
+    logger.info('$label finished with: ${process.exitCode}');
   }
 }
