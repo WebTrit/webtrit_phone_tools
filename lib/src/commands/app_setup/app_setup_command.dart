@@ -14,7 +14,11 @@ const _argCacheSessionDataPath = 'cache-session-data-path';
 const _paramDirectory = '<directory>';
 
 class AppSetupCommand extends Command<int> {
-  AppSetupCommand({required Logger logger}) : _logger = logger {
+  AppSetupCommand({
+    required Logger logger,
+    FirebaseSetupRunner? firebaseSetupRunner,
+  })  : _logger = logger,
+        _firebaseSetupRunner = firebaseSetupRunner {
     argParser
       ..addMultiOption(
         _argPlatform,
@@ -23,7 +27,7 @@ class AppSetupCommand extends Command<int> {
       )
       ..addOption(
         _argKeystorePath,
-        help: 'Absolute path to the application keystore directory. '
+        help: 'Path to the application keystore directory (absolute, or relative to the phone project directory). '
             'Must be provided explicitly — do not rely on the cached path, '
             'which may reference a different OS.',
         mandatory: true,
@@ -54,13 +58,14 @@ class AppSetupCommand extends Command<int> {
   String get invocation => '${super.invocation} [$_paramDirectory]';
 
   final Logger _logger;
+  final FirebaseSetupRunner? _firebaseSetupRunner;
 
   @override
   Future<int> run() async {
     try {
       final context = AppSetupContext.fromArgs(argResults!, _logger);
 
-      await FirebaseSetupRunner(logger: _logger).configure(context);
+      await (_firebaseSetupRunner ?? FirebaseSetupRunner(logger: _logger)).configure(context);
 
       _logger.success('✓ configurator-setup completed for ${context.platforms.map((p) => p.name).join(', ')}');
       return ExitCode.success.code;

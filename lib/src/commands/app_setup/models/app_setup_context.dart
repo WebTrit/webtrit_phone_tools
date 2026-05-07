@@ -50,7 +50,7 @@ class AppSetupContext {
     if (platformArgs.isEmpty) {
       throw UsageException('--$_argPlatform is required. Use --platform ios, --platform android, or both.', '');
     }
-    final platforms = platformArgs.map(SetupPlatform.fromString).toList();
+    final platforms = platformArgs.map(SetupPlatform.fromString).toSet().toList();
 
     final cacheSessionDataPath = (argResults[_argCacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
     final absoluteCachePath = path.isAbsolute(cacheSessionDataPath)
@@ -58,8 +58,7 @@ class AppSetupContext {
         : path.normalize(path.join(workingDirectoryPath, cacheSessionDataPath));
 
     if (!File(absoluteCachePath).existsSync()) {
-      logger.err('Cache session data not found at: $absoluteCachePath');
-      throw Exception('Missing cache session data.');
+      throw UsageException('Cache session data not found at: $absoluteCachePath', '');
     }
 
     final cacheSessionData = File(absoluteCachePath).readAsStringSync().toMap();
@@ -75,33 +74,28 @@ class AppSetupContext {
         : path.normalize(path.join(workingDirectoryPath, keystoreArg));
 
     if (!Directory(projectKeystorePath).existsSync()) {
-      logger.err('Keystore directory does not exist: $projectKeystorePath');
-      throw Exception('Keystore directory not found.');
+      throw UsageException('Keystore directory does not exist: $projectKeystorePath', '');
     }
 
     final bundleIdAndroid = cacheSessionData[bundleIdAndroidField] as String?;
     if (bundleIdAndroid == null || bundleIdAndroid.isEmpty) {
-      logger.err('"$bundleIdAndroidField" is missing from cache session data.');
-      throw Exception('Missing Android bundle ID.');
+      throw UsageException('"$bundleIdAndroidField" is missing from cache session data.', '');
     }
 
     final bundleIdIos = cacheSessionData[bundleIdIosField] as String?;
     if (bundleIdIos == null || bundleIdIos.isEmpty) {
-      logger.err('"$bundleIdIosField" is missing from cache session data.');
-      throw Exception('Missing iOS bundle ID.');
+      throw UsageException('"$bundleIdIosField" is missing from cache session data.', '');
     }
 
     final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
     if (!File(firebaseServiceAccountPath).existsSync()) {
-      logger.err('Firebase service account not found at: $firebaseServiceAccountPath');
-      throw Exception('Missing Firebase service account.');
+      throw UsageException('Firebase service account not found at: $firebaseServiceAccountPath', '');
     }
 
     final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
     final firebaseAccountId = firebaseServiceAccount[projectIdField] as String?;
     if (firebaseAccountId == null || firebaseAccountId.isEmpty) {
-      logger.err('"$projectIdField" missing in Firebase service account JSON.');
-      throw Exception('Missing Firebase project ID.');
+      throw UsageException('"$projectIdField" missing in Firebase service account JSON.', '');
     }
 
     logger

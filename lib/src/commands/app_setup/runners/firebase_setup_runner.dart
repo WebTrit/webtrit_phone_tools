@@ -32,11 +32,17 @@ class FirebaseSetupRunner {
       runInShell: true,
     );
 
-    final stdoutFuture = process.stdout.transform(utf8.decoder).forEach((data) => logger.info('stdout: ${data.trim()}'));
-    final stderrFuture = process.stderr.transform(utf8.decoder).forEach((data) => logger.err('stderr: ${data.trim()}'));
+    final stderrBuffer = StringBuffer();
+    final stdoutFuture = process.stdout.transform(utf8.decoder).forEach((data) => logger.info(data.trim()));
+    final stderrFuture = process.stderr.transform(utf8.decoder).forEach(stderrBuffer.write);
 
     await Future.wait([stdoutFuture, stderrFuture]);
     final exitCode = await process.exitCode;
+
+    final stderr = stderrBuffer.toString().trim();
+    if (stderr.isNotEmpty) {
+      exitCode != 0 ? logger.err(stderr) : logger.detail(stderr);
+    }
 
     logger.info('flutterfire finished with exit code: $exitCode');
 
