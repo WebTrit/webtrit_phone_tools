@@ -31,7 +31,7 @@ enum SetupPlatform {
 class AppSetupContext {
   const AppSetupContext({
     required this.workingDirectoryPath,
-    required this.platform,
+    required this.platforms,
     required this.bundleIdAndroid,
     required this.bundleIdIos,
     required this.firebaseAccountId,
@@ -46,8 +46,11 @@ class AppSetupContext {
 
     final workingDirectoryPath = rest.isEmpty ? Directory.current.path : path.normalize(rest[0]);
 
-    final platformArg = argResults[_argPlatform] as String;
-    final platform = SetupPlatform.fromString(platformArg);
+    final platformArgs = argResults[_argPlatform] as List<String>;
+    if (platformArgs.isEmpty) {
+      throw UsageException('--$_argPlatform is required. Use --platform ios, --platform android, or both.', '');
+    }
+    final platforms = platformArgs.map(SetupPlatform.fromString).toList();
 
     final cacheSessionDataPath = (argResults[_argCacheSessionDataPath] as String?) ?? defaultCacheSessionDataPath;
     final absoluteCachePath = path.isAbsolute(cacheSessionDataPath)
@@ -102,7 +105,7 @@ class AppSetupContext {
     }
 
     logger
-      ..info('- Platform: ${platform.name}')
+      ..info('- Platform(s): ${platforms.map((p) => p.name).join(', ')}')
       ..info('- Working directory: $workingDirectoryPath')
       ..info('- Keystore path: $projectKeystorePath')
       ..info('- Android bundle ID: $bundleIdAndroid')
@@ -111,7 +114,7 @@ class AppSetupContext {
 
     return AppSetupContext(
       workingDirectoryPath: workingDirectoryPath,
-      platform: platform,
+      platforms: platforms,
       bundleIdAndroid: bundleIdAndroid,
       bundleIdIos: bundleIdIos,
       firebaseAccountId: firebaseAccountId,
@@ -120,7 +123,7 @@ class AppSetupContext {
   }
 
   final String workingDirectoryPath;
-  final SetupPlatform platform;
+  final List<SetupPlatform> platforms;
   final String bundleIdAndroid;
   final String bundleIdIos;
   final String firebaseAccountId;

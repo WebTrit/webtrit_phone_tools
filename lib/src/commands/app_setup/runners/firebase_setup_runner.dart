@@ -13,7 +13,7 @@ class FirebaseSetupRunner {
 
   Future<void> configure(AppSetupContext context) async {
     logger
-      ..info('Running flutterfire configure for platform: ${context.platform.name}')
+      ..info('Running flutterfire configure for platform(s): ${context.platforms.map((p) => p.name).join(', ')}')
       ..info('Firebase project: ${context.firebaseAccountId}')
       ..info('Service account: ${context.firebaseServiceAccountPath}');
 
@@ -26,7 +26,7 @@ class FirebaseSetupRunner {
         '--android-package-name=${context.bundleIdAndroid}',
         '--ios-bundle-id=${context.bundleIdIos}',
         '--service-account=${context.firebaseServiceAccountPath}',
-        '--platforms=${context.platform.flutterfirePlatformFlag}',
+        '--platforms=${context.platforms.map((p) => p.flutterfirePlatformFlag).join(',')}',
       ],
       workingDirectory: context.workingDirectoryPath,
       runInShell: true,

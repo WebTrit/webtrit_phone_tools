@@ -16,11 +16,10 @@ const _paramDirectory = '<directory>';
 class AppSetupCommand extends Command<int> {
   AppSetupCommand({required Logger logger}) : _logger = logger {
     argParser
-      ..addOption(
+      ..addMultiOption(
         _argPlatform,
-        help: 'Target platform for setup.',
+        help: 'Target platform(s) for setup. Can be specified multiple times.',
         allowed: ['ios', 'android'],
-        mandatory: true,
       )
       ..addOption(
         _argKeystorePath,
@@ -63,7 +62,7 @@ class AppSetupCommand extends Command<int> {
 
       await FirebaseSetupRunner(logger: _logger).configure(context);
 
-      _logger.success('✓ configurator-setup completed for ${context.platform.name}');
+      _logger.success('✓ configurator-setup completed for ${context.platforms.map((p) => p.name).join(', ')}');
       return ExitCode.success.code;
     } on UsageException catch (e) {
       _logger.err(e.message);
