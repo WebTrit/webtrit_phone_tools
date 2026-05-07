@@ -1,0 +1,47 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:mason_logger/mason_logger.dart';
+
+import '../models/models.dart';
+
+class FirebaseSetupRunner {
+  const FirebaseSetupRunner({required this.logger});
+
+  final Logger logger;
+
+  Future<void> configure(AppSetupContext context) async {
+    logger
+      ..info('Running flutterfire configure for platform: ${context.platform.name}')
+      ..info('Firebase project: ${context.firebaseAccountId}')
+      ..info('Service account: ${context.firebaseServiceAccountPath}');
+
+    final process = await Process.start(
+      'flutterfire',
+      [
+        'configure',
+        '--yes',
+        '--project=${context.firebaseAccountId}',
+        '--android-package-name=${context.bundleIdAndroid}',
+        '--ios-bundle-id=${context.bundleIdIos}',
+        '--service-account=${context.firebaseServiceAccountPath}',
+        '--platforms=${context.platform.flutterfirePlatformFlag}',
+      ],
+      workingDirectory: context.workingDirectoryPath,
+      runInShell: true,
+    );
+
+    final stdoutFuture = process.stdout.transform(utf8.decoder).forEach((data) => logger.info('stdout: ${data.trim()}'));
+    final stderrFuture = process.stderr.transform(utf8.decoder).forEach((data) => logger.err('stderr: ${data.trim()}'));
+
+    await Future.wait([stdoutFuture, stderrFuture]);
+    final exitCode = await process.exitCode;
+
+    logger.info('flutterfire finished with exit code: $exitCode');
+
+    if (exitCode != 0) {
+      throw Exception('flutterfire configure failed with exit code $exitCode');
+    }
+  }
+}

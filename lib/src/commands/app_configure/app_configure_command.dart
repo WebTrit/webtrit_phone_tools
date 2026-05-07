@@ -4,7 +4,6 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 import 'models/app_configure_context.dart';
-import 'runners/firebase_runner.dart';
 import 'runners/flutter_runner.dart';
 import 'runners/make_runner.dart';
 
@@ -64,13 +63,9 @@ class AppConfigureCommand extends Command<int> {
 
       final flutterRunner = FlutterRunner(logger: _logger);
       final makeRunner = MakeRunner(logger: _logger);
-      final firebaseRunner = FirebaseRunner(logger: _logger);
 
       // Setup dependencies for the proper functioning of the configuration script
       await flutterRunner.setupDependencies(context.workingDirectoryPath);
-
-      // Configure firebase for all supported platforms
-      await firebaseRunner.configure(context);
 
       // Configure launch icons for all supported platforms
       await makeRunner.configureLaunchIcons(context.workingDirectoryPath);
