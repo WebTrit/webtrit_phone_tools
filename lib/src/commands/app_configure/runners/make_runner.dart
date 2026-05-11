@@ -26,9 +26,11 @@ class MakeRunner {
       workingDirectory: workingDirectory,
     );
 
-    logger
-      ..info(process.stdout.toString().trim())
-      ..err(process.stderr.toString().trim())
-      ..info('Make command "$target" finished with: ${process.exitCode}');
+    final stderr = process.stderr.toString().trim();
+    logger.info(process.stdout.toString().trim());
+    if (stderr.isNotEmpty) {
+      process.exitCode != 0 ? logger.err(stderr) : logger.detail(stderr);
+    }
+    logger.info('Make command "$target" finished with: ${process.exitCode}');
   }
 }
