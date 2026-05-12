@@ -6,12 +6,12 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/app_resources/constants/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/keystore_constants.dart' show firebaseServiceAccountRelativePath;
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _argPlatform = 'platform';
 const _argKeystorePath = 'keystore-path';
 const _argCacheSessionDataPath = 'cache-session-data-path';
-const _firebaseServiceAccountFileName = 'build/google-play-service-account.json';
 
 enum SetupPlatform {
   ios,
@@ -87,13 +87,13 @@ class AppSetupContext {
       throw UsageException('"$bundleIdIosField" is missing from cache session data.', '');
     }
 
-    final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
+    final firebaseServiceAccountPath = path.join(projectKeystorePath, firebaseServiceAccountRelativePath);
     if (!File(firebaseServiceAccountPath).existsSync()) {
       throw UsageException('Firebase service account not found at: $firebaseServiceAccountPath', '');
     }
 
-    final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
-    final firebaseAccountId = firebaseServiceAccount[projectIdField] as String?;
+    final firebaseServiceAccountJson = File(firebaseServiceAccountPath).readAsStringSync().toMap();
+    final firebaseAccountId = firebaseServiceAccountJson[projectIdField] as String?;
     if (firebaseAccountId == null || firebaseAccountId.isEmpty) {
       throw UsageException('"$projectIdField" missing in Firebase service account JSON.', '');
     }

@@ -43,8 +43,8 @@ void main() {
     tempDir = Directory.systemTemp.createTempSync('app_setup_test_');
     keystoreDir = Directory('${tempDir.path}/keystore')..createSync();
 
-    final serviceAccountDir = Directory('${keystoreDir.path}/build')..createSync();
-    File('${serviceAccountDir.path}/google-play-service-account.json')
+    final serviceAccountDir = Directory('${keystoreDir.path}/push_notifications')..createSync();
+    File('${serviceAccountDir.path}/firebase-service-account.json')
         .writeAsStringSync(jsonEncode({'project_id': 'test-firebase-project'}));
 
     cacheFile = File('${tempDir.path}/cache_session_data.json')

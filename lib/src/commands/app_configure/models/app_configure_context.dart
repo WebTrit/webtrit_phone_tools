@@ -6,6 +6,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:webtrit_phone_tools/src/commands/app_resources/constants/constants.dart';
+import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/keystore_constants.dart' show firebaseServiceAccountRelativePath;
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 const _bundleIdAndroid = 'bundleIdAndroid';
@@ -13,7 +14,6 @@ const _bundleIdIos = 'bundleIdIos';
 const _keystorePath = 'keystore-path';
 const _cacheSessionDataPath = 'cache-session-data-path';
 const _directoryParameterName = '<directory>';
-const _firebaseServiceAccountFileName = 'build/google-play-service-account.json';
 
 class AppConfigureContext {
   const AppConfigureContext({
@@ -83,14 +83,14 @@ class AppConfigureContext {
       throw Exception('Permission denied for Keystore directory.');
     }
 
-    final firebaseServiceAccountPath = path.join(projectKeystorePath, _firebaseServiceAccountFileName);
-    final firebaseServiceAccount = File(firebaseServiceAccountPath).readAsStringSync().toMap();
+    final firebaseServiceAccountPath = path.join(projectKeystorePath, firebaseServiceAccountRelativePath);
+    final firebaseServiceAccountData = File(firebaseServiceAccountPath).readAsStringSync().toMap();
 
     logger
       ..info('- Firebase service account path: $firebaseServiceAccountPath')
-      ..info('- Firebase service account: $firebaseServiceAccount');
+      ..info('- Firebase service account: $firebaseServiceAccountData');
 
-    final firebaseAccountId = firebaseServiceAccount[projectIdField] as String;
+    final firebaseAccountId = firebaseServiceAccountData[projectIdField] as String;
 
     return AppConfigureContext(
       workingDirectoryPath: workingDirectoryPath,

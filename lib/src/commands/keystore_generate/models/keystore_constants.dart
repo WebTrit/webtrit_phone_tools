@@ -21,6 +21,8 @@ const keystoreFileSubdirectory = {
 
 // Firebase
 const firebaseServiceAccount = 'firebase-service-account.json';
+const firebaseServiceAccountSubdir = 'push_notifications';
+const firebaseServiceAccountRelativePath = '$firebaseServiceAccountSubdir/$firebaseServiceAccount';
 
 // IOS
 const iosAuthKey = 'AuthKey_[key_id].p8';
