@@ -96,6 +96,14 @@ class KeystoreInitCommand extends Command<int> {
         );
       }
 
+      // Generate Apple distribution certificate signing request
+      if (((application.iosPlatformId) ?? '').isNotEmpty) {
+        await CsrGenerateRunner(logger: _logger).run(
+          keystoreProjectPath: keystoreProjectPath,
+          applicationName: application.name ?? context.applicationId,
+        );
+      }
+
       // Prepare base credentials template for ios auto deploy
       projectProcessor.writeIosCredentialsTemplate(
         keystoreProjectPath: keystoreProjectPath,
