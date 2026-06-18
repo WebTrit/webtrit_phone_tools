@@ -40,7 +40,7 @@ void main() {
       const applicationId = 'testAppId';
 
       final readmeFilePath = path.join(tempDir.path, 'README.md');
-      const initialContent = '## Keystore folders\n\n---\n';
+      const initialContent = '# Keystore accounts\n\n---\n';
       File(readmeFilePath).writeAsStringSync(initialContent);
 
       await readmeUpdater.addApplicationRecord(tempDir.path, applicationName, applicationId);
