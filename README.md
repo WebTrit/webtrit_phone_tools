@@ -51,6 +51,8 @@ The command creates the following structure under `<directory>/applications/<app
 ├── ssl_certificates/                    # SSL certificates for the application
 ├── AuthKey_[key_id].p8                  # iOS APNs auth key
 ├── Certificates.p12                     # iOS distribution certificate
+├── CertificateSigningRequest.certSigningRequest # CSR to upload to the Apple Developer portal
+├── CertificateSigningRequest.key        # Private key for the CSR (required to use the issued certificate)
 ├── Provision.mobileprovision            # iOS provisioning profile
 ├── upload-keystore.jks                  # Android upload keystore (JKS)
 ├── upload-keystore.p12                  # Android upload keystore (P12)
@@ -90,6 +92,17 @@ $ webtrit_phone_tools configurator-generate
 # Create metadata (Assetlinks and Apple App Site Association)
 $ webtrit_phone_tools assetlinks-generate --bundleId=<id> --appleTeamID=<id> --androidFingerprints=<sha256> --output=<path>
 
+```
+
+### Certificate Signing Request
+
+Generate an RSA private key and a certificate signing request (CSR) for the Apple Developer portal, mirroring the
+Keychain Access certificate assistant ("Request a Certificate from a Certificate Authority"). Produces
+`CertificateSigningRequest.certSigningRequest` (upload to Apple) and `CertificateSigningRequest.key` (keep it; the
+issued certificate is useless without it).
+
+```sh
+$ webtrit_phone_tools csr-generate --email=app.admin@webtrit.com --commonName="PortaDialer admin certificate request" [directory]
 ```
 
 ---
