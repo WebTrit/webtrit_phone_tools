@@ -105,6 +105,15 @@ issued certificate is useless without it).
 $ webtrit_phone_tools csr-generate --email=app.admin@webtrit.com --commonName="PortaDialer admin certificate request" [directory]
 ```
 
+Once Apple issues the certificate, download the `.cer` and finalize it with `csr-finalize`. It bundles the
+certificate with the private key (`CertificateSigningRequest.key`) into `Certificates.p12`, computes the 40-character
+code signing identity (SHA-1 fingerprint), and writes it to `upload-store-connect-metadata.json` as
+`code-signing-identity`.
+
+```sh
+$ webtrit_phone_tools csr-finalize --cert=ios_distribution.cer [--password=<p12-password>] [directory]
+```
+
 ---
 
 ## Documentation
