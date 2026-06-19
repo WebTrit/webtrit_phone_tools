@@ -38,6 +38,12 @@ class OpensslRunner {
       [
         'pkcs12',
         '-export',
+        // OpenSSL 3.x defaults to PBES2/AES-256-CBC with a SHA-256 MAC, which
+        // macOS `security import` (used by fastlane during the iOS archive)
+        // cannot read and rejects with "MAC verification failed during PKCS12
+        // import (wrong password?)". `-legacy` emits the older
+        // PBE-SHA1-3DES/RC2 + SHA-1 MAC format that the macOS keychain accepts.
+        '-legacy',
         '-inkey',
         privateKeyPath,
         '-in',
