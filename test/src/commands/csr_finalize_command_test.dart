@@ -50,7 +50,23 @@ void main() {
     ]);
 
     expect(result, equals(0));
-    expect(File(path.join(directory.path, 'Certificates.p12')).existsSync(), isTrue);
+    final pkcs12Path = path.join(directory.path, 'Certificates.p12');
+    expect(File(pkcs12Path).existsSync(), isTrue);
+
+    // On macOS the bundle must import with an empty password — this is exactly
+    // what `yukiarrr/ios-build-action` does, and what the OpenSSL-only bundle
+    // failed with ("MAC verification failed during PKCS12 import").
+    if (Platform.isMacOS) {
+      final keychainPath = path.join(directory.path, 'verify.keychain');
+      Process.runSync('security', ['create-keychain', '-p', 'verify', keychainPath], runInShell: true);
+      final import = Process.runSync(
+        'security',
+        ['import', pkcs12Path, '-k', keychainPath, '-P', ''],
+        runInShell: true,
+      );
+      Process.runSync('security', ['delete-keychain', keychainPath], runInShell: true);
+      expect(import.exitCode, equals(0), reason: 'security import failed: ${import.stderr}');
+    }
 
     final metadata = jsonDecode(
       File(path.join(directory.path, 'upload-store-connect-metadata.json')).readAsStringSync(),

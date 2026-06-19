@@ -89,14 +89,43 @@ class CsrFinalizeCommand extends Command<int> {
         return ExitCode.software.code;
       }
 
+      // OpenSSL and Apple's SecurityFramework disagree on the PKCS12 MAC for
+      // empty passwords, so a bundle written straight to disk by OpenSSL is
+      // rejected by macOS `security import`. On macOS, build an intermediate
+      // bundle (non-empty password, so the keychain can read it) and re-export
+      // it through the keychain to get a macOS-compatible MAC. Elsewhere fall
+      // back to the OpenSSL bundle directly.
+      final repackageViaKeychain = Platform.isMacOS;
+      final bundlePath = repackageViaKeychain ? path.join(tempDirectory.path, 'intermediate.p12') : context.pkcs12Path;
+      final bundlePassword = repackageViaKeychain ? intermediatePkcs12Password : context.password;
+
       final pkcs12Result = opensslRunner.buildPkcs12(
         pemPath: pemPath,
         privateKeyPath: context.privateKeyPath,
-        pkcs12Path: context.pkcs12Path,
-        password: context.password,
+        pkcs12Path: bundlePath,
+        password: bundlePassword,
       );
       if (pkcs12Result.exitCode != 0) {
         return ExitCode.software.code;
+      }
+
+      if (repackageViaKeychain) {
+        final repackaged = KeychainRunner(logger: _logger).repackage(
+          sourcePkcs12Path: bundlePath,
+          sourcePassword: bundlePassword,
+          outputPkcs12Path: context.pkcs12Path,
+          outputPassword: context.password,
+          workDirectory: tempDirectory.path,
+        );
+        if (!repackaged) {
+          return ExitCode.software.code;
+        }
+      } else {
+        _logger.warn(
+          'Not running on macOS: wrote the PKCS12 bundle directly with OpenSSL. '
+          'With an empty password it may be rejected by macOS `security import` '
+          '("MAC verification failed"); generate on macOS or pass a non-empty --password.',
+        );
       }
 
       final identity = opensslRunner.extractCodeSigningIdentity(pemPath: pemPath);
