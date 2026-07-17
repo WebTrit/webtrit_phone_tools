@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
@@ -6,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../constants/constants.dart';
+import '../utils/utils.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 class TranslationProcessor {
@@ -70,13 +72,33 @@ class TranslationProcessor {
 
       final locale = fileName.split('.').first;
       if (localeCodes.contains(locale)) {
-        final outFile = File(resolvePath('$translationsArbPath/app_$fileName'));
-        if (!outFile.parent.existsSync()) {
-          await outFile.parent.create(recursive: true);
-        }
-        await outFile.writeAsBytes(file.content);
-        logger.success('  Saved: ${outFile.path}');
+        await _writeArbFile(resolvePath('$translationsArbPath/app_$fileName'), file.content as List<int>);
       }
+    }
+  }
+
+  Future<void> _writeArbFile(String outPath, List<int> downloadedBytes) async {
+    final outFile = File(outPath);
+    if (!outFile.parent.existsSync()) {
+      await outFile.parent.create(recursive: true);
+    }
+
+    final downloaded = jsonDecode(utf8.decode(downloadedBytes)) as Map<String, dynamic>;
+
+    if (!outFile.existsSync()) {
+      await outFile.writeAsString(const JsonEncoder.withIndent('  ').convert(downloaded));
+      logger.success('  Saved: ${outFile.path}');
+      return;
+    }
+
+    try {
+      final local = jsonDecode(await outFile.readAsString()) as Map<String, dynamic>;
+      final merged = ArbMergeUtil.mergeArb(local, downloaded);
+      await outFile.writeAsString(const JsonEncoder.withIndent('  ').convert(merged));
+      logger.success('  Merged: ${outFile.path}');
+    } on FormatException {
+      logger.warn('  Existing file has invalid JSON, overwriting: ${outFile.path}');
+      await outFile.writeAsString(const JsonEncoder.withIndent('  ').convert(downloaded));
     }
   }
 }
