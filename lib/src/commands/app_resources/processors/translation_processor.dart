@@ -1,10 +1,9 @@
-import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
-import 'package:yaml/yaml.dart';
 
 import '../constants/constants.dart';
 import '../utils/utils.dart';
@@ -23,43 +22,16 @@ class TranslationProcessor {
     required String applicationId,
     required String Function(String) resolvePath,
   }) async {
-    final configFile = File(resolvePath('localizely.yml'));
-
-    if (!configFile.existsSync()) {
-      logger.warn('localizely.yml file not found in the working directory.');
-      return;
-    }
-
-    final localeCodes = <String>{};
-
-    try {
-      final yamlString = await configFile.readAsString();
-      final config = loadYaml(yamlString) as YamlMap;
-      final downloadConfig = config['download'] as YamlMap;
-      final filesConfig = downloadConfig['files'] as YamlList;
-
-      for (final item in filesConfig.cast<YamlMap>()) {
-        final localeCode = item['locale_code'] as String?;
-        if (localeCode != null && localeCode.isNotEmpty) {
-          localeCodes.add(localeCode);
-        } else {
-          logger.warn('Skipping file entry: missing or invalid "locale_code".');
-        }
-      }
-    } on YamlException catch (e) {
-      logger.err('Failed to parse localizely.yml: ${e.message}');
-      return;
-    } catch (e) {
-      logger.err('Invalid structure in localizely.yml: $e');
-      return;
-    }
+    final localeCodes = _collectLocaleCodes(resolvePath);
 
     if (localeCodes.isEmpty) {
-      logger.warn('No valid locale codes found to download.');
-      return;
+      logger.warn(
+        'No app_*.arb files found under $translationsArbPath; accepting all downloaded locales.',
+      );
+    } else {
+      logger.info('Downloading translations for: ${localeCodes.join(', ')}');
     }
 
-    logger.info('Downloading translations for: ${localeCodes.join(', ')}');
     final zipFiles = await httpClient.getTranslationFiles(applicationId);
 
     for (final file in zipFiles) {
@@ -71,11 +43,36 @@ class TranslationProcessor {
       }
 
       final locale = fileName.split('.').first;
-      if (localeCodes.contains(locale)) {
+      if (localeCodes.isEmpty || localeCodes.contains(_normalizeLocale(locale))) {
         await _writeArbFile(resolvePath('$translationsArbPath/app_$fileName'), file.content as List<int>);
       }
     }
   }
+
+  /// Locale codes derived from the app_<locale>.arb files already present in
+  /// the working directory; they act as a whitelist over the downloaded ZIP.
+  Set<String> _collectLocaleCodes(String Function(String) resolvePath) {
+    final arbDirectory = Directory(resolvePath(translationsArbPath));
+    if (!arbDirectory.existsSync()) {
+      return const {};
+    }
+
+    final localeCodes = arbDirectory
+        .listSync()
+        .whereType<File>()
+        .map((file) => p.basename(file.path))
+        .where((name) => name.startsWith('app_') && name.endsWith('.arb'))
+        .map((name) => name.substring('app_'.length, name.length - '.arb'.length))
+        .where((locale) => locale.isNotEmpty)
+        .map(_normalizeLocale)
+        .toSet();
+
+    return SplayTreeSet.of(localeCodes);
+  }
+
+  /// ARB filenames spell region subtags with an underscore (app_pt_BR.arb)
+  /// while ZIP entries may use the hyphenated form (pt-BR.arb).
+  String _normalizeLocale(String locale) => locale.toLowerCase().replaceAll('_', '-');
 
   Future<void> _writeArbFile(String outPath, List<int> downloadedBytes) async {
     final outFile = File(outPath);

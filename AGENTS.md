@@ -252,7 +252,6 @@ lib/src/commands/<feature_name>/
 | `mustache_template` | ^2.0.2      | Mustache template rendering              |
 | `http`              | ^1.6.0      | Simple GET requests                      |
 | `archive`           | ^4.0.7      | ZIP/archive handling                     |
-| `yaml`              | ^3.1.3      | YAML parsing                             |
 | `data` (local)      | path: …     | Configurator API datasource (Dio-based)  |
 | `test`              | ^1.25.15    | Unit/integration tests                   |
 | `mocktail`          | ^1.0.4      | Mocking in tests                         |
