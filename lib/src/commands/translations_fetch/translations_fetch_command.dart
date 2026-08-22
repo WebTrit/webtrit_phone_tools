@@ -12,6 +12,7 @@ const _argToken = 'token';
 const _argOutput = 'output';
 
 const _tokenEnvironmentVariable = 'CONFIGURATOR_TOKEN';
+const _apiKeyPrefix = 'wtc_';
 const _defaultOutputPath = 'lib/l10n/arb';
 
 const _paramDirectory = '<directory>';
@@ -80,8 +81,12 @@ class TranslationsFetchCommand extends Command<int> {
         path.join(workingDirectoryPath, argResults![_argOutput] as String);
 
     try {
+      // An administrator-minted API key (wtc_...) travels in its own header;
+      // anything else is treated as a signed-in bearer token.
       final archive = await _httpClient.getCatalogTranslationFiles(
-        headers: {'Authorization': 'Bearer $token'},
+        headers: token.startsWith(_apiKeyPrefix)
+            ? {'X-Api-Key': token}
+            : {'Authorization': 'Bearer $token'},
       );
 
       // Parse everything before writing anything: a half-written locale set
