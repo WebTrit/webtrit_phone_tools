@@ -4,3 +4,4 @@ export 'http_client.dart';
 export 'json_utils.dart';
 export 'keystore_readme_updater.dart';
 export 'password_generator.dart';
+export 'phone_version.dart';

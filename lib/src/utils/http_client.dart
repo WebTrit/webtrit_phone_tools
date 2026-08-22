@@ -17,11 +17,11 @@ class HttpClient {
   final Logger logger;
 
   String _applicationUrl(String applicationId) {
-    return '$baseUrl/api/v1/applications/$applicationId';
+    return '$baseUrl/applications/$applicationId';
   }
 
   String _translationsUrl(String applicationId) {
-    return '$baseUrl/api/v1/translations/compose-arb/$applicationId';
+    return '$baseUrl/translations/compose-arb/$applicationId';
   }
 
   Future<ApplicationDTO> getApplication(String applicationId) async {

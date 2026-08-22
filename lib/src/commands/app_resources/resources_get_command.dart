@@ -198,7 +198,11 @@ class AppResourcesGetCommand extends Command<int> {
       workingDirectoryPath: workingDirectoryPath,
       applicationId: applicationId,
       projectKeystorePath: projectKeystoreDir.path,
-      authHeader: {'Authorization': 'Bearer $token'},
+      authHeader: {
+        'Authorization': 'Bearer $token',
+        // Which era is writing: see readPhoneVersion.
+        if (readPhoneVersion(workingDirectoryPath) case final version?) 'X-Phone-Version': version,
+      },
       cachePathArg: argResults![_argCacheSessionDataPath] as String?,
     );
   }
