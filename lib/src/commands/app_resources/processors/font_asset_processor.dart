@@ -24,15 +24,13 @@ class FontAssetProcessor {
       ..._families(darkConfig),
     }..removeAll(_ignoredFamilies);
     if (families.length != 1) {
-      throw StateError(
-          'Theme must select exactly one predefined Google Font: $families');
+      throw StateError('Theme must select exactly one predefined Google Font: $families');
     }
 
     final family = families.single;
     final weights = {..._weights(lightConfig), ..._weights(darkConfig)};
     final safeFamily = _safeFamily(family);
-    final target =
-        Directory(resolvePath(path.join('assets/fonts', safeFamily)));
+    final target = Directory(resolvePath(path.join('assets/fonts', safeFamily)));
     if (target.existsSync()) {
       await target.delete(recursive: true);
     }
@@ -41,23 +39,18 @@ class FontAssetProcessor {
     final cssUri = Uri.https('fonts.googleapis.com', '/css2', {
       'family': '$family:wght@${weights.join(';')}',
     });
-    final response = await http.get(cssUri,
-        headers: const {'User-Agent': 'curl/8'}).timeout(_httpTimeout);
+    final response = await http.get(cssUri, headers: const {'User-Agent': 'curl/8'}).timeout(_httpTimeout);
     if (response.statusCode != 200) {
-      throw HttpException(
-          'Google Font $family lookup failed: ${response.statusCode}');
+      throw HttpException('Google Font $family lookup failed: ${response.statusCode}');
     }
     final entries = _parseCss(response.body);
     if (entries.length != weights.length) {
-      throw StateError(
-          'Google Font $family does not provide all required weights');
+      throw StateError('Google Font $family does not provide all required weights');
     }
     for (final entry in entries) {
-      final fontResponse =
-          await http.get(Uri.parse(entry.url)).timeout(_httpTimeout);
+      final fontResponse = await http.get(Uri.parse(entry.url)).timeout(_httpTimeout);
       if (fontResponse.statusCode != 200) {
-        throw HttpException(
-            'Google Font $family ${entry.weight} download failed: ${fontResponse.statusCode}');
+        throw HttpException('Google Font $family ${entry.weight} download failed: ${fontResponse.statusCode}');
       }
       final bytes = fontResponse.bodyBytes;
       if (bytes.isEmpty) {
@@ -70,8 +63,7 @@ class FontAssetProcessor {
         700 => 'Bold',
         _ => throw StateError('Unsupported weight ${entry.weight}'),
       };
-      await File(path.join(target.path, '$family-$suffix.ttf'))
-          .writeAsBytes(bytes);
+      await File(path.join(target.path, '$family-$suffix.ttf')).writeAsBytes(bytes);
     }
     final licenseResponse = await http
         .get(Uri.parse(
@@ -79,11 +71,9 @@ class FontAssetProcessor {
         ))
         .timeout(_httpTimeout);
     if (licenseResponse.statusCode == 200) {
-      await File(path.join(target.path, 'OFL.txt'))
-          .writeAsString(licenseResponse.body);
+      await File(path.join(target.path, 'OFL.txt')).writeAsString(licenseResponse.body);
     } else {
-      _logger.warn(
-          'License unavailable for $family (${licenseResponse.statusCode})');
+      _logger.warn('License unavailable for $family (${licenseResponse.statusCode})');
     }
     _logger.info('Downloaded $family font assets (${entries.length} variants)');
   }
@@ -137,16 +127,12 @@ class FontAssetProcessor {
   }
 
   String _safeFamily(String family) {
-    final valid = RegExp(r'^[\p{L}\p{N}][\p{L}\p{N} _-]*$', unicode: true)
-            .firstMatch(family)
-            ?.group(0) ==
-        family;
+    final valid = RegExp(r'^[\p{L}\p{N}][\p{L}\p{N} _-]*$', unicode: true).firstMatch(family)?.group(0) == family;
     if (!valid) {
       throw FormatException('Invalid Google Font family: $family');
     }
     return family.replaceAll(RegExp(r'\s+'), '_');
   }
 
-  String _slug(String family) =>
-      family.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  String _slug(String family) => family.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 }

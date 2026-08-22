@@ -34,8 +34,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
         _datasource = datasource ?? createConfiguratorDatasource(),
-        _keystoreReadmeUpdater =
-            keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
+        _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
     // Add root options and flags

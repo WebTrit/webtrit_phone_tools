@@ -49,8 +49,7 @@ class HttpClient {
   /// The whole global translation catalog, one `<locale>.arb` per shipped
   /// locale. Unlike the per-application bundle above this route needs a
   /// signed-in principal - the build pipeline's token.
-  Future<Archive> getCatalogTranslationFiles(
-      {required Map<String, String> headers}) async {
+  Future<Archive> getCatalogTranslationFiles({required Map<String, String> headers}) async {
     final url = _catalogTranslationsUrl;
     final fileBytes = await getBytes(url, headers: headers);
     if (fileBytes != null) {
@@ -60,8 +59,7 @@ class HttpClient {
     }
   }
 
-  Future<Uint8List?> getBytes(String? url,
-      {Map<String, String>? headers}) async {
+  Future<Uint8List?> getBytes(String? url, {Map<String, String>? headers}) async {
     if (url == null) {
       logger.err('Failed to load file from null link');
       return null;
@@ -86,24 +84,21 @@ class HttpClient {
         if (response.statusCode == 200) {
           progress.complete('Data loaded successfully from $url');
           return parseResponse(response);
-        } else if (_isServerError(response.statusCode) &&
-            attempt < _maxRetries) {
+        } else if (_isServerError(response.statusCode) && attempt < _maxRetries) {
           final delay = _delayWithJitter(_retryDelaysMs[attempt]);
           logger.detail(
               'Retry ${attempt + 1}/$_maxRetries for $url (status ${response.statusCode}), waiting ${delay.inMilliseconds}ms');
           await Future<void>.delayed(delay);
           continue;
         } else {
-          final errorMessage =
-              'Failed to load data from $url: ${response.statusCode} ${response.reasonPhrase}';
+          final errorMessage = 'Failed to load data from $url: ${response.statusCode} ${response.reasonPhrase}';
           progress.fail(errorMessage);
           throw Exception(errorMessage);
         }
       } on http.ClientException catch (e) {
         if (attempt < _maxRetries) {
           final delay = _delayWithJitter(_retryDelaysMs[attempt]);
-          logger.detail(
-              'Retry ${attempt + 1}/$_maxRetries for $url ($e), waiting ${delay.inMilliseconds}ms');
+          logger.detail('Retry ${attempt + 1}/$_maxRetries for $url ($e), waiting ${delay.inMilliseconds}ms');
           await Future<void>.delayed(delay);
           continue;
         }

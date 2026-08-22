@@ -36,8 +36,7 @@ class TranslationsFetchCommand extends Command<int> {
       )
       ..addOption(
         _argOutput,
-        help:
-            'Directory the ARB files are written to, relative to $_paramDirectory.',
+        help: 'Directory the ARB files are written to, relative to $_paramDirectory.',
         defaultsTo: _defaultOutputPath,
       );
   }
@@ -47,8 +46,7 @@ class TranslationsFetchCommand extends Command<int> {
 
   @override
   String get description => CommandHelpFormatter.formatDescription(
-        title:
-            'Fetch the translation catalog into the phone repository ARB files',
+        title: 'Fetch the translation catalog into the phone repository ARB files',
         parameter: '$_paramDirectory (optional)',
         description: 'Phone repository root the files are written under.',
         note: 'Defaults to the current working directory if not provided.',
@@ -62,11 +60,9 @@ class TranslationsFetchCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final token = (argResults![_argToken] as String?) ??
-        Platform.environment[_tokenEnvironmentVariable];
+    final token = (argResults![_argToken] as String?) ?? Platform.environment[_tokenEnvironmentVariable];
     if (token == null || token.isEmpty) {
-      _logger.err(
-          'No token: pass --$_argToken or set $_tokenEnvironmentVariable.');
+      _logger.err('No token: pass --$_argToken or set $_tokenEnvironmentVariable.');
       return ExitCode.usage.code;
     }
 
@@ -75,18 +71,14 @@ class TranslationsFetchCommand extends Command<int> {
       _logger.err('At most one $_paramDirectory argument is expected.');
       return ExitCode.usage.code;
     }
-    final workingDirectoryPath =
-        rest.isNotEmpty ? rest.single : Directory.current.path;
-    final outputDirectoryPath =
-        path.join(workingDirectoryPath, argResults![_argOutput] as String);
+    final workingDirectoryPath = rest.isNotEmpty ? rest.single : Directory.current.path;
+    final outputDirectoryPath = path.join(workingDirectoryPath, argResults![_argOutput] as String);
 
     try {
       // An administrator-minted API key (wtc_...) travels in its own header;
       // anything else is treated as a signed-in bearer token.
       final archive = await _httpClient.getCatalogTranslationFiles(
-        headers: token.startsWith(_apiKeyPrefix)
-            ? {'X-Api-Key': token}
-            : {'Authorization': 'Bearer $token'},
+        headers: token.startsWith(_apiKeyPrefix) ? {'X-Api-Key': token} : {'Authorization': 'Bearer $token'},
       );
 
       // Parse everything before writing anything: a half-written locale set
@@ -99,8 +91,7 @@ class TranslationsFetchCommand extends Command<int> {
           continue;
         }
         final locale = fileName.substring(0, fileName.length - '.arb'.length);
-        arbByLocale[locale] = jsonDecode(utf8.decode(file.content as List<int>))
-            as Map<String, dynamic>;
+        arbByLocale[locale] = jsonDecode(utf8.decode(file.content as List<int>)) as Map<String, dynamic>;
       }
 
       if (arbByLocale.isEmpty) {
@@ -114,17 +105,13 @@ class TranslationsFetchCommand extends Command<int> {
       }
 
       for (final entry in arbByLocale.entries) {
-        final outFile =
-            File(path.join(outputDirectoryPath, 'app_${entry.key}.arb'));
-        await outFile.writeAsString(
-            '${const JsonEncoder.withIndent('  ').convert(entry.value)}\n');
-        final keys =
-            entry.value.keys.where((key) => !key.startsWith('@')).length;
+        final outFile = File(path.join(outputDirectoryPath, 'app_${entry.key}.arb'));
+        await outFile.writeAsString('${const JsonEncoder.withIndent('  ').convert(entry.value)}\n');
+        final keys = entry.value.keys.where((key) => !key.startsWith('@')).length;
         _logger.success('  Saved: ${outFile.path} ($keys keys)');
       }
 
-      _logger.success(
-          'Fetched ${arbByLocale.length} locales from the translation catalog.');
+      _logger.success('Fetched ${arbByLocale.length} locales from the translation catalog.');
       return ExitCode.success.code;
     } on Exception catch (e) {
       _logger.err('$e');

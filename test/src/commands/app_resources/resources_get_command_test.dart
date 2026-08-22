@@ -53,8 +53,7 @@ void main() {
     when(() => logger.progress(any())).thenReturn(_MockProgress());
 
     checkout = Directory.systemTemp.createTempSync('resources_get_test_');
-    Directory(p.join(checkout.path, 'keystores', _applicationId))
-        .createSync(recursive: true);
+    Directory(p.join(checkout.path, 'keystores', _applicationId)).createSync(recursive: true);
 
     commandRunner = CommandRunner<int>('test', 'test')
       ..addCommand(AppResourcesGetCommand(
@@ -89,8 +88,7 @@ void main() {
     ]);
   }
 
-  test('a run identifies itself with the token and the phone version',
-      () async {
+  test('a run identifies itself with the token and the phone version', () async {
     writePubspec('''
 name: webtrit_phone
 version: 0.0.0+0000000
@@ -99,8 +97,7 @@ app_version: 1.16.5+3
 
     await runResources();
 
-    final applicationRequest =
-        backend.requestFor('/v1/applications/$_applicationId');
+    final applicationRequest = backend.requestFor('/v1/applications/$_applicationId');
     expect(applicationRequest, isNotNull);
     expect(applicationRequest!.header('authorization'), 'Bearer $_token');
     expect(applicationRequest.header('x-phone-version'), '1.16.5');
@@ -114,8 +111,7 @@ app_version: 1.16.5+3
 
     await runResources();
 
-    final themeRequest =
-        backend.requestFor('/v1/applications/$_applicationId/themes/$_themeId');
+    final themeRequest = backend.requestFor('/v1/applications/$_applicationId/themes/$_themeId');
     expect(themeRequest, isNotNull);
     expect(themeRequest!.header('authorization'), 'Bearer $_token');
     expect(themeRequest.header('x-phone-version'), '1.16.5');
@@ -129,8 +125,7 @@ version: 0.0.0+0000000
 
     await runResources();
 
-    final applicationRequest =
-        backend.requestFor('/v1/applications/$_applicationId');
+    final applicationRequest = backend.requestFor('/v1/applications/$_applicationId');
     expect(applicationRequest, isNotNull);
     expect(applicationRequest!.header('authorization'), 'Bearer $_token');
     expect(applicationRequest.header('x-phone-version'), isNull);

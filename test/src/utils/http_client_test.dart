@@ -96,8 +96,7 @@ void main() {
     addTearDown(other.stop);
     other.serveJson('/applications/app-1', {'id': 'app-1'});
 
-    final application =
-        await HttpClient(other.baseUrl, logger).getApplication('app-1');
+    final application = await HttpClient(other.baseUrl, logger).getApplication('app-1');
 
     expect(application.id, 'app-1');
     expect(other.requestFor('/applications/app-1'), isNotNull);
