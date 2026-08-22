@@ -12,15 +12,21 @@ import 'package:webtrit_phone_tools/src/utils/utils.dart';
 import 'font_asset_processor.dart';
 
 class ThemeConfigProcessor {
-  const ThemeConfigProcessor({
+  ThemeConfigProcessor({
     required this.httpClient,
     required this.datasource,
     required this.logger,
-  });
+    FontAssetProcessor? fontAssetProcessor,
+  }) : fontAssetProcessor =
+            fontAssetProcessor ?? FontAssetProcessor(logger: logger);
 
   final HttpClient httpClient;
   final ConfiguratorBackandDatasource datasource;
   final Logger logger;
+
+  /// Downloads the font the theme selects. It reaches Google Fonts, so a run
+  /// that must stay offline supplies its own.
+  final FontAssetProcessor fontAssetProcessor;
 
   static const _imagesAssetDiskDir = 'assets/images';
   static const _imagesAssetLogicalPrefix = 'asset://assets/images';
@@ -66,7 +72,7 @@ class ThemeConfigProcessor {
     await _writePageConfig(applicationId, themeId, resolvePath, variants);
     await _writeWidgetConfig(applicationId, themeId, resolvePath, variants);
 
-    await FontAssetProcessor(logger: logger).process(
+    await fontAssetProcessor.process(
       lightConfig: Map<String, dynamic>.from(
         jsonDecode(
                 await File(resolvePath(assetWidgetsLightConfig)).readAsString())

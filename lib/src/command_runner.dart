@@ -8,7 +8,7 @@ import 'package:pub_updater/pub_updater.dart';
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
-import 'commands/app_resources/interceptors/interceptors.dart';
+import 'configurator_datasource.dart';
 import 'constants.dart';
 import 'utils/utils.dart';
 
@@ -33,7 +33,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
-        _datasource = datasource ?? _buildDefaultDatasource(),
+        _datasource = datasource ?? createConfiguratorDatasource(),
         _keystoreReadmeUpdater =
             keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
@@ -75,21 +75,6 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
       httpClient: _httpClient,
     ));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
-  }
-
-  static ConfiguratorBackandDatasource _buildDefaultDatasource() {
-    final dio = Dio(BaseOptions(baseUrl: configuratorApiUrl))
-      ..interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: print,
-      ));
-    dio.interceptors.add(RetryInterceptor(dio: dio));
-    // A command signs in with a static token, so there is no session to keep:
-    // the store starts empty, the refresh interceptor finds nothing to renew,
-    // and the token from the arguments does all the talking.
-    return ConfiguratorBackandDatasource(dio, UnauthorizedInterceptor(),
-        AuthPrefDatasource(_EphemeralStorage()));
   }
 
   @override
@@ -194,21 +179,4 @@ Run ${lightCyan.wrap('$executableName update')} to update''',
       }
     } catch (_) {}
   }
-}
-
-class _EphemeralStorage implements LocalStorage {
-  final Map<String, String> _values = {};
-
-  @override
-  Future<void> setString(String key, String value) async =>
-      _values[key] = value;
-
-  @override
-  String? getString(String key) => _values[key];
-
-  @override
-  Future<void> remove(String key) async => _values.remove(key);
-
-  @override
-  bool containsKey(String key) => _values.containsKey(key);
 }
