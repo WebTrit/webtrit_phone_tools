@@ -65,15 +65,28 @@ class ThemeConfigProcessor {
     await _writePageConfig(applicationId, themeId, resolvePath, variants);
     await _writeWidgetConfig(applicationId, themeId, resolvePath, variants);
 
-    await fontAssetProcessor.process(
-      lightConfig: Map<String, dynamic>.from(
-        jsonDecode(await File(resolvePath(assetWidgetsLightConfig)).readAsString()) as Map,
-      ),
-      darkConfig: Map<String, dynamic>.from(
-        jsonDecode(await File(resolvePath(assetWidgetsDarkConfig)).readAsString()) as Map,
-      ),
-      resolvePath: resolvePath,
-    );
+    // The brand font is fetched from a public font service, so this is the one
+    // step here that a network of its own can refuse. It is also the one whose
+    // absence the app survives - it falls back to a substituted face - so a
+    // refusal is said out loud rather than ending a run that has already
+    // written everything the app needs to behave correctly.
+    try {
+      await fontAssetProcessor.process(
+        lightConfig: Map<String, dynamic>.from(
+          jsonDecode(await File(resolvePath(assetWidgetsLightConfig)).readAsString()) as Map,
+        ),
+        darkConfig: Map<String, dynamic>.from(
+          jsonDecode(await File(resolvePath(assetWidgetsDarkConfig)).readAsString()) as Map,
+        ),
+        resolvePath: resolvePath,
+      );
+    } catch (e, s) {
+      logger
+        ..err('Could not fetch the brand font: $e')
+        ..err('  -> the app will be built with a substituted typeface.')
+        ..err('  -> Everything else was generated. Fix this and run again.')
+        ..detail('$s');
+    }
   }
 
   /// Determines which theme variants (light/dark) to fetch from the backend

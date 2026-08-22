@@ -113,18 +113,11 @@ class AppResourcesGetCommand extends Command<int> {
         logger: _logger,
       );
 
-      final splashInfo = await assetProcessor.processSplashAssets(
-        applicationId: context.applicationId,
-        themeId: theme.id!,
-        resolvePath: context.resolvePath,
-      );
-
-      final launchIcons = await assetProcessor.processLaunchIcons(
-        applicationId: context.applicationId,
-        themeId: theme.id!,
-        resolvePath: context.resolvePath,
-      );
-
+      // What the app IS comes first: its configuration, its embeds, its theme
+      // and its fonts. What the app LOOKS like on the way in - the splash and
+      // the launcher icons - comes after, and cannot take the rest with it.
+      // It used to be the other way round, and a single refused image answer
+      // left a brand with none of its settings at all.
       await ThemeConfigProcessor(
         httpClient: _httpClient,
         datasource: _datasource,
@@ -133,6 +126,26 @@ class AppResourcesGetCommand extends Command<int> {
         applicationId: context.applicationId,
         themeId: theme.id!,
         resolvePath: context.resolvePath,
+      );
+
+      final splashInfo = await _imagesOrWarning(
+        'splash screen',
+        'the app will be built with the stock WebTrit splash',
+        () => assetProcessor.processSplashAssets(
+          applicationId: context.applicationId,
+          themeId: theme.id!,
+          resolvePath: context.resolvePath,
+        ),
+      );
+
+      final launchIcons = await _imagesOrWarning(
+        'launcher icons',
+        'the app will be built with the stock WebTrit icons',
+        () => assetProcessor.processLaunchIcons(
+          applicationId: context.applicationId,
+          themeId: theme.id!,
+          resolvePath: context.resolvePath,
+        ),
       );
 
       await ExternalGeneratorRunner(logger: _logger).runGenerators(
@@ -154,6 +167,26 @@ class AppResourcesGetCommand extends Command<int> {
         ..err('Execution failed: $e')
         ..detail('$s');
       return ExitCode.usage.code;
+    }
+  }
+
+  /// Runs one image step. A refusal here is said out loud and named for what
+  /// the brand loses, and the run carries on: an app with someone else's splash
+  /// is recoverable and visible, an app with none of its own settings is not.
+  Future<T?> _imagesOrWarning<T>(
+    String what,
+    String consequence,
+    Future<T> Function() step,
+  ) async {
+    try {
+      return await step();
+    } catch (e, s) {
+      _logger
+        ..err('Could not fetch the $what: $e')
+        ..err('  -> $consequence.')
+        ..err('  -> Everything else was generated. Fix this and run again.')
+        ..detail('$s');
+      return null;
     }
   }
 
