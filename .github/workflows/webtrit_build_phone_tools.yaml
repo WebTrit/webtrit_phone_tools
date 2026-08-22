@@ -49,6 +49,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: WebTrit/webtrit_phone_configurator
+          ref: main
           path: webtrit_phone_configurator
           ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
