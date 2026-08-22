@@ -84,6 +84,28 @@ void main() {
     expect(captured['Authorization'], 'Bearer build-token');
   });
 
+  test('an administrator-minted key travels in its own header', () async {
+    when(() => httpClient
+            .getCatalogTranslationFiles(headers: any(named: 'headers')))
+        .thenAnswer((_) async => _archiveOf({
+              'en.arb': jsonEncode({'@@locale': 'en', 'greeting': 'Hello'})
+            }));
+
+    await commandRunner.run([
+      'configurator-translations-fetch',
+      '--token',
+      'wtc_generated-in-the-admin-ui',
+      tempDir.path,
+    ]);
+
+    final captured = verify(
+      () => httpClient.getCatalogTranslationFiles(
+          headers: captureAny(named: 'headers')),
+    ).captured.single as Map<String, String>;
+    expect(captured['X-Api-Key'], 'wtc_generated-in-the-admin-ui');
+    expect(captured.containsKey('Authorization'), isFalse);
+  });
+
   test('writes nothing when any locale fails to parse - all locales or none',
       () async {
     when(() => httpClient.getCatalogTranslationFiles(
