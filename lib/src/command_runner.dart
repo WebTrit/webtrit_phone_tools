@@ -34,7 +34,8 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
         _datasource = datasource ?? _buildDefaultDatasource(),
-        _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
+        _keystoreReadmeUpdater =
+            keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
     // Add root options and flags
@@ -69,6 +70,10 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(AssetlinksGenerateCommand(logger: _logger));
     addCommand(CsrGenerateCommand(logger: _logger));
     addCommand(CsrFinalizeCommand(logger: _logger));
+    addCommand(TranslationsFetchCommand(
+      logger: _logger,
+      httpClient: _httpClient,
+    ));
     addCommand(UpdateCommand(logger: _logger, pubUpdater: _pubUpdater));
   }
 
@@ -83,7 +88,8 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     // A command signs in with a static token, so there is no session to keep:
     // the store starts empty, the refresh interceptor finds nothing to renew,
     // and the token from the arguments does all the talking.
-    return ConfiguratorBackandDatasource(dio, UnauthorizedInterceptor(), AuthPrefDatasource(_EphemeralStorage()));
+    return ConfiguratorBackandDatasource(dio, UnauthorizedInterceptor(),
+        AuthPrefDatasource(_EphemeralStorage()));
   }
 
   @override
@@ -194,7 +200,8 @@ class _EphemeralStorage implements LocalStorage {
   final Map<String, String> _values = {};
 
   @override
-  Future<void> setString(String key, String value) async => _values[key] = value;
+  Future<void> setString(String key, String value) async =>
+      _values[key] = value;
 
   @override
   String? getString(String key) => _values[key];
