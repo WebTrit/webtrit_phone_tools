@@ -43,7 +43,8 @@ class KeychainRunner {
       if (output.existsSync()) output.deleteSync();
 
       return _run('export', [
-        'export', '-k', keychainPath, '-t', 'identities', '-f', 'pkcs12', '-P', outputPassword, '-o', outputPkcs12Path, //
+        'export', '-k', keychainPath, '-t', 'identities', '-f', 'pkcs12', '-P', outputPassword, '-o',
+        outputPkcs12Path, //
       ]);
     } finally {
       Process.runSync('security', ['delete-keychain', keychainPath], runInShell: true);

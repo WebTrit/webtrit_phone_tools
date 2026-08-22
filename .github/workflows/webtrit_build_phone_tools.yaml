@@ -25,9 +25,32 @@ jobs:
             platform: windows
             output: webtrit_phone_tools.exe
 
+    defaults:
+      run:
+        working-directory: webtrit_phone_tools
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
+        with:
+          path: webtrit_phone_tools
+
+      # Path dependencies expect the sibling repositories beside this one,
+      # the way they lie on a workstation. The configurator is private, so
+      # its checkout uses the read-only CONFIGURATOR_DEPLOY_KEY secret.
+      - name: Checkout sibling webtrit_phone
+        uses: actions/checkout@v3
+        with:
+          repository: WebTrit/webtrit_phone
+          ref: develop
+          path: webtrit_phone
+
+      - name: Checkout sibling webtrit_phone_configurator
+        uses: actions/checkout@v3
+        with:
+          repository: WebTrit/webtrit_phone_configurator
+          path: webtrit_phone_configurator
+          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
@@ -54,7 +77,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: dart-cli-build-${{ matrix.platform }}
-          path: build/${{ matrix.output }}
+          path: webtrit_phone_tools/build/${{ matrix.output }}
 
       - name: Provide download link
         run: |

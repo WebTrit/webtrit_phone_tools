@@ -76,9 +76,9 @@ class AssetlinksGenerateCommand extends Command<int> {
 
       final fileProcessor = AssetlinksFileProcessor(logger: _logger)
         ..createWorkingDirectory(
-        outputPath: context.outputPath,
-        appendWellKnown: context.appendWellKnown,
-      );
+          outputPath: context.outputPath,
+          appendWellKnown: context.appendWellKnown,
+        );
 
       final outputDirectoryPath = fileProcessor.resolveOutputPath(
         outputPath: context.outputPath,

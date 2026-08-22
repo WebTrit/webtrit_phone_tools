@@ -17,8 +17,7 @@ class ThemeConfigProcessor {
     required this.datasource,
     required this.logger,
     FontAssetProcessor? fontAssetProcessor,
-  }) : fontAssetProcessor =
-            fontAssetProcessor ?? FontAssetProcessor(logger: logger);
+  }) : fontAssetProcessor = fontAssetProcessor ?? FontAssetProcessor(logger: logger);
 
   final HttpClient httpClient;
   final ConfiguratorBackandDatasource datasource;
@@ -43,28 +42,22 @@ class ThemeConfigProcessor {
     );
     final embedsDto = await datasource.getEmbeds(applicationId);
 
-    final migratedFeatures =
-        await _migrateAssetsInJson(resolvePath, featureDto.config);
-    await writeJsonToFile(resolvePath(assetAppConfigPath), migratedFeatures,
-        logger: logger);
+    final migratedFeatures = await _migrateAssetsInJson(resolvePath, featureDto.config);
+    await writeJsonToFile(resolvePath(assetAppConfigPath), migratedFeatures, logger: logger);
 
     final embedsList = embedsDto.map((e) => e.toJson()).toList();
-    await writeJsonToFile(resolvePath(assetAppConfigEmbeddedsPath), embedsList,
-        logger: logger);
+    await writeJsonToFile(resolvePath(assetAppConfigEmbeddedsPath), embedsList, logger: logger);
 
     // 2. Resolve which theme variants to fetch based on themeMode
     final appConfig = AppConfig.fromJson(featureDto.config);
-    final themeMode =
-        appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
+    final themeMode = appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
     final variants = _resolveVariants(themeMode);
 
     logger
-      ..info(
-          'Theme mode: ${themeMode?.mode.name ?? 'not set (defaulting to light)'}')
+      ..info('Theme mode: ${themeMode?.mode.name ?? 'not set (defaulting to light)'}')
       ..info('Variants to fetch: ${variants.join(', ')}');
     if (variants.length == 1) {
-      logger.info(
-          'Single variant mode — ${variants.first} config will be written to both light and dark files');
+      logger.info('Single variant mode — ${variants.first} config will be written to both light and dark files');
     }
 
     // 3. Write theme configs fetching only needed variants
@@ -74,14 +67,10 @@ class ThemeConfigProcessor {
 
     await fontAssetProcessor.process(
       lightConfig: Map<String, dynamic>.from(
-        jsonDecode(
-                await File(resolvePath(assetWidgetsLightConfig)).readAsString())
-            as Map,
+        jsonDecode(await File(resolvePath(assetWidgetsLightConfig)).readAsString()) as Map,
       ),
       darkConfig: Map<String, dynamic>.from(
-        jsonDecode(
-                await File(resolvePath(assetWidgetsDarkConfig)).readAsString())
-            as Map,
+        jsonDecode(await File(resolvePath(assetWidgetsDarkConfig)).readAsString()) as Map,
       ),
       resolvePath: resolvePath,
     );
@@ -115,18 +104,14 @@ class ThemeConfigProcessor {
         themeId: themeId,
         variant: 'light',
       );
-      await writeJsonToFile(
-          resolvePath(assetLightColorSchemePath), lightDto.config,
-          logger: logger);
+      await writeJsonToFile(resolvePath(assetLightColorSchemePath), lightDto.config, logger: logger);
 
       final darkDto = await datasource.getColorSchemeByVariant(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      await writeJsonToFile(
-          resolvePath(assetDarkColorSchemePath), darkDto.config,
-          logger: logger);
+      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), darkDto.config, logger: logger);
     } else {
       final variant = variants.first;
       final dto = await datasource.getColorSchemeByVariant(
@@ -134,10 +119,8 @@ class ThemeConfigProcessor {
         themeId: themeId,
         variant: variant,
       );
-      await writeJsonToFile(resolvePath(assetLightColorSchemePath), dto.config,
-          logger: logger);
-      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), dto.config,
-          logger: logger);
+      await writeJsonToFile(resolvePath(assetLightColorSchemePath), dto.config, logger: logger);
+      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), dto.config, logger: logger);
     }
   }
 
@@ -153,20 +136,16 @@ class ThemeConfigProcessor {
         themeId: themeId,
         variant: 'light',
       );
-      final migratedLight =
-          await _migrateAssetsInJson(resolvePath, lightDto.config);
-      await writeJsonToFile(resolvePath(assetPageLightConfig), migratedLight,
-          logger: logger);
+      final migratedLight = await _migrateAssetsInJson(resolvePath, lightDto.config);
+      await writeJsonToFile(resolvePath(assetPageLightConfig), migratedLight, logger: logger);
 
       final darkDto = await datasource.getPageConfigByThemeVariant(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      final migratedDark =
-          await _migrateAssetsInJson(resolvePath, darkDto.config);
-      await writeJsonToFile(resolvePath(assetPageDarkConfig), migratedDark,
-          logger: logger);
+      final migratedDark = await _migrateAssetsInJson(resolvePath, darkDto.config);
+      await writeJsonToFile(resolvePath(assetPageDarkConfig), migratedDark, logger: logger);
     } else {
       final variant = variants.first;
       final dto = await datasource.getPageConfigByThemeVariant(
@@ -175,10 +154,8 @@ class ThemeConfigProcessor {
         variant: variant,
       );
       final migrated = await _migrateAssetsInJson(resolvePath, dto.config);
-      await writeJsonToFile(resolvePath(assetPageLightConfig), migrated,
-          logger: logger);
-      await writeJsonToFile(resolvePath(assetPageDarkConfig), migrated,
-          logger: logger);
+      await writeJsonToFile(resolvePath(assetPageLightConfig), migrated, logger: logger);
+      await writeJsonToFile(resolvePath(assetPageDarkConfig), migrated, logger: logger);
     }
   }
 
@@ -194,20 +171,16 @@ class ThemeConfigProcessor {
         themeId: themeId,
         variant: 'light',
       );
-      final migratedLight =
-          await _migrateAssetsInJson(resolvePath, lightDto.config);
-      await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migratedLight,
-          logger: logger);
+      final migratedLight = await _migrateAssetsInJson(resolvePath, lightDto.config);
+      await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migratedLight, logger: logger);
 
       final darkDto = await datasource.getWidgetConfigByThemeVariant(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      final migratedDark =
-          await _migrateAssetsInJson(resolvePath, darkDto.config);
-      await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migratedDark,
-          logger: logger);
+      final migratedDark = await _migrateAssetsInJson(resolvePath, darkDto.config);
+      await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migratedDark, logger: logger);
     } else {
       final variant = variants.first;
       final dto = await datasource.getWidgetConfigByThemeVariant(
@@ -216,10 +189,8 @@ class ThemeConfigProcessor {
         variant: variant,
       );
       final migrated = await _migrateAssetsInJson(resolvePath, dto.config);
-      await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migrated,
-          logger: logger);
-      await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migrated,
-          logger: logger);
+      await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migrated, logger: logger);
+      await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migrated, logger: logger);
     }
   }
 
@@ -229,9 +200,7 @@ class ThemeConfigProcessor {
   ) async {
     Future<Uint8List?> fetchBytesAdapter(String url) async {
       final List<int>? bytes = await httpClient.getBytes(url);
-      return bytes is Uint8List
-          ? bytes
-          : (bytes != null ? Uint8List.fromList(bytes) : null);
+      return bytes is Uint8List ? bytes : (bytes != null ? Uint8List.fromList(bytes) : null);
     }
 
     final migrator = JsonAssetMigrator(

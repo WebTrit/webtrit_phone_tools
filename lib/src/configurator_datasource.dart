@@ -36,8 +36,7 @@ class _EphemeralStorage implements LocalStorage {
   final Map<String, String> _values = {};
 
   @override
-  Future<void> setString(String key, String value) async =>
-      _values[key] = value;
+  Future<void> setString(String key, String value) async => _values[key] = value;
 
   @override
   String? getString(String key) => _values[key];

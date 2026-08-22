@@ -26,11 +26,53 @@ jobs:
   semantic-pull-request:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
 
+  # The package depends on its sibling repositories by path - `data` from the
+  # configurator, `webtrit_appearance_theme` from the phone - exactly as they
+  # lie side by side on a workstation. The job therefore reproduces that
+  # layout instead of pretending the package is self-contained. The
+  # configurator is a private repository: its checkout authenticates with a
+  # read-only deploy key stored as the CONFIGURATOR_DEPLOY_KEY secret.
   build:
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/dart_package.yml@v1
-    with:
-      format_line_length: 120
-      min_coverage: 0
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webtrit_phone_tools
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@v4
+        with:
+          path: webtrit_phone_tools
+
+      - name: 📚 Checkout sibling webtrit_phone
+        uses: actions/checkout@v4
+        with:
+          repository: WebTrit/webtrit_phone
+          ref: develop
+          path: webtrit_phone
+
+      - name: 📚 Checkout sibling webtrit_phone_configurator
+        uses: actions/checkout@v4
+        with:
+          repository: WebTrit/webtrit_phone_configurator
+          path: webtrit_phone_configurator
+          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: 📦 Install Dependencies
+        run: dart pub get
+
+      - name: ✨ Check Formatting
+        run: dart format --line-length 120 --set-exit-if-changed bin lib test
+
+      - name: 🕵️ Analyze
+        run: dart analyze --fatal-warnings
+
+      - name: 🧪 Run Tests
+        run: dart test
 
   spell-check:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@v1
@@ -43,9 +85,28 @@ jobs:
 
   verify-version:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webtrit_phone_tools
     steps:
       - name: 📚 Git Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          path: webtrit_phone_tools
+
+      - name: 📚 Checkout sibling webtrit_phone
+        uses: actions/checkout@v4
+        with:
+          repository: WebTrit/webtrit_phone
+          ref: develop
+          path: webtrit_phone
+
+      - name: 📚 Checkout sibling webtrit_phone_configurator
+        uses: actions/checkout@v4
+        with:
+          repository: WebTrit/webtrit_phone_configurator
+          path: webtrit_phone_configurator
+          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1
@@ -53,8 +114,7 @@ jobs:
           sdk: "stable"
 
       - name: 📦 Install Dependencies
-        run: |
-          dart pub get
+        run: dart pub get
 
       - name: 🔎 Verify version
         run: dart run test --run-skipped -t version-verify

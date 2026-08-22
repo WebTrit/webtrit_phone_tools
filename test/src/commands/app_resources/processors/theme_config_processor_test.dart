@@ -34,8 +34,7 @@ void main() {
   late Directory checkout;
   late ThemeConfigProcessor processor;
 
-  String resolvePath(String relativePath) =>
-      p.join(checkout.path, relativePath);
+  String resolvePath(String relativePath) => p.join(checkout.path, relativePath);
 
   setUp(() async {
     backend = await FakeConfiguratorBackend.start();
@@ -60,8 +59,7 @@ void main() {
 
     processor = ThemeConfigProcessor(
       httpClient: HttpClient(baseUrl, logger),
-      datasource:
-          createConfiguratorDatasource(baseUrl: baseUrl, logPrint: (_) {}),
+      datasource: createConfiguratorDatasource(baseUrl: baseUrl, logPrint: (_) {}),
       logger: logger,
       fontAssetProcessor: fontAssetProcessor,
     );
@@ -156,8 +154,7 @@ void main() {
     expect(appConfig['aFieldTheAppDoesNotModelYet'], {'kept': true});
   });
 
-  test('a light-only theme fills both the light and the dark theme files',
-      () async {
+  test('a light-only theme fills both the light and the dark theme files', () async {
     serveFeatureAccess({
       'supported': [
         {'type': 'themeMode', 'mode': 'light'},
@@ -180,8 +177,7 @@ void main() {
     expect(jsonDecode(light), {'primary': '#FF0000'});
     expect(jsonDecode(dark), jsonDecode(light));
     expect(
-      backend.requestFor(
-          '/v1/applications/$_applicationId/themes/$_themeId/color-schemes/dark'),
+      backend.requestFor('/v1/applications/$_applicationId/themes/$_themeId/color-schemes/dark'),
       isNull,
     );
   });
@@ -202,17 +198,13 @@ void main() {
     );
 
     expect(
-      jsonDecode(
-          File(resolvePath('assets/themes/original.page.light.config.json'))
-              .readAsStringSync()),
+      jsonDecode(File(resolvePath('assets/themes/original.page.light.config.json')).readAsStringSync()),
       {
         'main': {'label': 'light'},
       },
     );
     expect(
-      jsonDecode(
-          File(resolvePath('assets/themes/original.page.dark.config.json'))
-              .readAsStringSync()),
+      jsonDecode(File(resolvePath('assets/themes/original.page.dark.config.json')).readAsStringSync()),
       {
         'main': {'label': 'dark'},
       },
@@ -237,8 +229,7 @@ void main() {
       resolvePath: resolvePath,
     );
 
-    final logo = (readAppConfig()['loginConfig']
-        as Map<String, dynamic>)['logoUrl'] as String;
+    final logo = (readAppConfig()['loginConfig'] as Map<String, dynamic>)['logoUrl'] as String;
     expect(logo, startsWith('asset://assets/images/'));
     final onDisk = File(resolvePath(logo.replaceFirst('asset://', '')));
     expect(onDisk.existsSync(), isTrue);
@@ -263,11 +254,9 @@ void main() {
     );
 
     final embeds = jsonDecode(
-      File(resolvePath('assets/themes/app.embedded.config.json'))
-          .readAsStringSync(),
+      File(resolvePath('assets/themes/app.embedded.config.json')).readAsStringSync(),
     ) as List<dynamic>;
     expect(embeds, hasLength(1));
-    expect((embeds.single as Map<String, dynamic>)['uri'],
-        'https://brand.example/help');
+    expect((embeds.single as Map<String, dynamic>)['uri'], 'https://brand.example/help');
   });
 }
