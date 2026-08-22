@@ -16,11 +16,11 @@ class ExternalGeneratorRunner {
   Future<void> runGenerators({
     required String workingDirectoryPath,
     required ApplicationDTO application,
-    required SplashAssetDto splashInfo,
-    required LaunchAssetsEnvelopeDto launchIcons,
+    required SplashAssetDto? splashInfo,
+    required LaunchAssetsEnvelopeDto? launchIcons,
   }) async {
-    final launchBgColor = launchIcons.entity.source?.backgroundColorHex;
-    final splashBgColor = splashInfo.source?.backgroundColorHex;
+    final launchBgColor = launchIcons?.entity.source?.backgroundColorHex;
+    final splashBgColor = splashInfo?.source?.backgroundColorHex;
 
     if (launchBgColor != null) {
       logger.info('- Running: generate-launcher-icons-config');
@@ -35,7 +35,7 @@ class ExternalGeneratorRunner {
 
     if (splashBgColor != null) {
       logger.info('- Running: generate-native-splash-config');
-      final hasAndroid12Splash = splashInfo.urls?['android12SplashUrl'] != null;
+      final hasAndroid12Splash = splashInfo?.urls?['android12SplashUrl'] != null;
       final env = AppConfigFactory.createNativeSplashEnv(
         splashBgColor,
         hasAndroid12Splash: hasAndroid12Splash,
