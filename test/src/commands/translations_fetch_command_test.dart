@@ -116,6 +116,33 @@ void main() {
     expect(File('${tempDir.path}/lib/l10n/arb/app_en.arb').existsSync(), isFalse);
   });
 
+  test('nested or foreign archive entries are skipped, honest ones written', () async {
+    when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
+      (_) async => _archiveOf({
+        'en.arb': jsonEncode({'@@locale': 'en', 'greeting': 'Hello'}),
+        '../escape.arb': jsonEncode({'@@locale': 'xx'}),
+        'notes/readme.txt': 'not a language file',
+      }),
+    );
+
+    final result = await commandRunner.run([
+      'configurator-translations-fetch',
+      '--token',
+      'build-token',
+      tempDir.path,
+    ]);
+
+    expect(result, ExitCode.success.code);
+    expect(File('${tempDir.path}/lib/l10n/arb/app_en.arb').existsSync(), isTrue);
+    // Nothing escaped the output directory and nothing foreign was written.
+    expect(File('${tempDir.path}/escape.arb').existsSync(), isFalse);
+    expect(File('${tempDir.path}/lib/escape.arb').existsSync(), isFalse);
+    expect(
+      Directory('${tempDir.path}/lib/l10n/arb').listSync().map((entry) => entry.path.split('/').last).toList(),
+      ['app_en.arb'],
+    );
+  });
+
   test('refuses an empty catalog instead of quietly writing nothing', () async {
     when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers')))
         .thenAnswer((_) async => Archive());
