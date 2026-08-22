@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:data/dto/application/application.dart';
 import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:archive/archive.dart';
@@ -16,10 +16,6 @@ class HttpClient {
   final String baseUrl;
   final Logger logger;
 
-  String _applicationUrl(String applicationId) {
-    return '$baseUrl/applications/$applicationId';
-  }
-
   String _translationsUrl(String applicationId) {
     return '$baseUrl/translations/compose-arb/$applicationId';
   }
@@ -28,13 +24,34 @@ class HttpClient {
     return '$baseUrl/translations/catalog/arb';
   }
 
-  Future<ApplicationDTO> getApplication(String applicationId) async {
-    final url = _applicationUrl(applicationId);
-    return _fetchData<ApplicationDTO>(
-      url,
-      (response) => ApplicationDTO.fromJsonString(response.body),
+  /// A JSON object from a path under [baseUrl]. The typed reads of the
+  /// configurator API are built on this, so they inherit the retries.
+  Future<Map<String, dynamic>> getJsonMap(String path, {Map<String, String>? headers}) async {
+    final decoded = await _fetchData<Object?>(
+      _url(path),
+      (response) => jsonDecode(utf8.decode(response.bodyBytes)),
+      headers: headers,
     );
+    if (decoded is! Map) {
+      throw Exception('Expected a JSON object from $path');
+    }
+    return {for (final entry in decoded.entries) '${entry.key}': entry.value};
   }
+
+  /// A JSON array from a path under [baseUrl].
+  Future<List<dynamic>> getJsonList(String path, {Map<String, String>? headers}) async {
+    final decoded = await _fetchData<Object?>(
+      _url(path),
+      (response) => jsonDecode(utf8.decode(response.bodyBytes)),
+      headers: headers,
+    );
+    if (decoded is! List) {
+      throw Exception('Expected a JSON array from $path');
+    }
+    return decoded;
+  }
+
+  String _url(String path) => path.startsWith('http') ? path : '$baseUrl$path';
 
   Future<Archive> getTranslationFiles(String applicationId) async {
     final url = _translationsUrl(applicationId);

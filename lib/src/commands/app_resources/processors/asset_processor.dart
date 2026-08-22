@@ -3,8 +3,7 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/datasource/datasource.dart';
-import 'package:data/dto/dto.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
@@ -12,23 +11,23 @@ import 'package:webtrit_phone_tools/src/utils/utils.dart';
 class AssetProcessor {
   const AssetProcessor({
     required this.httpClient,
-    required this.datasource,
+    required this.client,
     required this.logger,
   });
 
   final HttpClient httpClient;
-  final ConfiguratorBackandDatasource datasource;
+  final ConfiguratorClient client;
   final Logger logger;
 
-  Future<SplashAssetDto> processSplashAssets({
+  Future<SplashAssets> processSplashAssets({
     required String applicationId,
     required String themeId,
     required String Function(String) resolvePath,
   }) async {
-    final splash = await datasource.getSplashAsset(applicationId: applicationId, themeId: themeId);
+    final splash = await client.getSplashAsset(applicationId: applicationId, themeId: themeId);
     await _downloadAsset(splash.splashUrl, assetSplashIconPath, 'splash image', resolvePath);
 
-    final android12Url = splash.urls?['android12SplashUrl'];
+    final android12Url = splash.android12SplashUrl;
     if (android12Url != null && android12Url.isNotEmpty) {
       await _downloadAsset(android12Url, assetAndroid12SplashIconPath, 'android 12 splash image', resolvePath);
     }
@@ -36,12 +35,12 @@ class AssetProcessor {
     return splash;
   }
 
-  Future<LaunchAssetsEnvelopeDto> processLaunchIcons({
+  Future<LaunchIcons> processLaunchIcons({
     required String applicationId,
     required String themeId,
     required String Function(String) resolvePath,
   }) async {
-    final icons = await datasource.getLaunchAssetsByTheme(applicationId: applicationId, themeId: themeId);
+    final icons = await client.getLaunchAssets(applicationId: applicationId, themeId: themeId);
 
     await Future.wait([
       _downloadAsset(icons.androidLegacyUrl, assetLauncherAndroidIconPath, 'android legacy icon', resolvePath),

@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/dto/dto.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
@@ -16,7 +16,7 @@ class LocalConfigProcessor {
   final Logger logger;
 
   Future<void> writeBuildCache({
-    required ApplicationDTO application,
+    required ApplicationInfo application,
     required String projectKeystorePath,
     required String? cachePathArg,
     required String Function(String) resolvePath,
@@ -28,7 +28,7 @@ class LocalConfigProcessor {
   }
 
   Future<void> writeEnvironmentConfig({
-    required ApplicationDTO application,
+    required ApplicationInfo application,
     required String projectKeystorePath,
     required String Function(String) resolvePath,
   }) async {

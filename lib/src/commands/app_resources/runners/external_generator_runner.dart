@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/dto/dto.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 import '../utils/app_config_factory.dart';
 
@@ -15,12 +15,12 @@ class ExternalGeneratorRunner {
 
   Future<void> runGenerators({
     required String workingDirectoryPath,
-    required ApplicationDTO application,
-    required SplashAssetDto? splashInfo,
-    required LaunchAssetsEnvelopeDto? launchIcons,
+    required ApplicationInfo application,
+    required SplashAssets? splashInfo,
+    required LaunchIcons? launchIcons,
   }) async {
-    final launchBgColor = launchIcons?.entity.source?.backgroundColorHex;
-    final splashBgColor = splashInfo?.source?.backgroundColorHex;
+    final launchBgColor = launchIcons?.backgroundColorHex;
+    final splashBgColor = splashInfo?.backgroundColorHex;
 
     if (launchBgColor != null) {
       logger.info('- Running: generate-launcher-icons-config');
@@ -35,7 +35,7 @@ class ExternalGeneratorRunner {
 
     if (splashBgColor != null) {
       logger.info('- Running: generate-native-splash-config');
-      final hasAndroid12Splash = splashInfo?.urls?['android12SplashUrl'] != null;
+      final hasAndroid12Splash = splashInfo?.android12SplashUrl != null;
       final env = AppConfigFactory.createNativeSplashEnv(
         splashBgColor,
         hasAndroid12Splash: hasAndroid12Splash,

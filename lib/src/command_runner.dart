@@ -1,14 +1,13 @@
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
-import 'package:data/datasource/datasource.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:pub_updater/pub_updater.dart';
 
 import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/version.dart';
 
-import 'configurator_datasource.dart';
+import 'configurator/configurator.dart';
 import 'constants.dart';
 import 'utils/utils.dart';
 
@@ -27,13 +26,13 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   /// {@macro webtrit_phone_tools_command_runner}
   WebtritPhoneToolsCommandRunner({
     Logger? logger,
-    ConfiguratorBackandDatasource? datasource,
+    ConfiguratorClient? client,
     HttpClient? httpClient,
     KeystoreReadmeUpdater? keystoreReadmeUpdater,
     PubUpdater? pubUpdater,
   })  : _logger = logger ?? Logger(),
         _httpClient = httpClient ?? HttpClient(configuratorApiUrl, Logger()),
-        _datasource = datasource ?? createConfiguratorDatasource(),
+        _client = client ?? ConfiguratorClient(transport: httpClient ?? HttpClient(configuratorApiUrl, Logger())),
         _keystoreReadmeUpdater = keystoreReadmeUpdater ?? KeystoreReadmeUpdater(Logger()),
         _pubUpdater = pubUpdater ?? PubUpdater(),
         super(executableName, description) {
@@ -54,13 +53,13 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(AppResourcesGetCommand(
       logger: _logger,
       httpClient: _httpClient,
-      datasource: _datasource,
+      client: _client,
     ));
     addCommand(AppConfigureCommand(logger: _logger));
     addCommand(AppSetupCommand(logger: _logger));
     addCommand(KeystoreInitCommand(
       logger: _logger,
-      datasource: _datasource,
+      client: _client,
       keystoreReadmeUpdater: _keystoreReadmeUpdater,
     ));
     addCommand(KeystoreGenerateCommand(logger: _logger));
@@ -80,7 +79,7 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
   void printUsage() => _logger.info(usage);
 
   final Logger _logger;
-  final ConfiguratorBackandDatasource _datasource;
+  final ConfiguratorClient _client;
   final HttpClient _httpClient;
 
   final KeystoreReadmeUpdater _keystoreReadmeUpdater;
