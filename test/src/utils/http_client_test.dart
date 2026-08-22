@@ -5,6 +5,7 @@ import 'package:mason_logger/mason_logger.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 import 'package:webtrit_phone_tools/src/utils/http_client.dart';
 
 import '../support/fake_configurator_backend.dart';
@@ -51,7 +52,7 @@ void main() {
       'theme': 'theme-1',
     });
 
-    final application = await httpClient.getApplication('app-1');
+    final application = await ConfiguratorClient(transport: httpClient).getApplication('app-1');
 
     expect(backend.requestFor('/v1/applications/app-1'), isNotNull);
     expect(application.id, 'app-1');
@@ -96,7 +97,8 @@ void main() {
     addTearDown(other.stop);
     other.serveJson('/applications/app-1', {'id': 'app-1'});
 
-    final application = await HttpClient(other.baseUrl, logger).getApplication('app-1');
+    final application =
+        await ConfiguratorClient(transport: HttpClient(other.baseUrl, logger)).getApplication('app-1');
 
     expect(application.id, 'app-1');
     expect(other.requestFor('/applications/app-1'), isNotNull);

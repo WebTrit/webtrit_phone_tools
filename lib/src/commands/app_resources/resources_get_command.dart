@@ -5,7 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:data/datasource/datasource.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
@@ -26,10 +26,10 @@ class AppResourcesGetCommand extends Command<int> {
   AppResourcesGetCommand({
     required Logger logger,
     required HttpClient httpClient,
-    required ConfiguratorBackandDatasource datasource,
+    required ConfiguratorClient client,
   })  : _logger = logger,
         _httpClient = httpClient,
-        _datasource = datasource {
+        _client = client {
     argParser
       ..addOption(
         _argApplicationId,
@@ -68,22 +68,20 @@ class AppResourcesGetCommand extends Command<int> {
 
   final Logger _logger;
   final HttpClient _httpClient;
-  final ConfiguratorBackandDatasource _datasource;
+  final ConfiguratorClient _client;
 
   @override
   Future<int> run() async {
     try {
       final context = _buildContext();
 
-      _datasource.addInterceptor(HeadersInterceptor(context.authHeader));
+      // The token the run was given travels with every read from here on.
+      final client = _client.withHeaders(context.authHeader);
 
       final (application, theme) = await ApplicationDataFetcher(
-        datasource: _datasource,
+        client: client,
         logger: _logger,
-      ).fetch(
-        applicationId: context.applicationId,
-        authHeader: context.authHeader,
-      );
+      ).fetch(applicationId: context.applicationId);
 
       await CertificateProcessor(logger: _logger).process(
         projectKeystorePath: context.projectKeystorePath,
@@ -107,12 +105,6 @@ class AppResourcesGetCommand extends Command<int> {
         resolvePath: context.resolvePath,
       );
 
-      final assetProcessor = AssetProcessor(
-        httpClient: _httpClient,
-        datasource: _datasource,
-        logger: _logger,
-      );
-
       // What the app IS comes first: its configuration, its embeds, its theme
       // and its fonts. What the app LOOKS like on the way in - the splash and
       // the launcher icons - comes after, and cannot take the rest with it.
@@ -120,12 +112,18 @@ class AppResourcesGetCommand extends Command<int> {
       // left a brand with none of its settings at all.
       await ThemeConfigProcessor(
         httpClient: _httpClient,
-        datasource: _datasource,
+        client: client,
         logger: _logger,
       ).process(
         applicationId: context.applicationId,
         themeId: theme.id!,
         resolvePath: context.resolvePath,
+      );
+
+      final assetProcessor = AssetProcessor(
+        httpClient: _httpClient,
+        client: client,
+        logger: _logger,
       );
 
       final splashInfo = await _imagesOrWarning(

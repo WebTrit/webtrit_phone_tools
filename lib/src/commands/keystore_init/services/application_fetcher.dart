@@ -1,25 +1,18 @@
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/datasource/configurator_backend/configurator_bakcend.dart';
-import 'package:data/dto/application/application.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 class ApplicationFetcher {
   const ApplicationFetcher({
-    required this.datasource,
+    required this.client,
     required this.logger,
   });
 
-  final ConfiguratorBackandDatasource datasource;
+  final ConfiguratorClient client;
   final Logger logger;
 
-  Future<ApplicationDTO> fetch({
-    required String applicationId,
-    required Map<String, String> authHeader,
-  }) async {
+  Future<ApplicationInfo> fetch({required String applicationId}) async {
     logger.info('Fetching application: $applicationId');
-    return datasource.getApplication(
-      applicationId: applicationId,
-      headers: authHeader,
-    );
+    return client.getApplication(applicationId);
   }
 }

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/datasource/datasource.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 import 'package:webtrit_appearance_theme/webtrit_appearance_theme.dart';
 
 import '../constants/constants.dart';
@@ -14,13 +14,13 @@ import 'font_asset_processor.dart';
 class ThemeConfigProcessor {
   ThemeConfigProcessor({
     required this.httpClient,
-    required this.datasource,
+    required this.client,
     required this.logger,
     FontAssetProcessor? fontAssetProcessor,
   }) : fontAssetProcessor = fontAssetProcessor ?? FontAssetProcessor(logger: logger);
 
   final HttpClient httpClient;
-  final ConfiguratorBackandDatasource datasource;
+  final ConfiguratorClient client;
   final Logger logger;
 
   /// Downloads the font the theme selects. It reaches Google Fonts, so a run
@@ -36,20 +36,19 @@ class ThemeConfigProcessor {
     required String Function(String) resolvePath,
   }) async {
     // 1. Fetch feature-access + embeds and write app configs first
-    final featureDto = await datasource.getFeatureAccessByTheme(
+    final featureConfig = await client.getFeatureAccessConfig(
       applicationId: applicationId,
       themeId: themeId,
     );
-    final embedsDto = await datasource.getEmbeds(applicationId);
+    final embeds = await client.getEmbeds(applicationId);
 
-    final migratedFeatures = await _migrateAssetsInJson(resolvePath, featureDto.config);
+    final migratedFeatures = await _migrateAssetsInJson(resolvePath, featureConfig);
     await writeJsonToFile(resolvePath(assetAppConfigPath), migratedFeatures, logger: logger);
 
-    final embedsList = embedsDto.map((e) => e.toJson()).toList();
-    await writeJsonToFile(resolvePath(assetAppConfigEmbeddedsPath), embedsList, logger: logger);
+    await writeJsonToFile(resolvePath(assetAppConfigEmbeddedsPath), embeds, logger: logger);
 
     // 2. Resolve which theme variants to fetch based on themeMode
-    final appConfig = AppConfig.fromJson(featureDto.config);
+    final appConfig = AppConfig.fromJson(featureConfig);
     final themeMode = appConfig.supported.whereType<SupportedThemeMode>().firstOrNull;
     final variants = _resolveVariants(themeMode);
 
@@ -112,28 +111,28 @@ class ThemeConfigProcessor {
     List<String> variants,
   ) async {
     if (variants.contains('light') && variants.contains('dark')) {
-      final lightDto = await datasource.getColorSchemeByVariant(
+      final lightConfig = await client.getColorSchemeConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'light',
       );
-      await writeJsonToFile(resolvePath(assetLightColorSchemePath), lightDto.config, logger: logger);
+      await writeJsonToFile(resolvePath(assetLightColorSchemePath), lightConfig, logger: logger);
 
-      final darkDto = await datasource.getColorSchemeByVariant(
+      final darkConfig = await client.getColorSchemeConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), darkDto.config, logger: logger);
+      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), darkConfig, logger: logger);
     } else {
       final variant = variants.first;
-      final dto = await datasource.getColorSchemeByVariant(
+      final config = await client.getColorSchemeConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: variant,
       );
-      await writeJsonToFile(resolvePath(assetLightColorSchemePath), dto.config, logger: logger);
-      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), dto.config, logger: logger);
+      await writeJsonToFile(resolvePath(assetLightColorSchemePath), config, logger: logger);
+      await writeJsonToFile(resolvePath(assetDarkColorSchemePath), config, logger: logger);
     }
   }
 
@@ -144,29 +143,29 @@ class ThemeConfigProcessor {
     List<String> variants,
   ) async {
     if (variants.contains('light') && variants.contains('dark')) {
-      final lightDto = await datasource.getPageConfigByThemeVariant(
+      final lightConfig = await client.getPageConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'light',
       );
-      final migratedLight = await _migrateAssetsInJson(resolvePath, lightDto.config);
+      final migratedLight = await _migrateAssetsInJson(resolvePath, lightConfig);
       await writeJsonToFile(resolvePath(assetPageLightConfig), migratedLight, logger: logger);
 
-      final darkDto = await datasource.getPageConfigByThemeVariant(
+      final darkConfig = await client.getPageConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      final migratedDark = await _migrateAssetsInJson(resolvePath, darkDto.config);
+      final migratedDark = await _migrateAssetsInJson(resolvePath, darkConfig);
       await writeJsonToFile(resolvePath(assetPageDarkConfig), migratedDark, logger: logger);
     } else {
       final variant = variants.first;
-      final dto = await datasource.getPageConfigByThemeVariant(
+      final config = await client.getPageConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: variant,
       );
-      final migrated = await _migrateAssetsInJson(resolvePath, dto.config);
+      final migrated = await _migrateAssetsInJson(resolvePath, config);
       await writeJsonToFile(resolvePath(assetPageLightConfig), migrated, logger: logger);
       await writeJsonToFile(resolvePath(assetPageDarkConfig), migrated, logger: logger);
     }
@@ -179,29 +178,29 @@ class ThemeConfigProcessor {
     List<String> variants,
   ) async {
     if (variants.contains('light') && variants.contains('dark')) {
-      final lightDto = await datasource.getWidgetConfigByThemeVariant(
+      final lightConfig = await client.getWidgetConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'light',
       );
-      final migratedLight = await _migrateAssetsInJson(resolvePath, lightDto.config);
+      final migratedLight = await _migrateAssetsInJson(resolvePath, lightConfig);
       await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migratedLight, logger: logger);
 
-      final darkDto = await datasource.getWidgetConfigByThemeVariant(
+      final darkConfig = await client.getWidgetConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: 'dark',
       );
-      final migratedDark = await _migrateAssetsInJson(resolvePath, darkDto.config);
+      final migratedDark = await _migrateAssetsInJson(resolvePath, darkConfig);
       await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migratedDark, logger: logger);
     } else {
       final variant = variants.first;
-      final dto = await datasource.getWidgetConfigByThemeVariant(
+      final config = await client.getWidgetConfig(
         applicationId: applicationId,
         themeId: themeId,
         variant: variant,
       );
-      final migrated = await _migrateAssetsInJson(resolvePath, dto.config);
+      final migrated = await _migrateAssetsInJson(resolvePath, config);
       await writeJsonToFile(resolvePath(assetWidgetsLightConfig), migrated, logger: logger);
       await writeJsonToFile(resolvePath(assetWidgetsDarkConfig), migrated, logger: logger);
     }

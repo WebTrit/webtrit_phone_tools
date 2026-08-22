@@ -1,35 +1,26 @@
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:data/datasource/datasource.dart';
-import 'package:data/dto/dto.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 
 class ApplicationDataFetcher {
   const ApplicationDataFetcher({
-    required this.datasource,
+    required this.client,
     required this.logger,
   });
 
-  final ConfiguratorBackandDatasource datasource;
+  final ConfiguratorClient client;
   final Logger logger;
 
-  Future<(ApplicationDTO, ThemeDTO)> fetch({
+  Future<(ApplicationInfo, ThemeInfo)> fetch({
     required String applicationId,
-    required Map<String, String> authHeader,
   }) async {
-    final application = await datasource.getApplication(
-      applicationId: applicationId,
-      headers: authHeader,
-    );
+    final application = await client.getApplication(applicationId);
 
     if (application.theme == null) {
       throw Exception('Application $applicationId does not have a default theme.');
     }
 
-    final theme = await datasource.getTheme(
-      applicationId: applicationId,
-      themeId: application.theme!,
-      headers: authHeader,
-    );
+    final theme = await client.getTheme(applicationId, application.theme!);
 
     logger.info('- Fetched theme: ${theme.id}');
     return (application, theme);

@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'package:webtrit_phone_tools/src/commands/app_resources/resources_get_command.dart';
-import 'package:webtrit_phone_tools/src/configurator_datasource.dart';
+import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
 import 'package:webtrit_phone_tools/src/utils/http_client.dart';
 
 import '../../support/fake_configurator_backend.dart';
@@ -96,10 +96,7 @@ void main() {
       ..addCommand(AppResourcesGetCommand(
         logger: logger,
         httpClient: HttpClient(baseUrl, logger),
-        datasource: createConfiguratorDatasource(
-          baseUrl: baseUrl,
-          logPrint: (_) {},
-        ),
+        client: ConfiguratorClient(transport: HttpClient(baseUrl, logger)),
       ));
   });
 
