@@ -8,4 +8,5 @@ export 'keystore_commit/keystore_commit.dart';
 export 'keystore_generate/keystore_generate.dart';
 export 'keystore_init/keystore_init.dart';
 export 'keystore_verify/keystore_verify.dart';
+export 'translations_fetch/translations_fetch.dart';
 export 'update_command.dart';
