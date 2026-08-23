@@ -6,8 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import 'package:webtrit_phone_tools/src/commands/app_resources/resources_get_command.dart';
-import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
+import 'package:webtrit_phone_tools/src/commands/commands.dart';
 import 'package:webtrit_phone_tools/src/utils/http_client.dart';
 
 import '../../support/fake_configurator_backend.dart';
@@ -18,68 +17,55 @@ class _MockProgress extends Mock implements Progress {}
 
 const _applicationId = 'app-1';
 const _themeId = 'theme-1';
-const _token = 'build-token';
+const _token = 'a-signed-in-token';
+const _buildKey = 'wtc_a-minted-build-key';
 
-/// Everything the configuration half of a run asks for. The image half is left
-/// to each test, since that is what they are about.
-extension _TheConfiguration on FakeConfiguratorBackend {
-  void serveTheConfiguration() {
-    serveJson('/v1/applications/$_applicationId/feature-access/by-theme/$_themeId', {
-      'applicationId': _applicationId,
-      'themeId': _themeId,
-      'config': {
-        'supported': [
-          {'type': 'videoCall', 'enabled': true},
-        ],
-      },
-    });
-    serveJson('/v1/applications/$_applicationId/embeds', []);
-    for (final slice in ['color-schemes', 'page-configs', 'widget-configs']) {
-      serveJson('/v1/applications/$_applicationId/themes/$_themeId/$slice/light', {
-        // Page and widget answers name an id of their own; the colour one may.
-        'id': '${_themeId}_light',
-        'applicationId': _applicationId,
-        'themeId': _themeId,
-        'variant': 'light',
-        // The widget answer's reader parses these as dates, not as optionals.
-        'createdAt': '2026-08-22T00:00:00.000Z',
-        'updatedAt': '2026-08-22T00:00:00.000Z',
-        'config': slice == 'widget-configs'
-            ? {
-                'fonts': {'fontFamily': 'Montserrat'},
-              }
-            : <String, Object?>{},
-      });
-    }
-  }
-}
-
+/// Fetching what brands an app.
+///
+/// It used to take nine calls through the configurator's own client, which
+/// meant this command knew which theme to ask for, how a slice is shaped and
+/// where each file belongs. It now takes one, and what is left to hold are the
+/// promises that survive the change: the run says who it is and which era it
+/// writes for, the settings reach disk before anything that can refuse, and a
+/// refusal costs the brand its picture rather than its configuration.
 void main() {
   late FakeConfiguratorBackend backend;
   late Logger logger;
   late CommandRunner<int> commandRunner;
   late Directory checkout;
 
+  String bundlePath() => '/v1/build/applications/$_applicationId/bundle';
+
+  Map<String, Object?> bundle({List<Map<String, String>> splash = const []}) => {
+        'themeId': _themeId,
+        'application': {
+          'id': _applicationId,
+          'name': 'Brand One',
+          'androidPlatformId': 'com.brand.one',
+          'iosPlatformId': 'com.brand.one',
+          'androidVersion': {'buildName': '1.16.5', 'buildNumber': 3},
+          'iosVersion': {'buildName': '1.16.5', 'buildNumber': 3},
+          'environment': <String, Object?>{},
+        },
+        'files': {
+          'assets/themes/app.config.json': {
+            'supported': [
+              {'type': 'videoCall'},
+            ],
+          },
+          'assets/themes/app.embedded.config.json': <Object?>[],
+        },
+        'assets': <Object?>[],
+        'brandImages': {
+          'splash': {'backgroundColorHex': '#FFFFFF', 'files': splash},
+          'launcher': {'backgroundColorHex': null, 'files': <Object?>[]},
+        },
+        'font': null,
+        'translations': {'locales': <String>[]},
+      };
+
   setUp(() async {
     backend = await FakeConfiguratorBackend.start();
-    final baseUrl = '${backend.baseUrl}/v1';
-
-    // Enough of the backend for the run to get past fetching the application
-    // and its theme; every later call answers 404, which ends the run.
-    backend
-      ..serveJson('/v1/applications/$_applicationId', {
-        'id': _applicationId,
-        'name': 'Brand One',
-        'theme': _themeId,
-        // The build cache step refuses to write without both platforms' versions.
-        'androidVersion': {'buildName': '1.16.5', 'buildNumber': 3},
-        'iosVersion': {'buildName': '1.16.5', 'buildNumber': 3},
-      })
-      ..serveJson('/v1/applications/$_applicationId/themes/$_themeId', {
-        'id': _themeId,
-        'applicationId': _applicationId,
-        'title': 'Default',
-      });
 
     logger = _MockLogger();
     when(() => logger.info(any())).thenReturn(null);
@@ -95,8 +81,7 @@ void main() {
     commandRunner = CommandRunner<int>('test', 'test')
       ..addCommand(AppResourcesGetCommand(
         logger: logger,
-        httpClient: HttpClient(baseUrl, logger),
-        client: ConfiguratorClient(transport: HttpClient(baseUrl, logger)),
+        httpClient: HttpClient('${backend.baseUrl}/v1', logger),
       ));
   });
 
@@ -109,84 +94,85 @@ void main() {
     File(p.join(checkout.path, 'pubspec.yaml')).writeAsStringSync(content);
   }
 
-  Future<void> runResources() async {
+  Future<void> runResources({String credential = _token}) async {
     await commandRunner.run([
       'configurator-resources',
       '--applicationId',
       _applicationId,
       '--token',
-      _token,
+      credential,
       '--keystores-path',
       'keystores',
       checkout.path,
     ]);
   }
 
-  test('a run identifies itself with the token and the phone version', () async {
+  File appConfig() => File(p.join(checkout.path, 'assets', 'themes', 'app.config.json'));
+
+  test('a run says who it is and which era it writes for', () async {
     writePubspec('''
 name: webtrit_phone
 version: 0.0.0+0000000
 app_version: 1.16.5+3
 ''');
+    backend.serveJson(bundlePath(), bundle());
 
     await runResources();
 
-    final applicationRequest = backend.requestFor('/v1/applications/$_applicationId');
-    expect(applicationRequest, isNotNull);
-    expect(applicationRequest!.header('authorization'), 'Bearer $_token');
-    expect(applicationRequest.header('x-phone-version'), '1.16.5');
+    final request = backend.requestFor(bundlePath());
+    expect(request, isNotNull);
+    expect(request!.header('authorization'), 'Bearer $_token');
+    expect(request.header('x-phone-version'), '1.16.5');
   });
 
-  test('the theme is fetched with the same identification', () async {
+  test('a minted build key travels in its own header, not as a bearer', () async {
+    // The reason a machine can run this at all. A key presented as a bearer is
+    // not refused with an explanation - it is simply not recognised.
     writePubspec('''
 name: webtrit_phone
 app_version: 1.16.5+3
 ''');
+    backend.serveJson(bundlePath(), bundle());
 
-    await runResources();
+    await runResources(credential: _buildKey);
 
-    final themeRequest = backend.requestFor('/v1/applications/$_applicationId/themes/$_themeId');
-    expect(themeRequest, isNotNull);
-    expect(themeRequest!.header('authorization'), 'Bearer $_token');
-    expect(themeRequest.header('x-phone-version'), '1.16.5');
+    final request = backend.requestFor(bundlePath());
+    expect(request!.header('x-api-key'), _buildKey);
+    expect(request.header('authorization'), isNull);
   });
 
-  test('a checkout without a phone version sends the token alone', () async {
+  test('a checkout without a phone version sends the credential alone', () async {
     writePubspec('''
 name: webtrit_phone
 version: 0.0.0+0000000
 ''');
+    backend.serveJson(bundlePath(), bundle());
 
     await runResources();
 
-    final applicationRequest = backend.requestFor('/v1/applications/$_applicationId');
-    expect(applicationRequest, isNotNull);
-    expect(applicationRequest!.header('authorization'), 'Bearer $_token');
-    expect(applicationRequest.header('x-phone-version'), isNull);
+    final request = backend.requestFor(bundlePath());
+    expect(request!.header('authorization'), 'Bearer $_token');
+    expect(request.header('x-phone-version'), isNull);
   });
 
-  test('a refused launcher answer no longer costs the brand its settings', () async {
-    // The whole point of the ordering. `launch-assets` answers with something
-    // its reader cannot unwrap - which is exactly what production did - and the
-    // app configuration must still be on disk afterwards.
+  test('a refused picture costs the brand its picture, not its settings', () async {
     writePubspec('''
 name: webtrit_phone
 app_version: 1.16.5+3
 ''');
-    backend
-      ..serveTheConfiguration()
-      // No `entity` key - the shape that used to end the run on its first read.
-      ..serveJson('/v1/applications/$_applicationId/themes/$_themeId/launch-assets', {
-        'id': _themeId,
-        'applicationId': _applicationId,
-        'themeId': _themeId,
-      });
+    // A splash the bundle names and the storage will not hand over. Nothing
+    // serves that address, so it answers 404 - which is what production did.
+    backend.serveJson(
+      bundlePath(),
+      bundle(splash: [
+        {'path': 'tool/assets/native_splash/image.png', 'url': '${backend.baseUrl}/v1/files/gone.png'},
+      ]),
+    );
 
     await runResources();
 
-    final appConfig = File(p.join(checkout.path, 'assets', 'themes', 'app.config.json'));
-    expect(appConfig.existsSync(), isTrue, reason: 'the app configuration must survive a refused image answer');
-    expect(appConfig.readAsStringSync(), contains('videoCall'));
+    expect(appConfig().existsSync(), isTrue, reason: 'the configuration must survive a refused picture');
+    expect(appConfig().readAsStringSync(), contains('videoCall'));
   });
 
   test('the brand is told what it will get instead', () async {
@@ -194,39 +180,40 @@ app_version: 1.16.5+3
 name: webtrit_phone
 app_version: 1.16.5+3
 ''');
-    backend
-      ..serveTheConfiguration()
-      ..serveJson('/v1/applications/$_applicationId/themes/$_themeId/launch-assets', {
-        'id': _themeId,
-      });
+    backend.serveJson(bundlePath(), bundle());
 
     await runResources();
 
-    final said = verify(() => logger.err(captureAny())).captured.join('\n');
-    expect(said, contains('launcher icons'));
-    expect(said, contains('stock WebTrit icons'));
+    final said = [
+      ...verify(() => logger.warn(captureAny())).captured,
+      ...verify(() => logger.err(captureAny())).captured,
+    ].join('\n');
+    expect(said, contains('stock WebTrit'));
   });
 
-  test('the settings are asked for before the images', () async {
-    // Guarding the image steps is what keeps a refusal from being fatal; asking
-    // for the settings first is what keeps a refusal from mattering at all.
-    // Pinned separately, because a reordering would not fail the checks above.
+  test('the settings are on disk before anything that can refuse is fetched', () async {
+    // Guarding the picture steps is what keeps a refusal from being fatal;
+    // writing the settings first is what keeps it from mattering at all.
+    // Pinned on its own, because a reordering would pass every check above.
     writePubspec('''
 name: webtrit_phone
 app_version: 1.16.5+3
 ''');
-    backend.serveTheConfiguration();
+    var settingsWereOnDisk = false;
+    backend
+      ..serveJson(
+        bundlePath(),
+        bundle(splash: [
+          {'path': 'tool/assets/native_splash/image.png', 'url': '${backend.baseUrl}/v1/files/splash.png'},
+        ]),
+      )
+      ..serveWith('/v1/files/splash.png', (response) async {
+        settingsWereOnDisk = appConfig().existsSync();
+        response.statusCode = HttpStatus.notFound;
+      });
 
     await runResources();
 
-    final asked = backend.requests.map((request) => request.path).toList();
-    final featureAccess = asked.indexWhere((path) => path.contains('/feature-access/'));
-    final images = asked.indexWhere(
-      (path) => path.contains('/splash-asset') || path.contains('/launch-assets'),
-    );
-
-    expect(featureAccess, isNot(-1), reason: 'the settings were never asked for');
-    expect(images, isNot(-1), reason: 'the images were never asked for');
-    expect(featureAccess, lessThan(images));
+    expect(settingsWereOnDisk, isTrue, reason: 'the picture was fetched before the settings were written');
   });
 }

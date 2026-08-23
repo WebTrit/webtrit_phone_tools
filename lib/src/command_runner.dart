@@ -53,7 +53,6 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(AppResourcesGetCommand(
       logger: _logger,
       httpClient: _httpClient,
-      client: _client,
     ));
     addCommand(AppConfigureCommand(logger: _logger));
     addCommand(AppSetupCommand(logger: _logger));

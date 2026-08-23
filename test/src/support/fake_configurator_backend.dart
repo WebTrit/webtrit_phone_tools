@@ -51,6 +51,12 @@ class FakeConfiguratorBackend {
     };
   }
 
+  /// Answers [path] with whatever [handler] writes, so a test can observe the
+  /// world at the moment a request arrives rather than only afterwards.
+  void serveWith(String path, Future<void> Function(HttpResponse response) handler) {
+    _routes[path] = handler;
+  }
+
   /// Answers [path] with [body] verbatim.
   void serveBytes(String path, List<int> body) {
     _routes[path] = (response) async {

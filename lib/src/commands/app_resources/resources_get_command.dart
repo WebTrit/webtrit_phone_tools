@@ -5,10 +5,9 @@ import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
-
 import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
+import 'constants/constants.dart';
 import 'models/models.dart';
 import 'processors/processors.dart';
 import 'runners/external_generator_runner.dart';
@@ -26,10 +25,8 @@ class AppResourcesGetCommand extends Command<int> {
   AppResourcesGetCommand({
     required Logger logger,
     required HttpClient httpClient,
-    required ConfiguratorClient client,
   })  : _logger = logger,
-        _httpClient = httpClient,
-        _client = client {
+        _httpClient = httpClient {
     argParser
       ..addOption(
         _argApplicationId,
@@ -38,7 +35,7 @@ class AppResourcesGetCommand extends Command<int> {
       )
       ..addOption(
         _argToken,
-        help: 'JWT token for configurator API.',
+        help: 'A signed-in token, or an administrator-minted build key (wtc_...).',
         mandatory: true,
       )
       ..addOption(
@@ -68,20 +65,30 @@ class AppResourcesGetCommand extends Command<int> {
 
   final Logger _logger;
   final HttpClient _httpClient;
-  final ConfiguratorClient _client;
 
   @override
   Future<int> run() async {
     try {
       final context = _buildContext();
 
-      // The token the run was given travels with every read from here on.
-      final client = _client.withHeaders(context.authHeader);
+      // One request. The service chose the theme, resolved the appearances,
+      // pointed every picture reference at the file it will live in and named
+      // the path each document belongs to - so what follows is writing, not
+      // deciding.
+      final bundle = BuildBundle.fromJson(
+        await _httpClient.getBuildBundle(context.applicationId, headers: context.authHeader),
+      );
+      _logger.info('- Theme: ${bundle.themeId}');
 
-      final (application, theme) = await ApplicationDataFetcher(
-        client: client,
-        logger: _logger,
-      ).fetch(applicationId: context.applicationId);
+      final writer = BundleWriter(httpClient: _httpClient, logger: _logger);
+
+      // What the app IS comes first: its configuration and the pictures it
+      // points at. What it LOOKS like on the way in - the splash and the
+      // launcher icons - comes after, and cannot take the rest with it. It used
+      // to be the other way round, and a single refused image answer left a
+      // brand with none of its settings at all.
+      await writer.writeFiles(bundle.files, context.resolvePath);
+      await writer.downloadAssets(bundle.assets, context.resolvePath);
 
       await CertificateProcessor(logger: _logger).process(
         projectKeystorePath: context.projectKeystorePath,
@@ -99,62 +106,44 @@ class AppResourcesGetCommand extends Command<int> {
       final localConfigProcessor = LocalConfigProcessor(logger: _logger);
 
       await localConfigProcessor.writeBuildCache(
-        application: application,
+        application: bundle.application,
         projectKeystorePath: context.projectKeystorePath,
         cachePathArg: context.cachePathArg,
         resolvePath: context.resolvePath,
       );
 
-      // What the app IS comes first: its configuration, its embeds, its theme
-      // and its fonts. What the app LOOKS like on the way in - the splash and
-      // the launcher icons - comes after, and cannot take the rest with it.
-      // It used to be the other way round, and a single refused image answer
-      // left a brand with none of its settings at all.
-      await ThemeConfigProcessor(
-        httpClient: _httpClient,
-        client: client,
-        logger: _logger,
-      ).process(
-        applicationId: context.applicationId,
-        themeId: theme.id!,
-        resolvePath: context.resolvePath,
+      // The typeface the theme asks for. It reaches Google Fonts, so it is one
+      // more thing that can refuse without costing the brand its settings.
+      await _orWarning<void>(
+        'font',
+        'the app will be built with the stock typeface',
+        () => FontAssetProcessor(logger: _logger).process(
+          lightConfig: _widgetConfig(bundle, assetWidgetsLightConfig),
+          darkConfig: _widgetConfig(bundle, assetWidgetsDarkConfig),
+          resolvePath: context.resolvePath,
+        ),
       );
 
-      final assetProcessor = AssetProcessor(
-        httpClient: _httpClient,
-        client: client,
-        logger: _logger,
-      );
-
-      final splashInfo = await _imagesOrWarning(
+      await _orWarning<void>(
         'splash screen',
         'the app will be built with the stock WebTrit splash',
-        () => assetProcessor.processSplashAssets(
-          applicationId: context.applicationId,
-          themeId: theme.id!,
-          resolvePath: context.resolvePath,
-        ),
+        () => writer.downloadBrandImages(bundle.brandImages.splash, 'splash screen', context.resolvePath),
       );
 
-      final launchIcons = await _imagesOrWarning(
+      await _orWarning<void>(
         'launcher icons',
         'the app will be built with the stock WebTrit icons',
-        () => assetProcessor.processLaunchIcons(
-          applicationId: context.applicationId,
-          themeId: theme.id!,
-          resolvePath: context.resolvePath,
-        ),
+        () => writer.downloadBrandImages(bundle.brandImages.launcher, 'launcher icon', context.resolvePath),
       );
 
       await ExternalGeneratorRunner(logger: _logger).runGenerators(
         workingDirectoryPath: context.workingDirectoryPath,
-        application: application,
-        splashInfo: splashInfo,
-        launchIcons: launchIcons,
+        application: bundle.application,
+        brandImages: bundle.brandImages,
       );
 
       await localConfigProcessor.writeEnvironmentConfig(
-        application: application,
+        application: bundle.application,
         projectKeystorePath: context.projectKeystorePath,
         resolvePath: context.resolvePath,
       );
@@ -168,10 +157,18 @@ class AppResourcesGetCommand extends Command<int> {
     }
   }
 
-  /// Runs one image step. A refusal here is said out loud and named for what
-  /// the brand loses, and the run carries on: an app with someone else's splash
-  /// is recoverable and visible, an app with none of its own settings is not.
-  Future<T?> _imagesOrWarning<T>(
+  /// The widget appearance the bundle carries, as a plain map. Absent means the
+  /// service sent no such file, which the font step reads as "nothing to do".
+  Map<String, dynamic> _widgetConfig(BuildBundle bundle, String path) {
+    final document = bundle.files[path];
+    return document is Map<String, dynamic> ? document : const {};
+  }
+
+  /// Runs one step that a brand can live without. A refusal is said out loud
+  /// and named for what the brand loses, and the run carries on: an app with
+  /// someone else's splash is recoverable and visible, an app with none of its
+  /// own settings is not.
+  Future<T?> _orWarning<T>(
     String what,
     String consequence,
     Future<T> Function() step,
@@ -230,7 +227,7 @@ class AppResourcesGetCommand extends Command<int> {
       applicationId: applicationId,
       projectKeystorePath: projectKeystoreDir.path,
       authHeader: {
-        'Authorization': 'Bearer $token',
+        ...credentialHeader(token),
         // Which era is writing: see readPhoneVersion.
         if (readPhoneVersion(workingDirectoryPath) case final version?) 'X-Phone-Version': version,
       },

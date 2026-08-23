@@ -4,8 +4,9 @@ import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
 
-import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
+import '../models/build_bundle.dart';
 
+import '../constants/constants.dart';
 import '../utils/app_config_factory.dart';
 
 class ExternalGeneratorRunner {
@@ -15,12 +16,11 @@ class ExternalGeneratorRunner {
 
   Future<void> runGenerators({
     required String workingDirectoryPath,
-    required ApplicationInfo application,
-    required SplashAssets? splashInfo,
-    required LaunchIcons? launchIcons,
+    required BundleApplication application,
+    required BrandImages brandImages,
   }) async {
-    final launchBgColor = launchIcons?.backgroundColorHex;
-    final splashBgColor = splashInfo?.backgroundColorHex;
+    final launchBgColor = brandImages.launcher.backgroundColorHex;
+    final splashBgColor = brandImages.splash.backgroundColorHex;
 
     if (launchBgColor != null) {
       logger.info('- Running: generate-launcher-icons-config');
@@ -35,7 +35,10 @@ class ExternalGeneratorRunner {
 
     if (splashBgColor != null) {
       logger.info('- Running: generate-native-splash-config');
-      final hasAndroid12Splash = splashInfo?.android12SplashUrl != null;
+      // Asked of the file the bundle named rather than of an address: what
+      // decides whether a generator writes the Android 12 splash is whether
+      // there is an image for it, and that is what a path says.
+      final hasAndroid12Splash = brandImages.splash.writesTo(assetAndroid12SplashIconPath);
       final env = AppConfigFactory.createNativeSplashEnv(
         splashBgColor,
         hasAndroid12Splash: hasAndroid12Splash,
