@@ -26,12 +26,10 @@ jobs:
   semantic-pull-request:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
 
-  # The package depends on its sibling repositories by path - `data` from the
-  # configurator, `webtrit_appearance_theme` from the phone - exactly as they
-  # lie side by side on a workstation. The job therefore reproduces that
-  # layout instead of pretending the package is self-contained. The
-  # configurator is a private repository: its checkout authenticates with a
-  # read-only deploy key stored as the CONFIGURATOR_DEPLOY_KEY secret.
+  # One path dependency survives: `webtrit_appearance_theme`, which the theme
+  # step reads to decide light and dark. It lives in the phone repository,
+  # which is public, so the job simply lays it out beside this one - no
+  # credentials anywhere in the checks.
   build:
     runs-on: ubuntu-latest
     defaults:
@@ -49,14 +47,6 @@ jobs:
           repository: WebTrit/webtrit_phone
           ref: develop
           path: webtrit_phone
-
-      - name: 📚 Checkout sibling webtrit_phone_configurator
-        uses: actions/checkout@v4
-        with:
-          repository: WebTrit/webtrit_phone_configurator
-          ref: main
-          path: webtrit_phone_configurator
-          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1
@@ -101,14 +91,6 @@ jobs:
           repository: WebTrit/webtrit_phone
           ref: develop
           path: webtrit_phone
-
-      - name: 📚 Checkout sibling webtrit_phone_configurator
-        uses: actions/checkout@v4
-        with:
-          repository: WebTrit/webtrit_phone_configurator
-          ref: main
-          path: webtrit_phone_configurator
-          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1

@@ -29,9 +29,9 @@ class BuildVersion {
   const BuildVersion({this.buildName, this.buildNumber});
 
   factory BuildVersion.fromJson(Map<String, dynamic> json) => BuildVersion(
-    buildName: _string(json['buildName']),
-    buildNumber: _int(json['buildNumber']),
-  );
+        buildName: _string(json['buildName']),
+        buildNumber: _int(json['buildNumber']),
+      );
 
   final String? buildName;
   final int? buildNumber;
@@ -52,15 +52,15 @@ class ApplicationInfo {
   });
 
   factory ApplicationInfo.fromJson(Map<String, dynamic> json) => ApplicationInfo(
-    id: _string(json['id']),
-    name: _string(json['name']),
-    environment: json['environment'] is Map ? _jsonMap(json['environment']) : null,
-    iosPlatformId: _string(json['iosPlatformId']),
-    androidPlatformId: _string(json['androidPlatformId']),
-    androidVersion: json['androidVersion'] is Map ? BuildVersion.fromJson(_jsonMap(json['androidVersion'])) : null,
-    iosVersion: json['iosVersion'] is Map ? BuildVersion.fromJson(_jsonMap(json['iosVersion'])) : null,
-    theme: _string(json['theme']),
-  );
+        id: _string(json['id']),
+        name: _string(json['name']),
+        environment: json['environment'] is Map ? _jsonMap(json['environment']) : null,
+        iosPlatformId: _string(json['iosPlatformId']),
+        androidPlatformId: _string(json['androidPlatformId']),
+        androidVersion: json['androidVersion'] is Map ? BuildVersion.fromJson(_jsonMap(json['androidVersion'])) : null,
+        iosVersion: json['iosVersion'] is Map ? BuildVersion.fromJson(_jsonMap(json['iosVersion'])) : null,
+        theme: _string(json['theme']),
+      );
 
   final String? id;
   final String? name;
