@@ -16,7 +16,11 @@ const _directoryParameterName = '<directory>';
 class AppConfigureCommand extends Command<int> {
   AppConfigureCommand({
     required Logger logger,
-  }) : _logger = logger {
+    FlutterRunner? flutterRunner,
+    MakeRunner? makeRunner,
+  })  : _logger = logger,
+        _flutterRunner = flutterRunner,
+        _makeRunner = makeRunner {
     argParser
       ..addOption(
         _keystorePath,
@@ -49,6 +53,8 @@ class AppConfigureCommand extends Command<int> {
       );
 
   final Logger _logger;
+  final FlutterRunner? _flutterRunner;
+  final MakeRunner? _makeRunner;
 
   @override
   Future<int> run() async {
@@ -61,8 +67,11 @@ class AppConfigureCommand extends Command<int> {
         ..info('- Scripts working directory: ${context.workingDirectoryPath}')
         ..info('- Service account path: ${context.firebaseServiceAccountPath}');
 
-      final flutterRunner = FlutterRunner(logger: _logger);
-      final makeRunner = MakeRunner(logger: _logger);
+      // Taken as arguments so a test can watch this step without starting a
+      // build: what is worth holding here is which generators run and in what
+      // order, not what `make` does once it is running.
+      final flutterRunner = _flutterRunner ?? FlutterRunner(logger: _logger);
+      final makeRunner = _makeRunner ?? MakeRunner(logger: _logger);
 
       // Setup dependencies for the proper functioning of the configuration script
       await flutterRunner.setupDependencies(context.workingDirectoryPath);
