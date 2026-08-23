@@ -1,10 +1,10 @@
-import 'package:webtrit_phone_tools/src/configurator/configurator.dart';
+import '../models/build_bundle.dart';
 
 import '../constants/constants.dart';
 import 'package:webtrit_phone_tools/src/extension/extension.dart';
 
 class AppConfigFactory {
-  static Map<String, dynamic> createBuildCacheConfig(ApplicationInfo application, String keystorePath) {
+  static Map<String, dynamic> createBuildCacheConfig(BundleApplication application, String keystorePath) {
     if (application.androidVersion?.buildName == null ||
         application.androidVersion?.buildNumber == null ||
         application.iosVersion?.buildName == null ||
@@ -23,8 +23,8 @@ class AppConfigFactory {
     };
   }
 
-  static Map<String, dynamic> createDartDefineEnv(ApplicationInfo application, String keystorePath) {
-    final env = Map<String, dynamic>.from(application.environment ?? {});
+  static Map<String, dynamic> createDartDefineEnv(BundleApplication application, String keystorePath) {
+    final env = Map<String, dynamic>.from(application.environment);
     env['WEBTRIT_ANDROID_RELEASE_UPLOAD_KEYSTORE_PATH'] = keystorePath;
     return env;
   }
@@ -55,7 +55,7 @@ class AppConfigFactory {
     };
   }
 
-  static Map<String, String> createPackageConfigEnv(ApplicationInfo application) {
+  static Map<String, String> createPackageConfigEnv(BundleApplication application) {
     return {
       'ANDROID_APP_NAME': application.name ?? '',
       'PACKAGE_NAME': application.androidPlatformId ?? '',

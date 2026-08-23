@@ -88,6 +88,20 @@ class HttpClient {
     );
   }
 
+  /// One brand's whole build input, as JSON. The address of the route is the
+  /// service's business; what a caller supplies is which brand and how it is
+  /// entitled to ask.
+  Future<Map<String, dynamic>> getBuildBundle(
+    String applicationId, {
+    required Map<String, String> headers,
+  }) async {
+    return _fetchData<Map<String, dynamic>>(
+      '$baseUrl/build/applications/$applicationId/bundle',
+      (response) => jsonDecode(response.body) as Map<String, dynamic>,
+      headers: headers,
+    );
+  }
+
   Future<T> _fetchData<T>(
     String url,
     T Function(http.Response response) parseResponse, {
