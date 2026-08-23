@@ -35,23 +35,14 @@ jobs:
         with:
           path: webtrit_phone_tools
 
-      # Path dependencies expect the sibling repositories beside this one,
-      # the way they lie on a workstation. The configurator is private, so
-      # its checkout uses the read-only CONFIGURATOR_DEPLOY_KEY secret.
+      # The theme package the build reads lives in the phone repository, and
+      # is expected beside this one the way it lies on a workstation.
       - name: Checkout sibling webtrit_phone
         uses: actions/checkout@v3
         with:
           repository: WebTrit/webtrit_phone
           ref: develop
           path: webtrit_phone
-
-      - name: Checkout sibling webtrit_phone_configurator
-        uses: actions/checkout@v3
-        with:
-          repository: WebTrit/webtrit_phone_configurator
-          ref: main
-          path: webtrit_phone_configurator
-          ssh-key: ${{ secrets.CONFIGURATOR_DEPLOY_KEY }}
 
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1
