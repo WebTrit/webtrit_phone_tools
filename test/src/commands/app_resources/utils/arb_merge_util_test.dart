@@ -57,7 +57,7 @@ void main() {
       expect(result, {'foo': 'Foo'});
     });
 
-    test('merges nested @key metadata objects like any other entry', () {
+    test('takes the translation of a message but not its definition', () {
       final local = <String, dynamic>{
         'foo': 'Old Foo',
         '@foo': {'description': 'old description'},
@@ -70,7 +70,59 @@ void main() {
       final result = ArbMergeUtil.mergeArb(local, downloaded);
 
       expect(result['foo'], 'New Foo');
-      expect(result['@foo'], {'description': 'new description'});
+      expect(result['@foo'], {'description': 'old description'});
+    });
+
+    // The failure this rule exists for. The service keeps placeholders in a map
+    // and hands them back alphabetically; `gen-l10n` turns their order into the
+    // order of the generated method's arguments. Letting the download win
+    // rewrote a call signature - which is a compile error when the two types
+    // differ, and silently swapped arguments when they do not.
+    test('keeps the order the app declared its placeholders in', () {
+      final local = <String, dynamic>{
+        'details': '{description} (code: {code})',
+        '@details': {
+          'placeholders': {
+            'description': {'type': 'String'},
+            'code': {'type': 'int'},
+          },
+        },
+      };
+      final downloaded = <String, dynamic>{
+        'details': '{description} (kod: {code})',
+        '@details': {
+          'placeholders': {
+            'code': {'type': 'int'},
+            'description': {'type': 'String'},
+          },
+        },
+      };
+
+      final result = ArbMergeUtil.mergeArb(local, downloaded);
+
+      expect(result['details'], '{description} (kod: {code})');
+      final placeholders = (result['@details'] as Map<String, dynamic>)['placeholders'] as Map<String, dynamic>;
+      expect(placeholders.keys.toList(), ['description', 'code']);
+    });
+
+    test('takes the definition of a message the checkout has never seen', () {
+      final local = <String, dynamic>{'foo': 'Foo'};
+      final downloaded = <String, dynamic>{
+        'foo': 'Foo',
+        'bar': 'Bar',
+        '@bar': {'description': 'a message this checkout does not declare'},
+      };
+
+      final result = ArbMergeUtil.mergeArb(local, downloaded);
+
+      expect(result['@bar'], {'description': 'a message this checkout does not declare'});
+    });
+
+    test('a locale marker is not a message definition and still comes across', () {
+      final local = <String, dynamic>{'@@locale': 'en'};
+      final downloaded = <String, dynamic>{'@@locale': 'uk'};
+
+      expect(ArbMergeUtil.mergeArb(local, downloaded)['@@locale'], 'uk');
     });
   });
 }
