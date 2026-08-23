@@ -11,7 +11,5 @@ const apiKeyPrefix = 'wtc_';
 /// guessed at each call site - a request that presents a key as a bearer is not
 /// refused with an explanation, it is simply not recognised.
 Map<String, String> credentialHeader(String credential) {
-  return credential.startsWith(apiKeyPrefix)
-      ? {'X-Api-Key': credential}
-      : {'Authorization': 'Bearer $credential'};
+  return credential.startsWith(apiKeyPrefix) ? {'X-Api-Key': credential} : {'Authorization': 'Bearer $credential'};
 }
