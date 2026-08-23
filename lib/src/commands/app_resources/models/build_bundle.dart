@@ -33,9 +33,7 @@ class BuildBundle {
       brandImages: BrandImages.fromJson(
         (json['brandImages'] as Map?)?.cast<String, dynamic>() ?? const {},
       ),
-      font: (json['font'] as Map?) == null
-          ? null
-          : BundleFont.fromJson((json['font'] as Map).cast<String, dynamic>()),
+      font: (json['font'] as Map?) == null ? null : BundleFont.fromJson((json['font'] as Map).cast<String, dynamic>()),
       locales: (((json['translations'] as Map?)?['locales'] as List?) ?? const [])
           .whereType<String>()
           .toList(growable: false),
@@ -172,7 +170,8 @@ class BundleFont {
 
   factory BundleFont.fromJson(Map<String, dynamic> json) => BundleFont(
         family: json['family'] as String?,
-        weights: ((json['weights'] as List?) ?? const []).whereType<num>().map((w) => w.toInt()).toList(growable: false),
+        weights:
+            ((json['weights'] as List?) ?? const []).whereType<num>().map((w) => w.toInt()).toList(growable: false),
       );
 
   final String? family;
