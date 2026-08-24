@@ -7,6 +7,7 @@ import 'models/models.dart';
 import 'processors/processors.dart';
 
 const _bundleIdOptionName = 'bundleId';
+const _androidBundleIdOptionName = 'androidBundleId';
 const _appleTeamIDOptionName = 'appleTeamID';
 const _androidFingerprints = 'androidFingerprints';
 const _outputDirectoryName = 'output';
@@ -22,6 +23,11 @@ class AssetlinksGenerateCommand extends Command<int> {
       ..addOption(
         _bundleIdOptionName,
         help: 'Platform bundle ID.',
+        defaultsTo: '',
+      )
+      ..addOption(
+        _androidBundleIdOptionName,
+        help: 'Android package name, when it differs from the bundle ID.',
         defaultsTo: '',
       )
       ..addMultiOption(
@@ -85,7 +91,7 @@ class AssetlinksGenerateCommand extends Command<int> {
         appendWellKnown: context.appendWellKnown,
       );
 
-      final isGenerateGoogleAssetLinks = context.androidFingerprints.isNotEmpty;
+      final isGenerateGoogleAssetLinks = context.androidFingerprints.isNotEmpty && context.androidBundleId.isNotEmpty;
       final isGenerateAppleAssetLinks = context.teamId.isNotEmpty && context.bundleId.isNotEmpty;
 
       if (isGenerateAppleAssetLinks) {
@@ -101,7 +107,7 @@ class AssetlinksGenerateCommand extends Command<int> {
       if (isGenerateGoogleAssetLinks) {
         fileProcessor.writeGoogleAssetLinks(
           outputDirectoryPath: outputDirectoryPath,
-          bundleId: context.bundleId,
+          bundleId: context.androidBundleId,
           androidFingerprints: context.androidFingerprints,
         );
       } else {
@@ -120,12 +126,14 @@ class AssetlinksGenerateCommand extends Command<int> {
   AssetlinksGenerateContext _buildContext() {
     final commandArgResults = argResults!;
     final bundleId = commandArgResults[_bundleIdOptionName] as String;
+    final androidBundleId = commandArgResults[_androidBundleIdOptionName] as String;
     final androidFingerprints = commandArgResults[_androidFingerprints] as List<String>;
     final outputPath = commandArgResults[_outputDirectoryName] as String;
     final teamId = commandArgResults[_appleTeamIDOptionName] as String;
     final appendWellKnown = commandArgResults[_appendWellKnowDirectory] as bool;
 
-    final isGenerateGoogleAssetLinks = androidFingerprints.isNotEmpty;
+    final androidPackage = androidBundleId.isNotEmpty ? androidBundleId : bundleId;
+    final isGenerateGoogleAssetLinks = androidFingerprints.isNotEmpty && androidPackage.isNotEmpty;
     final isGenerateAppleAssetLinks = teamId.isNotEmpty && bundleId.isNotEmpty;
 
     if (!isGenerateGoogleAssetLinks && !isGenerateAppleAssetLinks) {
@@ -141,6 +149,7 @@ class AssetlinksGenerateCommand extends Command<int> {
 
     return AssetlinksGenerateContext(
       bundleId: bundleId,
+      androidBundleId: androidPackage,
       androidFingerprints: androidFingerprints,
       outputPath: outputPath,
       teamId: teamId,

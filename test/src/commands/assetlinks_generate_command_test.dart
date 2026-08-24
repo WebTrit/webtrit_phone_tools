@@ -17,6 +17,61 @@ void main() {
       ..addCommand(AssetlinksGenerateCommand(logger: logger));
   });
 
+  test('names the Android package in the Android file, not the Apple one', () async {
+    // Two brands in production carry different identifiers for the two stores,
+    // and the file Android verifies has to name the package that signed the app.
+    final outputDirectory = Directory.systemTemp.createTempSync();
+    final result = await commandRunner.run([
+      'assetlinks-generate',
+      '--bundleId',
+      'com.example.ios',
+      '--androidBundleId',
+      'com.example.android',
+      '--appleTeamID',
+      'TEAMID123',
+      '--androidFingerprints',
+      'ABC123',
+      '--output',
+      outputDirectory.path,
+    ]);
+
+    expect(result, equals(0));
+
+    final google = File(path.join(outputDirectory.path, 'assetlinks.json')).readAsStringSync();
+    expect(google, contains('com.example.android'));
+    expect(google, isNot(contains('com.example.ios')));
+
+    final apple = File(path.join(outputDirectory.path, 'apple-app-site-association.json')).readAsStringSync();
+    expect(apple, contains('com.example.ios'));
+  });
+
+  test('writes the Android file for a brand that has no Apple identifier', () async {
+    // Three brands in production have no iOS identifier at all. Having an
+    // Android keystore says nothing about whether they do.
+    final outputDirectory = Directory.systemTemp.createTempSync();
+    final result = await commandRunner.run([
+      'assetlinks-generate',
+      '--bundleId',
+      '',
+      '--androidBundleId',
+      'com.example.android',
+      '--appleTeamID',
+      'TEAMID123',
+      '--androidFingerprints',
+      'ABC123',
+      '--output',
+      outputDirectory.path,
+    ]);
+
+    expect(result, equals(0));
+    expect(File(path.join(outputDirectory.path, 'assetlinks.json')).existsSync(), isTrue);
+    expect(
+      File(path.join(outputDirectory.path, 'apple-app-site-association.json')).existsSync(),
+      isFalse,
+      reason: 'nothing to associate without an identifier Apple would verify',
+    );
+  });
+
   test('should generate both Apple and Google asset links', () async {
     final outputDirectory = Directory.systemTemp.createTempSync();
     final result = await commandRunner.run([
