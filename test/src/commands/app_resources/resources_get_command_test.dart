@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:archive/archive.dart';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
@@ -36,7 +39,7 @@ void main() {
 
   String bundlePath() => '/v1/build/applications/$_applicationId/bundle';
 
-  Map<String, Object?> bundle({List<Map<String, String>> splash = const []}) => {
+  Map<String, Object?> bundle({List<Map<String, String>> splash = const [], List<String> locales = const []}) => {
         'themeId': _themeId,
         'application': {
           'id': _applicationId,
@@ -61,7 +64,7 @@ void main() {
           'launcher': {'backgroundColorHex': null, 'files': <Object?>[]},
         },
         'font': null,
-        'translations': {'locales': <String>[]},
+        'translations': {'locales': locales},
       };
 
   setUp(() async {
@@ -175,6 +178,37 @@ app_version: 1.16.5+3
     expect(appConfig().readAsStringSync(), contains('videoCall'));
   });
 
+  test('a brand gets only the languages its theme enables', () async {
+    // The list used to come from `localizely.yml`, a file of the translation
+    // service this product stopped using. A checkout without it wrote no
+    // translations at all, so the brand shipped with the strings built into the
+    // app instead of its own - and the only sign was a warning.
+    writePubspec("""
+name: webtrit_phone
+app_version: 1.16.5+3
+""");
+    File(p.join(checkout.path, 'lib/l10n/arb/app_uk.arb'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{"@@locale": "uk", "greeting": "Vitayu"}');
+
+    backend.serveJson(bundlePath(), bundle(locales: ['en']));
+    backend.serveBytes(
+        '/v1/translations/compose-arb/$_applicationId',
+        _archiveOf({
+          'en.arb': '{"@@locale": "en", "greeting": "Hello"}',
+          'uk.arb': '{"@@locale": "uk", "greeting": "Vitayu"}',
+        }));
+
+    await runResources();
+
+    expect(File(p.join(checkout.path, 'lib/l10n/arb/app_en.arb')).existsSync(), isTrue);
+    expect(
+      File(p.join(checkout.path, 'lib/l10n/arb/app_uk.arb')).existsSync(),
+      isFalse,
+      reason: 'a language the brand did not choose would otherwise reach its build',
+    );
+  });
+
   test('the brand is told what it will get instead', () async {
     writePubspec('''
 name: webtrit_phone
@@ -216,4 +250,13 @@ app_version: 1.16.5+3
 
     expect(settingsWereOnDisk, isTrue, reason: 'the picture was fetched before the settings were written');
   });
+}
+
+List<int> _archiveOf(Map<String, String> files) {
+  final archive = Archive();
+  for (final entry in files.entries) {
+    final bytes = utf8.encode(entry.value);
+    archive.addFile(ArchiveFile(entry.key, bytes.length, bytes));
+  }
+  return ZipEncoder().encode(archive);
 }
