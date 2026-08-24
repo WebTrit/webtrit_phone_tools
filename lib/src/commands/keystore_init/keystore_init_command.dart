@@ -86,9 +86,14 @@ class KeystoreInitCommand extends Command<int> {
         keystoreProjectPath: keystoreProjectPath,
       );
       if (uploadFingerprint != null) {
+        // A fingerprint means there is an Android keystore, which says nothing
+        // about whether this brand has an iOS identifier at all - three of the
+        // brands in production do not. Both are passed as they are, and the
+        // sub-command writes each file only where it has what that file needs.
         await AssetlinksGenerateRunner(logger: _logger).run(
           keystoreProjectPath: keystoreProjectPath,
-          iosPlatformId: application.iosPlatformId!,
+          iosPlatformId: application.iosPlatformId,
+          androidPlatformId: application.androidPlatformId,
           uploadFingerprint: uploadFingerprint,
         );
       }
