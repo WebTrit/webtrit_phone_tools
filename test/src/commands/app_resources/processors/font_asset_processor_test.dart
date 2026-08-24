@@ -49,6 +49,38 @@ void main() {
     expect(attempted, isNot(contains('Montserrat')), reason: 'the nested one is not a choice at all');
   });
 
+  test('names a face the way the app looks for it', () async {
+    // Not a naming preference: the app finds a bundled face by asking whether an
+    // asset name ends with what the google_fonts package builds from the weight.
+    // A file named anything else is not found, and the text renders in the
+    // platform font without a word about it.
+    const expected = {
+      100: 'Thin',
+      200: 'ExtraLight',
+      300: 'Light',
+      400: 'Regular',
+      500: 'Medium',
+      600: 'SemiBold',
+      700: 'Bold',
+      800: 'ExtraBold',
+      900: 'Black',
+    };
+
+    for (final entry in expected.entries) {
+      expect(
+        FontAssetProcessor.weightNames[entry.key],
+        entry.value,
+        reason: 'weight ${entry.key} must be spelled the way google_fonts spells it',
+      );
+    }
+  });
+
+  test('covers every weight a theme can name, not only the four it used to', () async {
+    // A brand in production asks for 800, and the step threw on it - so the
+    // brand chose a typeface and shipped with the platform one.
+    expect(FontAssetProcessor.weightNames.keys, containsAll(<int>[100, 200, 300, 800, 900]));
+  });
+
   test('a theme that declares nothing leaves the app alone', () async {
     var touched = false;
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
@@ -12,6 +13,26 @@ class FontAssetProcessor {
 
   static const _ignoredFamilies = {'MaterialIcons'};
   static const _defaultWeights = [400, 500, 600, 700];
+
+  /// How a weight is spelled in a font file's name.
+  ///
+  /// Not a choice: the app finds a bundled face by asking whether an asset's
+  /// name ends with the one the `google_fonts` package builds, so a file named
+  /// anything else is not found and the text renders in the platform font -
+  /// silently, which is the worst way for this to be wrong. These are that
+  /// package's own names.
+  @visibleForTesting
+  static const weightNames = <int, String>{
+    100: 'Thin',
+    200: 'ExtraLight',
+    300: 'Light',
+    400: 'Regular',
+    500: 'Medium',
+    600: 'SemiBold',
+    700: 'Bold',
+    800: 'ExtraBold',
+    900: 'Black',
+  };
   static const _httpTimeout = Duration(seconds: 30);
 
   Future<void> process({
@@ -42,7 +63,20 @@ class FontAssetProcessor {
       // light one is what a build carries - it is the one that gets edited.
       _logger.warn('Light and dark declare different fonts ($declared); building with $family');
     }
-    final weights = {..._weights(lightConfig), ..._weights(darkConfig)};
+    final asked = {..._weights(lightConfig), ..._weights(darkConfig)};
+    // Only the nine weights a font file can be named after. A theme asking for
+    // anything else - 550, say - makes the service answer with the two weights
+    // either side of it, which is more faces than were asked for and none of
+    // them the one requested.
+    final weights = asked.where(weightNames.containsKey).toSet();
+    final unnameable = asked.difference(weights);
+    if (unnameable.isNotEmpty) {
+      _logger.warn('Ignoring weight(s) ${unnameable.join(', ')}: a font file can only be named after 100 to 900');
+    }
+    if (weights.isEmpty) {
+      _logger.warn('No usable font weight in the theme; leaving the app on its built-in typeface');
+      return;
+    }
     final safeFamily = _safeFamily(family);
     final target = Directory(resolvePath(path.join('assets/fonts', safeFamily)));
     if (target.existsSync()) {
@@ -58,8 +92,16 @@ class FontAssetProcessor {
       throw HttpException('Google Font $family lookup failed: ${response.statusCode}');
     }
     final entries = _parseCss(response.body);
-    if (entries.length != weights.length) {
-      throw StateError('Google Font $family does not provide all required weights');
+    if (entries.isEmpty) {
+      throw StateError('Google Font $family provided none of the weights ${weights.join(', ')}');
+    }
+    // A family need not have every weight - Alex Brush has one - and the service
+    // answers with what it has. Refusing the lot over a missing face left the
+    // brand with no typeface at all rather than with the faces that do exist.
+    final delivered = entries.map((entry) => entry.weight).toSet();
+    final absent = weights.difference(delivered);
+    if (absent.isNotEmpty) {
+      _logger.warn('$family has no ${absent.join(', ')}; the app will render those at the nearest weight it has');
     }
     for (final entry in entries) {
       final fontResponse = await http.get(Uri.parse(entry.url)).timeout(_httpTimeout);
@@ -70,13 +112,15 @@ class FontAssetProcessor {
       if (bytes.isEmpty) {
         throw StateError('Downloaded empty font for $family ${entry.weight}');
       }
-      final suffix = switch (entry.weight) {
-        400 => 'Regular',
-        500 => 'Medium',
-        600 => 'SemiBold',
-        700 => 'Bold',
-        _ => throw StateError('Unsupported weight ${entry.weight}'),
-      };
+      final suffix = weightNames[entry.weight];
+      if (suffix == null) {
+        // Cannot happen from a weight this asked for - the request is filtered
+        // to the nine the names cover - so this is the service answering with
+        // something else, and guessing a name would bundle a file nothing looks
+        // for.
+        _logger.warn('Google Fonts answered with weight ${entry.weight}, which has no standard name; skipping it');
+        continue;
+      }
       await File(path.join(target.path, '$family-$suffix.ttf')).writeAsBytes(bytes);
     }
     final licenseResponse = await http
