@@ -95,12 +95,17 @@ class AppResourcesGetCommand extends Command<int> {
         resolvePath: context.resolvePath,
       );
 
-      await TranslationProcessor(
-        httpClient: _httpClient,
-        logger: _logger,
-      ).process(
-        applicationId: context.applicationId,
-        resolvePath: context.resolvePath,
+      await _orWarning<void>(
+        'translations',
+        "the app will be built with the translations that ship in it",
+        () => TranslationProcessor(
+          httpClient: _httpClient,
+          logger: _logger,
+        ).process(
+          applicationId: context.applicationId,
+          chosen: bundle.locales,
+          resolvePath: context.resolvePath,
+        ),
       );
 
       final localConfigProcessor = LocalConfigProcessor(logger: _logger);

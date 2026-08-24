@@ -20,23 +20,26 @@
   "useGitignore": true,
   "words": [
     "appbundle",
-    "assetlinks",
     "Assetlinks",
+    "assetlinks",
     "Backand",
     "Behaviour",
+    "cloudfunctions",
     "codesign",
     "colour",
-    "configurator",
     "Configurator",
-    "deeplink",
+    "configurator",
+    "Configurators",
+    "configurators",
     "Deeplink",
+    "deeplink",
     "deeplinks",
     "keytool",
     "mobileprovision",
     "optimised",
     "Porta",
     "rethrowing",
-    "webtrit",
-    "WebTrit"
+    "WebTrit",
+    "webtrit"
   ]
 }
