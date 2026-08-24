@@ -57,9 +57,9 @@ class AppConfigFactory {
 
   static Map<String, String> createPackageConfigEnv(BundleApplication application) {
     return {
-      'ANDROID_APP_NAME': application.name ?? '',
+      'ANDROID_APP_NAME': application.launchNameFor(BuildPlatform.android),
       'PACKAGE_NAME': application.androidPlatformId ?? '',
-      'IOS_APP_NAME': application.name ?? '',
+      'IOS_APP_NAME': application.launchNameFor(BuildPlatform.ios),
       'BUNDLE_ID': application.iosPlatformId ?? '',
     };
   }
