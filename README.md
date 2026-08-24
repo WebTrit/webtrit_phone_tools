@@ -23,6 +23,17 @@ dart pub global activate --source=path <path_to_package>
 
 ---
 
+## Which backend a build talks to
+
+The address of the configurator backend is a constant in this repository, so the
+**revision checked out is the choice** - no caller can override it. `main` faces
+the Cloud Run backend; `legacy/firebase-backend` is frozen at the last commit
+that faced the Firebase one, for configurators deployed before the move. Details,
+and why pointing an address elsewhere is not the same thing:
+[`docs/which_backend_a_build_talks_to.md`](docs/which_backend_a_build_talks_to.md).
+
+---
+
 ## Usage
 
 ### Keystore Project Initialization
