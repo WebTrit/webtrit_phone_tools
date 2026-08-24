@@ -62,6 +62,8 @@ class BundleApplication {
     this.name,
     this.androidPlatformId,
     this.iosPlatformId,
+    this.androidLaunchName,
+    this.iosLaunchName,
     this.androidVersion,
     this.iosVersion,
     this.environment = const {},
@@ -73,6 +75,8 @@ class BundleApplication {
       name: json['name'] as String?,
       androidPlatformId: json['androidPlatformId'] as String?,
       iosPlatformId: json['iosPlatformId'] as String?,
+      androidLaunchName: json['androidLaunchName'] as String?,
+      iosLaunchName: json['iosLaunchName'] as String?,
       androidVersion: BundleVersion.maybeFrom(json['androidVersion']),
       iosVersion: BundleVersion.maybeFrom(json['iosVersion']),
       environment: (json['environment'] as Map?)?.cast<String, dynamic>() ?? const {},
@@ -83,10 +87,30 @@ class BundleApplication {
   final String? name;
   final String? androidPlatformId;
   final String? iosPlatformId;
+
+  /// What goes under the icon, per store.
+  ///
+  /// [name] used to be this as well as the label the operator files the brand
+  /// under in the configurator - one field, so renaming the one renamed the
+  /// other. They are separate now, and a brand that has not been given a
+  /// caption of its own still gets [name], which is what every build has used
+  /// so far.
+  final String? androidLaunchName;
+  final String? iosLaunchName;
+
   final BundleVersion? androidVersion;
   final BundleVersion? iosVersion;
   final Map<String, dynamic> environment;
+
+  /// The caption for one store, or the brand's name when it has none.
+  String launchNameFor(BuildPlatform platform) {
+    final chosen = platform == BuildPlatform.android ? androidLaunchName : iosLaunchName;
+    return (chosen?.trim().isNotEmpty ?? false) ? chosen!.trim() : (name ?? '');
+  }
 }
+
+/// The stores a build is made for.
+enum BuildPlatform { android, ios }
 
 class BundleVersion {
   const BundleVersion({this.buildName, this.buildNumber});
