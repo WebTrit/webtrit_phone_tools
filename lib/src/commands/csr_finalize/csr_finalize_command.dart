@@ -4,12 +4,12 @@ import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
+import 'package:webtrit_phone_tools/src/app_store_connect/app_store_connect.dart';
 import 'package:webtrit_phone_tools/src/commands/csr_generate/models/models.dart';
 import 'package:webtrit_phone_tools/src/commands/keystore_generate/models/models.dart';
 import 'package:webtrit_phone_tools/src/constants.dart';
 
 import 'models/models.dart';
-import 'processors/processors.dart';
 import 'runners/runners.dart';
 
 const _certOptionName = 'cert';
@@ -133,9 +133,10 @@ class CsrFinalizeCommand extends Command<int> {
         return ExitCode.software.code;
       }
 
-      MetadataProcessor(logger: _logger).writeCodeSigningIdentity(
+      SigningMetadataProcessor(logger: _logger).write(
         metadataPath: context.metadataPath,
-        identity: identity,
+        key: codeSigningIdentityMetadataKey,
+        value: identity,
       );
 
       _logger

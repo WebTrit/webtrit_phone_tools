@@ -66,7 +66,9 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     addCommand(KeystoreVerifyCommand(logger: _logger));
     addCommand(AssetlinksGenerateCommand(logger: _logger));
     addCommand(CsrGenerateCommand(logger: _logger));
+    addCommand(CertCreateCommand(logger: _logger));
     addCommand(CsrFinalizeCommand(logger: _logger));
+    addCommand(ProvisionCreateCommand(logger: _logger));
     addCommand(TranslationsFetchCommand(
       logger: _logger,
       httpClient: _httpClient,
