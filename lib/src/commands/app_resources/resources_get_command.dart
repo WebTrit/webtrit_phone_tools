@@ -95,9 +95,9 @@ class AppResourcesGetCommand extends Command<int> {
         resolvePath: context.resolvePath,
       );
 
-      await _orWarning<void>(
+      await _orDegraded<void>(
         'translations',
-        "the app will be built with the translations that ship in it",
+        'the app will be built with the translations that ship in it',
         () => TranslationProcessor(
           httpClient: _httpClient,
           logger: _logger,
@@ -120,7 +120,7 @@ class AppResourcesGetCommand extends Command<int> {
 
       // The typeface the theme asks for. It reaches Google Fonts, so it is one
       // more thing that can refuse without costing the brand its settings.
-      await _orWarning<void>(
+      await _orDegraded<void>(
         'font',
         'the app will be built with the stock typeface',
         () => FontAssetProcessor(logger: _logger).process(
@@ -130,13 +130,13 @@ class AppResourcesGetCommand extends Command<int> {
         ),
       );
 
-      await _orWarning<void>(
+      await _orDegraded<void>(
         'splash screen',
         'the app will be built with the stock WebTrit splash',
         () => writer.downloadBrandImages(bundle.brandImages.splash, 'splash screen', context.resolvePath),
       );
 
-      await _orWarning<void>(
+      await _orDegraded<void>(
         'launcher icons',
         'the app will be built with the stock WebTrit icons',
         () => writer.downloadBrandImages(bundle.brandImages.launcher, 'launcher icon', context.resolvePath),
@@ -153,6 +153,17 @@ class AppResourcesGetCommand extends Command<int> {
         projectKeystorePath: context.projectKeystorePath,
         resolvePath: context.resolvePath,
       );
+
+      if (_degraded.isNotEmpty) {
+        _logger
+          ..err('')
+          ..err('Everything else was generated, but ${_degraded.length} step(s) failed:');
+        for (final failure in _degraded) {
+          _logger.err('  - ${failure.what}: ${failure.consequence}');
+        }
+        _logger.err('Fix this and run again; this build is not the one the brand asked for.');
+        return ExitCode.software.code;
+      }
 
       return ExitCode.success.code;
     } catch (e, s) {
@@ -174,7 +185,17 @@ class AppResourcesGetCommand extends Command<int> {
   /// and named for what the brand loses, and the run carries on: an app with
   /// someone else's splash is recoverable and visible, an app with none of its
   /// own settings is not.
-  Future<T?> _orWarning<T>(
+  /// Runs a step that a build can survive without, and records it when it
+  /// fails.
+  ///
+  /// Surviving is the point: a refused picture must cost the brand its picture
+  /// and not its settings, so the run carries on and one run reports every
+  /// problem rather than the first. What it must not do is finish successfully.
+  /// It used to: the message said "Fix this and run again" while the command
+  /// returned zero, so a pipeline that only reads the exit code shipped a build
+  /// with WebTrit's icons, or with the strings that ship in the app instead of
+  /// the brand's, and nothing downstream could tell.
+  Future<T?> _orDegraded<T>(
     String what,
     String consequence,
     Future<T> Function() step,
@@ -182,14 +203,17 @@ class AppResourcesGetCommand extends Command<int> {
     try {
       return await step();
     } catch (e, s) {
+      _degraded.add(_Degradation(what, consequence, e));
       _logger
         ..err('Could not fetch the $what: $e')
         ..err('  -> $consequence.')
-        ..err('  -> Everything else was generated. Fix this and run again.')
         ..detail('$s');
       return null;
     }
   }
+
+  /// What the run could not fetch. Read once, at the end.
+  final List<_Degradation> _degraded = [];
 
   CommandContext _buildContext() {
     final rest = argResults!.rest;
@@ -240,4 +264,13 @@ class AppResourcesGetCommand extends Command<int> {
       cachePathArg: argResults![_argCacheSessionDataPath] as String?,
     );
   }
+}
+
+/// One thing a run could not fetch, and what the build gets instead.
+class _Degradation {
+  const _Degradation(this.what, this.consequence, this.error);
+
+  final String what;
+  final String consequence;
+  final Object error;
 }

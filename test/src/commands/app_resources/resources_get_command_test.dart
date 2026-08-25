@@ -97,8 +97,8 @@ void main() {
     File(p.join(checkout.path, 'pubspec.yaml')).writeAsStringSync(content);
   }
 
-  Future<void> runResources({String credential = _token}) async {
-    await commandRunner.run([
+  Future<int?> runResources({String credential = _token}) async {
+    return commandRunner.run([
       'configurator-resources',
       '--applicationId',
       _applicationId,
@@ -223,6 +223,60 @@ app_version: 1.16.5+3
       ...verify(() => logger.err(captureAny())).captured,
     ].join('\n');
     expect(said, contains('stock WebTrit'));
+  });
+
+  group('what a run says when it could not fetch everything', () {
+    setUp(() {
+      writePubspec('''
+name: webtrit_phone
+app_version: 1.16.5+3
+''');
+      // The generators are `make` targets of the phone checkout. Without them
+      // the run ends in the outer catch and every exit code is the same one,
+      // which is precisely what hid the behaviour these tests are about.
+      File(p.join(checkout.path, 'makefile')).writeAsStringSync('''
+generate-launcher-icons-config:
+\t@true
+generate-native-splash-config:
+\t@true
+generate-package-config:
+\t@true
+''');
+    });
+
+    test('a run that fetched everything succeeds', () async {
+      backend
+        ..serveJson(bundlePath(), bundle())
+        ..serveBytes(
+          '/v1/translations/compose-arb/$_applicationId',
+          _archiveOf({'en.arb': '{"@@locale": "en", "greeting": "Hello"}'}),
+        );
+
+      expect(await runResources(), ExitCode.success.code);
+    });
+
+    test('a run that could not fetch the translations does not succeed', () async {
+      // The one that used to pass silently. Nothing serves compose-arb, so the
+      // step fails and the brand would ship with the strings built into the
+      // app - which nobody notices unless they read that language.
+      backend.serveJson(bundlePath(), bundle());
+
+      expect(await runResources(), isNot(ExitCode.success.code));
+    });
+
+    test('everything it could do is still done, and it says what it could not', () async {
+      // The guarantee that must survive: a refusal costs the brand that one
+      // thing, not the whole run. What changes is only that the run admits it.
+      backend.serveJson(bundlePath(), bundle());
+
+      final code = await runResources();
+
+      expect(code, isNot(ExitCode.success.code));
+      expect(appConfig().existsSync(), isTrue, reason: 'the settings must survive a failed step');
+      final said = verify(() => logger.err(captureAny())).captured.join('\n');
+      expect(said, contains('step(s) failed'));
+      expect(said, contains('translations'));
+    });
   });
 
   test('the settings are on disk before anything that can refuse is fetched', () async {
