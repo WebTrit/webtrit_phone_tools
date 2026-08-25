@@ -105,6 +105,7 @@ class AppResourcesGetCommand extends Command<int> {
           applicationId: context.applicationId,
           chosen: bundle.locales,
           resolvePath: context.resolvePath,
+          headers: context.authHeader,
         ),
       );
 

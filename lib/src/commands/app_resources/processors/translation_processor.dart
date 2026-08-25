@@ -33,6 +33,7 @@ class TranslationProcessor {
     required String applicationId,
     required List<String> chosen,
     required String Function(String) resolvePath,
+    Map<String, String>? headers,
   }) async {
     final wanted = chosen.map((code) => code.trim().toLowerCase()).where((code) => code.isNotEmpty).toSet();
 
@@ -42,7 +43,7 @@ class TranslationProcessor {
           : 'Writing the languages this brand enables: ${wanted.join(', ')}',
     );
 
-    final zipFiles = await httpClient.getTranslationFiles(applicationId);
+    final zipFiles = await httpClient.getTranslationFiles(applicationId, headers: headers);
     final written = <String>{};
 
     for (final file in zipFiles) {
