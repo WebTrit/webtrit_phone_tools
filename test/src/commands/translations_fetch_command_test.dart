@@ -116,6 +116,118 @@ void main() {
     expect(File('${tempDir.path}/lib/l10n/arb/app_en.arb').existsSync(), isFalse);
   });
 
+  group('refuses an export that would lose what the checkout has', () {
+    late Directory arbDir;
+
+    setUp(() {
+      arbDir = Directory('${tempDir.path}/lib/l10n/arb')..createSync(recursive: true);
+    });
+
+    void writeCheckout(String locale, Map<String, dynamic> arb) {
+      File('${arbDir.path}/app_$locale.arb').writeAsStringSync(jsonEncode(arb));
+    }
+
+    test('a catalog behind the checkout is refused, and the lost keys are named', () async {
+      // The catalog was synced from an older ref, so it has never seen
+      // `farewell`. Overwriting would delete it from every locale at once, and
+      // the app calls it.
+      writeCheckout('en', {'@@locale': 'en', 'greeting': 'Hello', 'farewell': 'Bye'});
+      when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
+        (_) async => _archiveOf({
+          'en.arb': jsonEncode({'@@locale': 'en', 'greeting': 'Hello'}),
+        }),
+      );
+
+      final result = await commandRunner.run([
+        'configurator-translations-fetch',
+        '--token',
+        'build-token',
+        tempDir.path,
+      ]);
+
+      expect(result, ExitCode.software.code);
+      final complaint = verify(() => logger.err(captureAny())).captured.single as String;
+      expect(complaint, contains('behind this checkout'));
+      expect(complaint, contains('farewell'));
+      // The whole point: the file it would have destroyed is untouched.
+      expect(
+        jsonDecode(File('${arbDir.path}/app_en.arb').readAsStringSync()),
+        containsPair('farewell', 'Bye'),
+      );
+    });
+
+    test('an export missing a locale the checkout has is refused', () async {
+      writeCheckout('en', {'@@locale': 'en', 'greeting': 'Hello'});
+      writeCheckout('uk', {'@@locale': 'uk', 'greeting': 'Привіт'});
+      when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
+        (_) async => _archiveOf({
+          'en.arb': jsonEncode({'@@locale': 'en', 'greeting': 'Hello'}),
+        }),
+      );
+
+      final result = await commandRunner.run([
+        'configurator-translations-fetch',
+        '--token',
+        'build-token',
+        tempDir.path,
+      ]);
+
+      expect(result, ExitCode.software.code);
+      expect(verify(() => logger.err(captureAny())).captured.single as String, contains('no uk'));
+      expect(File('${arbDir.path}/app_uk.arb').existsSync(), isTrue);
+    });
+
+    test('metadata the catalog drops does not count as a loss', () async {
+      // `@greeting` is metadata; the catalog carries one copy and the source
+      // locale owns it. Losing it from a translated file is not losing a string.
+      writeCheckout('uk', {'@@locale': 'uk', 'greeting': 'Привіт', '@greeting': <String, dynamic>{}});
+      when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
+        (_) async => _archiveOf({
+          'uk.arb': jsonEncode({'@@locale': 'uk', 'greeting': 'Вітаю'}),
+        }),
+      );
+
+      final result = await commandRunner.run([
+        'configurator-translations-fetch',
+        '--token',
+        'build-token',
+        tempDir.path,
+      ]);
+
+      expect(result, ExitCode.success.code);
+      expect(jsonDecode(File('${arbDir.path}/app_uk.arb').readAsStringSync()), containsPair('greeting', 'Вітаю'));
+    });
+  });
+
+  test('leaves a file alone when the catalog says the same thing in another shape', () async {
+    final arbDir = Directory('${tempDir.path}/lib/l10n/arb')..createSync(recursive: true);
+    // The checkout's own shape: compact metadata, keys in template order.
+    const asWritten = '{"@@locale": "en", "greeting": "Hello", "@greeting": {"description": "Hi"}}';
+    final file = File('${arbDir.path}/app_en.arb')..writeAsStringSync(asWritten);
+
+    when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
+      (_) async => _archiveOf({
+        // Same meaning, catalog ordering.
+        'en.arb': jsonEncode({
+          '@@locale': 'en',
+          '@greeting': {'description': 'Hi'},
+          'greeting': 'Hello',
+        }),
+      }),
+    );
+
+    final result = await commandRunner.run([
+      'configurator-translations-fetch',
+      '--token',
+      'build-token',
+      tempDir.path,
+    ]);
+
+    expect(result, ExitCode.success.code);
+    // Byte-for-byte untouched: a pull that changes nothing leaves no diff.
+    expect(file.readAsStringSync(), asWritten);
+  });
+
   test('nested or foreign archive entries are skipped, honest ones written', () async {
     when(() => httpClient.getCatalogTranslationFiles(headers: any(named: 'headers'))).thenAnswer(
       (_) async => _archiveOf({
