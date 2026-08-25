@@ -53,9 +53,17 @@ class HttpClient {
 
   String _url(String path) => path.startsWith('http') ? path : '$baseUrl$path';
 
-  Future<Archive> getTranslationFiles(String applicationId) async {
+  /// The composed ARB bundle for one application: the catalog with that
+  /// application's overrides applied.
+  ///
+  /// [headers] carries the same credential the build bundle is fetched with a
+  /// few lines earlier in the same command. The route does not require it yet -
+  /// it is `@Public()` on the backend, from when a build pipeline had no
+  /// machine credential to present - so sending it changes nothing today and
+  /// lets that door be closed without breaking this caller.
+  Future<Archive> getTranslationFiles(String applicationId, {Map<String, String>? headers}) async {
     final url = _translationsUrl(applicationId);
-    final fileBytes = await getBytes(url);
+    final fileBytes = await getBytes(url, headers: headers);
     if (fileBytes != null) {
       return ZipDecoder().decodeBytes(fileBytes);
     } else {

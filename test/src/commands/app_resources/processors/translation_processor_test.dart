@@ -40,6 +40,26 @@ void main() {
     return archive;
   }
 
+  test('sends the credential it was given, so the route can stop being public', () async {
+    // The build bundle a few lines earlier in the same command is fetched with
+    // this header. compose-arb is `@Public()` on the backend today, from when a
+    // build pipeline had no machine credential to present; sending it anyway
+    // means that door can be closed without breaking builds.
+    const header = {'X-Api-Key': 'wtc_the-build-key'};
+    when(() => httpClient.getTranslationFiles('app-id', headers: header)).thenAnswer(
+      (_) async => archiveWithFile('en.arb', {'@@locale': 'en', 'foo': 'Foo'}),
+    );
+
+    await processor.process(
+      applicationId: 'app-id',
+      chosen: const ['en'],
+      resolvePath: resolvePath,
+      headers: header,
+    );
+
+    verify(() => httpClient.getTranslationFiles('app-id', headers: header)).called(1);
+  });
+
   test('merges downloaded translations into an existing local ARB file', () async {
     final localArbFile = File(resolvePath('lib/l10n/arb/app_en.arb'))
       ..createSync(recursive: true)
