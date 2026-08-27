@@ -36,58 +36,17 @@ and why pointing an address elsewhere is not the same thing:
 
 ## Usage
 
-### Keystore Project Initialization
-
-Initialize a full keystore project directory for a given application. Fetches application metadata
-from the Configurator API and generates the required folder structure, signing keys, deep link
-metadata, and template credential files.
-
-```sh
-$ webtrit_phone_tools keystore-init --applicationId=<id> --token=<jwt> [directory]
-```
-
-The command creates the following structure under `<directory>/applications/<applicationId>/`:
-
-```
-<applicationId>/
-├── assets/                              # Application assets (logos, icons, etc.)
-├── build/
-│   └── google-play-service-account.json # Google Play service account for CI publishing
-├── deep_links/
-│   └── .well-known/
-│       ├── apple-app-site-association.json
-│       └── assetlinks.json
-├── push_notifications/
-│   └── firebase-service-account.json    # Firebase service account for push notifications
-├── ssl_certificates/                    # SSL certificates for the application
-├── AuthKey_[key_id].p8                  # iOS APNs auth key
-├── Certificates.p12                     # iOS distribution certificate
-├── CertificateSigningRequest.certSigningRequest # CSR to upload to the Apple Developer portal
-├── CertificateSigningRequest.key        # Private key for the CSR (required to use the issued certificate)
-├── Provision.mobileprovision            # iOS provisioning profile
-├── upload-keystore.jks                  # Android upload keystore (JKS)
-├── upload-keystore.p12                  # Android upload keystore (P12)
-├── upload-keystore-metadata.json        # Android keystore metadata
-└── upload-store-connect-metadata.json   # App Store Connect credentials
-```
-
-Files that require manual completion are created with an `.incomplete` suffix.
-
 ### Android Keystore Signing
 
 Tools for managing signing keys and certificates.
 
 ```sh
 # Generate a new keystore
-$ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory ../keystores/applications
-
-# Commit changes to the keystore repository
-$ webtrit_phone_tools keystore-commit --bundleId="com.webtrit.app" --appendDirectory ../keystores/applications
-
-# Verify an existing keystore
-$ webtrit_phone_tools keystore-verify ../keystores/applications/com.webtrit.app
-
+$ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory <directory>
 ```
+
+Where the keystore goes afterwards is the configurator's Secrets page: it is a credential like
+any other, and a build reads it from the slot it is linked to rather than from a checkout.
 
 ### Resources & Configuration
 
