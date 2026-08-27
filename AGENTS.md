@@ -134,7 +134,7 @@ import '../models/models.dart';
 
 ### 7.5 Command Naming
 
-- Lowercase, hyphen-separated: `keystore-generate`, `resources-get`.
+- Lowercase, hyphen-separated: `csr-generate`, `resources-get`.
 - `description` and `summary` must be set on every command for `--help` output.
 
 ### 7.6 Testing
