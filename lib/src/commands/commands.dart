@@ -4,6 +4,5 @@ export 'app_setup/app_setup.dart';
 export 'assetlinks_generate/assetlinks_generate.dart';
 export 'csr_finalize/csr_finalize.dart';
 export 'csr_generate/csr_generate.dart';
-export 'keystore_generate/keystore_generate.dart';
 export 'translations_fetch/translations_fetch.dart';
 export 'update_command.dart';

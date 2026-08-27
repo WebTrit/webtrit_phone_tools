@@ -38,15 +38,12 @@ and why pointing an address elsewhere is not the same thing:
 
 ### Android Keystore Signing
 
-Tools for managing signing keys and certificates.
+Nothing here makes a keystore any more. The configurator backend does, on the deploy screen, and
+the result lands in the Secrets catalogue as a credential like any other; a build reads it from the
+slot it is linked to rather than from a checkout.
 
-```sh
-# Generate a new keystore
-$ webtrit_phone_tools keystore-generate --bundleId="com.webtrit.app" --appendDirectory <directory>
-```
-
-Where the keystore goes afterwards is the configurator's Secrets page: it is a credential like
-any other, and a build reads it from the slot it is linked to rather than from a checkout.
+The only reason this ever needed a JVM was the belief that it produced a JKS. It did not: `keytool
+-genkeypair` under Java 9+ writes PKCS#12 whatever the file is called.
 
 ### Resources & Configuration
 
