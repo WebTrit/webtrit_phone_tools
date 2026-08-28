@@ -59,26 +59,6 @@ $ webtrit_phone_tools configurator-generate
 
 ```
 
-### Certificate Signing Request
-
-Generate an RSA private key and a certificate signing request (CSR) for the Apple Developer portal, mirroring the
-Keychain Access certificate assistant ("Request a Certificate from a Certificate Authority"). Produces
-`CertificateSigningRequest.certSigningRequest` (upload to Apple) and `CertificateSigningRequest.key` (keep it; the
-issued certificate is useless without it).
-
-```sh
-$ webtrit_phone_tools csr-generate --email=app.admin@webtrit.com --commonName="PortaDialer admin certificate request" [directory]
-```
-
-Once Apple issues the certificate, download the `.cer` and finalize it with `csr-finalize`. It bundles the
-certificate with the private key (`CertificateSigningRequest.key`) into `Certificates.p12`, computes the 40-character
-code signing identity (SHA-1 fingerprint), and writes it to `upload-store-connect-metadata.json` as
-`code-signing-identity`.
-
-```sh
-$ webtrit_phone_tools csr-finalize --cert=ios_distribution.cer [--password=<p12-password>] [directory]
-```
-
 ---
 
 ## Documentation

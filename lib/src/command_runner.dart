@@ -51,8 +51,6 @@ class WebtritPhoneToolsCommandRunner extends CompletionCommandRunner<int> {
     ));
     addCommand(AppConfigureCommand(logger: _logger));
     addCommand(AppSetupCommand(logger: _logger));
-    addCommand(CsrGenerateCommand(logger: _logger));
-    addCommand(CsrFinalizeCommand(logger: _logger));
     addCommand(TranslationsFetchCommand(
       logger: _logger,
       httpClient: _httpClient,
