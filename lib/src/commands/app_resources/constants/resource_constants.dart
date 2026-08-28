@@ -21,6 +21,15 @@ const assetLauncherAndroidIconPath = 'tool/assets/launcher_icons/android.png';
 const assetLauncherIosIconPath = 'tool/assets/launcher_icons/ios.png';
 const assetLauncherWebIconPath = 'tool/assets/launcher_icons/web.png';
 
+// The generator configs this writes, where the phone project's generators look
+// for them. Written here rather than asked of `make` in that repository: what
+// they hold is four strings out of the bundle, and running a makefile to echo
+// them meant the phone's makefile was parsed - and its shared include fetched
+// over the network - during every release build.
+const configPackageRenamePath = 'tool/configs/package_rename_config.yaml';
+const configLauncherIconsPath = 'tool/configs/flutter_launcher_icons.yaml';
+const configNativeSplashPath = 'tool/configs/flutter_native_splash.yaml';
+
 // Phone translations arb path
 const translationsArbPath = 'lib/l10n/arb';
 
