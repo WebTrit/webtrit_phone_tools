@@ -5,7 +5,6 @@ import 'package:webtrit_phone_tools/src/utils/utils.dart';
 
 import 'models/app_configure_context.dart';
 import 'runners/flutter_runner.dart';
-import 'runners/melos_runner.dart';
 
 const _bundleIdAndroid = 'bundleIdAndroid';
 const _bundleIdIos = 'bundleIdIos';
@@ -17,10 +16,8 @@ class AppConfigureCommand extends Command<int> {
   AppConfigureCommand({
     required Logger logger,
     FlutterRunner? flutterRunner,
-    MelosRunner? melosRunner,
   })  : _logger = logger,
-        _flutterRunner = flutterRunner,
-        _melosRunner = melosRunner {
+        _flutterRunner = flutterRunner {
     argParser
       ..addOption(
         _keystorePath,
@@ -54,7 +51,6 @@ class AppConfigureCommand extends Command<int> {
 
   final Logger _logger;
   final FlutterRunner? _flutterRunner;
-  final MelosRunner? _melosRunner;
 
   @override
   Future<int> run() async {
@@ -67,27 +63,12 @@ class AppConfigureCommand extends Command<int> {
         ..info('- Scripts working directory: ${context.workingDirectoryPath}')
         ..info('- Service account path: ${context.firebaseServiceAccountPath}');
 
-      // Taken as arguments so a test can watch this step without starting a
-      // build: what is worth holding here is which generators run and in what
-      // order, not how the project does each of them.
+      // Taken as an argument so a test can watch this step without starting a
+      // build.
       final flutterRunner = _flutterRunner ?? FlutterRunner(logger: _logger);
-      final melosRunner = _melosRunner ?? MelosRunner(logger: _logger);
 
       // Setup dependencies for the proper functioning of the configuration script
       await flutterRunner.setupDependencies(context.workingDirectoryPath);
-
-      // The project's own, so its scripts are there to be run. The targets
-      // these replaced added a generator apiece as they went.
-      await melosRunner.fetchDependencies(context.workingDirectoryPath);
-
-      // Configure launch icons for all supported platforms
-      await melosRunner.configureLaunchIcons(context.workingDirectoryPath);
-
-      // Configure splash screen for all supported platforms
-      await melosRunner.configureSplash(context.workingDirectoryPath);
-
-      // Configure platforms bundle id and package name
-      await melosRunner.configurePlatformIdentifiers(context.workingDirectoryPath);
 
       // Configure localization for support languages
       await flutterRunner.configureLocalization(context.workingDirectoryPath);

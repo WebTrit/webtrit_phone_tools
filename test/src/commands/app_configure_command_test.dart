@@ -38,33 +38,6 @@ class _RecordingFlutter implements FlutterRunner {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
 }
 
-class _RecordingMelos implements MelosRunner {
-  _RecordingMelos(this.calls, {this.failOn});
-
-  final List<String> calls;
-  final String? failOn;
-
-  Future<void> _record(String name) async {
-    calls.add(name);
-    if (name == failOn) throw Exception('$name refused');
-  }
-
-  @override
-  Future<void> fetchDependencies(String workingDirectory) => _record('project dependencies');
-
-  @override
-  Future<void> configureLaunchIcons(String workingDirectory) => _record('launcher icons');
-
-  @override
-  Future<void> configureSplash(String workingDirectory) => _record('splash');
-
-  @override
-  Future<void> configurePlatformIdentifiers(String workingDirectory) => _record('identifiers');
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
-}
-
 /// Turning what a build fetched into what a build ships.
 ///
 /// This step reads no service and decides nothing about a brand: it hands the
@@ -78,12 +51,11 @@ void main() {
   late Directory checkout;
   late List<String> calls;
 
-  Future<int?> runConfigure({String? flutterFails, String? melosFails}) async {
+  Future<int?> runConfigure({String? flutterFails}) async {
     final runner = CommandRunner<int>('test', 'test')
       ..addCommand(AppConfigureCommand(
         logger: logger,
         flutterRunner: _RecordingFlutter(calls, failOn: flutterFails),
-        melosRunner: _RecordingMelos(calls, failOn: melosFails),
       ));
     return runner.run(['configurator-generate', checkout.path]);
   }
@@ -113,8 +85,7 @@ void main() {
     final exitCode = await runConfigure();
 
     expect(exitCode, ExitCode.success.code);
-    expect(calls,
-        ['dependencies', 'project dependencies', 'launcher icons', 'splash', 'identifiers', 'localization', 'assets']);
+    expect(calls, ['dependencies', 'localization', 'assets']);
   });
 
   test('installs dependencies before anything reads them', () async {
@@ -126,21 +97,11 @@ void main() {
     expect(calls.first, 'dependencies');
   });
 
-  test('renames the app after its artwork is made, not before', () async {
-    // The icons and the splash are written into the platform folders that the
-    // rename then rewrites. In the other order a brand gets its identifiers and
-    // somebody else's artwork.
-    await runConfigure();
-
-    expect(calls.indexOf('launcher icons'), lessThan(calls.indexOf('identifiers')));
-    expect(calls.indexOf('splash'), lessThan(calls.indexOf('identifiers')));
-  });
-
-  test('stops when a generator refuses, rather than reporting success', () async {
-    final exitCode = await runConfigure(melosFails: 'splash');
+  test('stops when a step refuses, rather than reporting success', () async {
+    final exitCode = await runConfigure(flutterFails: 'localization');
 
     expect(exitCode, isNot(ExitCode.success.code));
-    expect(calls, ['dependencies', 'project dependencies', 'launcher icons', 'splash']);
+    expect(calls, ['dependencies', 'localization']);
   });
 
   test('says which step refused', () async {
