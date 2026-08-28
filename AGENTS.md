@@ -165,7 +165,7 @@ import '../models/models.dart';
 | **Context**      | `<Name>Context`                   | Immutable validated state; passed between all layers                          |
 | **Service**      | `<Name>Fetcher` / `<Name>Service` | Fetches remote data (API calls); pure I/O, no business logic                  |
 | **Processor**    | `<Name>Processor`                 | Transforms/writes data (file I/O, JSON manipulation, asset downloads)         |
-| **Runner**       | `<Name>Runner`                    | Executes external processes (`flutter`, `dart`, `keytool`, `make`, `git`)     |
+| **Runner**       | `<Name>Runner`                    | Executes external processes (`flutter`, `dart`, `keytool`, `git`)     |
 | **Factory/Util** | `<Name>Factory` / `<Name>Util`    | Pure stateless helpers; no side effects                                       |
 
 ### 8.2 Layer Rules
