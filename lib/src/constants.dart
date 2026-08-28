@@ -23,13 +23,3 @@ String resolveConfiguratorApiUrl([Map<String, String>? environment]) {
 }
 
 final configuratorApiUrl = resolveConfiguratorApiUrl();
-
-/// Two names out of a brand's signing directory.
-///
-/// A contract rather than a preference: the build workflow materialises a
-/// brand's secrets under exactly these names before `csr-finalize` looks for
-/// them. They are the survivors of a longer list that described the whole
-/// directory - the rest of it belonged to the commands that made and committed
-/// a keystore, and went with them.
-const iosCertificates = 'Certificates.p12';
-const iosCredentials = 'upload-store-connect-metadata.json';
