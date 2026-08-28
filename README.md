@@ -56,8 +56,6 @@ $ webtrit_phone_tools resources-get --applicationId=<id> --token=<jwt> --keystor
 # Generate local configuration files
 $ webtrit_phone_tools configurator-generate
 
-# Create metadata (Assetlinks and Apple App Site Association)
-$ webtrit_phone_tools assetlinks-generate --bundleId=<id> --appleTeamID=<id> --androidFingerprints=<sha256> --output=<path>
 
 ```
 

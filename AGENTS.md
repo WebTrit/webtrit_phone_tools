@@ -149,10 +149,10 @@ import '../models/models.dart';
 
 - **Simple commands** (single responsibility, minimal I/O): implement logic directly in the
   `Command` subclass without subdirectories.
-  Examples: `update_command.dart`, `assetlinks_generate_command.dart`
+  Examples: `update_command.dart`, `csr_generate_command.dart`
 - **Complex commands** (multi-step: API + file I/O + external processes): use the
   **Orchestrator Pattern** described in section 8 below.
-  Examples: `app_resources/`, `app_configure/`, `keystore_init/`
+  Examples: `app_resources/`, `app_configure/`, `app_setup/`
 
 ---
 
@@ -227,7 +227,8 @@ lib/src/commands/<feature_name>/
 - Mustache templates live in `assets/` and are stringified into Dart constants in
   `lib/src/gen/stringify_assets.dart` by `stringify_assets.sh`.
 - Never embed large template strings directly in source files.
-- Use `TemplateExtension.renderAndCleanJson()` to render and prune null/empty fields.
+- Render with `Template.renderString()`. The `renderAndCleanJson` extension went with the
+  `assetlinks-generate` command that was its only caller.
 
 ---
 
