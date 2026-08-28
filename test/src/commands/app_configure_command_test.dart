@@ -38,8 +38,8 @@ class _RecordingFlutter implements FlutterRunner {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
 }
 
-class _RecordingMake implements MakeRunner {
-  _RecordingMake(this.calls, {this.failOn});
+class _RecordingMelos implements MelosRunner {
+  _RecordingMelos(this.calls, {this.failOn});
 
   final List<String> calls;
   final String? failOn;
@@ -48,6 +48,9 @@ class _RecordingMake implements MakeRunner {
     calls.add(name);
     if (name == failOn) throw Exception('$name refused');
   }
+
+  @override
+  Future<void> fetchDependencies(String workingDirectory) => _record('project dependencies');
 
   @override
   Future<void> configureLaunchIcons(String workingDirectory) => _record('launcher icons');
@@ -75,12 +78,12 @@ void main() {
   late Directory checkout;
   late List<String> calls;
 
-  Future<int?> runConfigure({String? flutterFails, String? makeFails}) async {
+  Future<int?> runConfigure({String? flutterFails, String? melosFails}) async {
     final runner = CommandRunner<int>('test', 'test')
       ..addCommand(AppConfigureCommand(
         logger: logger,
         flutterRunner: _RecordingFlutter(calls, failOn: flutterFails),
-        makeRunner: _RecordingMake(calls, failOn: makeFails),
+        melosRunner: _RecordingMelos(calls, failOn: melosFails),
       ));
     return runner.run(['configurator-generate', checkout.path]);
   }
@@ -110,7 +113,8 @@ void main() {
     final exitCode = await runConfigure();
 
     expect(exitCode, ExitCode.success.code);
-    expect(calls, ['dependencies', 'launcher icons', 'splash', 'identifiers', 'localization', 'assets']);
+    expect(calls,
+        ['dependencies', 'project dependencies', 'launcher icons', 'splash', 'identifiers', 'localization', 'assets']);
   });
 
   test('installs dependencies before anything reads them', () async {
@@ -133,10 +137,10 @@ void main() {
   });
 
   test('stops when a generator refuses, rather than reporting success', () async {
-    final exitCode = await runConfigure(makeFails: 'splash');
+    final exitCode = await runConfigure(melosFails: 'splash');
 
     expect(exitCode, isNot(ExitCode.success.code));
-    expect(calls, ['dependencies', 'launcher icons', 'splash']);
+    expect(calls, ['dependencies', 'project dependencies', 'launcher icons', 'splash']);
   });
 
   test('says which step refused', () async {
