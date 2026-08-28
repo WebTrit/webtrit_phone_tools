@@ -231,17 +231,6 @@ app_version: 1.16.5+3
 name: webtrit_phone
 app_version: 1.16.5+3
 ''');
-      // The generators are `make` targets of the phone checkout. Without them
-      // the run ends in the outer catch and every exit code is the same one,
-      // which is precisely what hid the behaviour these tests are about.
-      File(p.join(checkout.path, 'makefile')).writeAsStringSync('''
-generate-launcher-icons-config:
-\t@true
-generate-native-splash-config:
-\t@true
-generate-package-config:
-\t@true
-''');
     });
 
     test('a run that fetched everything succeeds', () async {

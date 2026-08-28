@@ -10,7 +10,6 @@ import 'package:webtrit_phone_tools/src/utils/utils.dart';
 import 'constants/constants.dart';
 import 'models/models.dart';
 import 'processors/processors.dart';
-import 'runners/external_generator_runner.dart';
 import 'services/services.dart';
 
 const _argApplicationId = 'applicationId';
@@ -142,7 +141,7 @@ class AppResourcesGetCommand extends Command<int> {
         () => writer.downloadBrandImages(bundle.brandImages.launcher, 'launcher icon', context.resolvePath),
       );
 
-      await ExternalGeneratorRunner(logger: _logger).runGenerators(
+      await GeneratorConfigProcessor(logger: _logger).writeConfigs(
         workingDirectoryPath: context.workingDirectoryPath,
         application: bundle.application,
         brandImages: bundle.brandImages,
