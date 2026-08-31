@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
@@ -60,7 +61,22 @@ class TranslationProcessor {
     }
 
     logger.info('Downloading translations for: ${localeCodes.join(', ')}');
-    final zipFiles = await httpClient.getTranslationFiles(applicationId);
+
+    // The base translations live behind the configurator, and that service can
+    // be unreachable for reasons that have nothing to do with the application
+    // being built. The phone repository carries an ARB file for every locale
+    // already, so a failed download costs the per-application overrides, not
+    // the translations themselves - and that is not worth failing a build over.
+    final Archive zipFiles;
+    try {
+      zipFiles = await httpClient.getTranslationFiles(applicationId);
+    } catch (e) {
+      logger.warn(
+        'Failed to download translations: $e. '
+        'Keeping the local ARB files; application overrides are not applied.',
+      );
+      return;
+    }
 
     for (final file in zipFiles) {
       final fileName = p.basename(file.name);

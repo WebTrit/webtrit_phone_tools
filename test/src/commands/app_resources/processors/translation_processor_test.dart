@@ -106,4 +106,30 @@ download:
     expect(result, {'@@locale': 'en', 'foo': 'Foo'});
     verify(() => logger.warn(any(that: contains('invalid JSON')))).called(1);
   });
+
+  test('keeps the local ARB files and warns when the download fails', () async {
+    writeLocalizelyConfig();
+    final localArbFile = File(resolvePath('lib/l10n/arb/app_en.arb'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode({'@@locale': 'en', 'foo': 'Foo'}));
+
+    when(() => httpClient.getTranslationFiles('app-id')).thenThrow(
+      Exception('Failed to load data from compose-arb: 500 Internal Server Error'),
+    );
+
+    await processor.process(applicationId: 'app-id', resolvePath: resolvePath);
+
+    final result = jsonDecode(localArbFile.readAsStringSync()) as Map<String, dynamic>;
+    expect(result, {'@@locale': 'en', 'foo': 'Foo'});
+    verify(
+      () => logger.warn(
+        any(
+          that: allOf(
+            contains('Failed to download translations'),
+            contains('overrides are not applied'),
+          ),
+        ),
+      ),
+    ).called(1);
+  });
 }
