@@ -19,16 +19,37 @@ class FontAssetProcessor {
     required Map<String, dynamic> darkConfig,
     required String Function(String) resolvePath,
   }) async {
-    final families = {
-      ..._families(lightConfig),
-      ..._families(darkConfig),
+    // The theme declares its typeface in one place, `fonts.fontFamily`, and
+    // an app carries exactly one. Collecting every `fontFamily` the
+    // configuration mentions instead used to look equivalent and is not: the
+    // walk reaches into anything nested, including the style of the initials
+    // drawn on an avatar placeholder, and a value there was enough to refuse
+    // the whole build.
+    final declared = <String>{
+      for (final family in [
+        _declaredFamily(lightConfig),
+        _declaredFamily(darkConfig),
+      ])
+        if (family != null) family,
     }..removeAll(_ignoredFamilies);
-    if (families.length != 1) {
-      throw StateError(
-          'Theme must select exactly one predefined Google Font: $families');
+
+    // A theme that names none is a brand keeping the platform's own typeface,
+    // which is a decision rather than an omission: there is nothing to
+    // download, and refusing here refuses a configuration the app renders.
+    if (declared.isEmpty) {
+      _logger.warn('Theme declares no font family; '
+          'leaving the app on its built-in typeface');
+      return;
     }
 
-    final family = families.single;
+    final family = declared.first;
+    if (declared.length > 1) {
+      // Light and dark are separate configurations and can drift apart. Until
+      // the typeface belongs to the theme rather than to each appearance, the
+      // light one is what a build carries - it is the one that gets edited.
+      _logger.warn('Light and dark declare different fonts ($declared); '
+          'building with $family');
+    }
     final weights = {..._weights(lightConfig), ..._weights(darkConfig)};
     final safeFamily = _safeFamily(family);
     final target =
@@ -88,22 +109,14 @@ class FontAssetProcessor {
     _logger.info('Downloaded $family font assets (${entries.length} variants)');
   }
 
-  Set<String> _families(Map<String, dynamic> config) {
-    final result = <String>{};
-    void visit(Object? value) {
-      if (value is Map) {
-        final family = value['fontFamily'];
-        if (family is String && family.trim().isNotEmpty) {
-          result.add(family.trim());
-        }
-        value.values.forEach(visit);
-      } else if (value is List) {
-        value.forEach(visit);
-      }
-    }
-
-    visit(config);
-    return result;
+  /// The typeface the theme asks for, from the one place it says so.
+  String? _declaredFamily(Map<String, dynamic> config) {
+    final fonts = config['fonts'];
+    if (fonts is! Map) return null;
+    final family = fonts['fontFamily'];
+    if (family is! String) return null;
+    final trimmed = family.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   Set<int> _weights(Map<String, dynamic> config) {
