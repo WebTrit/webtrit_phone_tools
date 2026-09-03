@@ -14,7 +14,7 @@ the configurator's:
 
 ```
 the build bundle  ──►  files written into the phone checkout  ──►  three YAML configs
- (paths + colours)      tool/assets/native_splash/…                tool/configs/…
+ (paths + colors)      tool/assets/native_splash/…                tool/configs/…
                         tool/assets/launcher_icons/…               read by the phone's generators
 ```
 
@@ -54,7 +54,7 @@ one, asked of the file rather than of an address: `writesTo` looks for
 carries. When it is not there, the standard splash image is named for Android
 12 as well.
 
-## A missing colour
+## A missing color
 
 Both halves are skipped rather than guessed, and each says so:
 
@@ -65,4 +65,4 @@ Both halves are skipped rather than guessed, and each says so:
 
 The launcher's own background is the splash's when the brand set one, and its
 `theme_color` is always the launcher's - so an icon and the screen behind it
-agree without the brand having to say the colour twice.
+agree without the brand having to say the color twice.
