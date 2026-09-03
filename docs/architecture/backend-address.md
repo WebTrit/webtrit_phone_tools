@@ -1,4 +1,4 @@
-# Which backend a build talks to
+# The backend a build talks to
 
 This tool decides it, and nothing that calls the tool can override it. The
 address is a constant here:
@@ -23,7 +23,7 @@ credential issued by one means nothing to the other.
 backend - `57788c7`, the font-asset change. Nothing lands on it; if something
 ever has to, it is a cherry-pick and a deliberate one.
 
-## Why an address override is not enough
+## An address override is not enough
 
 There is one - `WEBTRIT_CONFIGURATOR_API_URL` - and it is meant for pointing a
 run at another deployment of the **same** shape: a debug instance, a local
@@ -36,14 +36,14 @@ theme, resolved the appearances and named the path each file belongs to. The
 Firebase backend has no such endpoint, and the older revision instead made a
 series of calls and did that assembling itself. Two shapes, two revisions.
 
-## Who picks which
+## The picker
 
 Nobody picks it by hand in practice. The builder has one workflow per era
-(`build_phone.yml` frozen on this branch, `build_phone_v2.yml` on `main`), and
-each configurator dispatches the one that matches it. See `docs/two-tracks.md`
-in `webtrit_phone_builder`.
+(`build_phone.yml` frozen on this branch, `build_phone_v3.yml` on `main`), and
+each configurator dispatches the one that matches it. The builder's own account
+of it is [two-tracks.md](https://github.com/WebTrit/webtrit_phone_builder/blob/main/docs/architecture/two-tracks.md).
 
-## When this ends
+## The end of it
 
 When the release under test ships and no deployed configurator asks for the
 Firebase backend any more: this branch, the frozen workflow and that backend go

@@ -23,14 +23,14 @@ dart pub global activate --source=path <path_to_package>
 
 ---
 
-## Which backend a build talks to
+## The backend a build talks to
 
 The address of the configurator backend is a constant in this repository, so the
 **revision checked out is the choice** - no caller can override it. `main` faces
 the Cloud Run backend; `legacy/firebase-backend` is frozen at the last commit
 that faced the Firebase one, for configurators deployed before the move. Details,
 and why pointing an address elsewhere is not the same thing:
-[`docs/which_backend_a_build_talks_to.md`](docs/which_backend_a_build_talks_to.md).
+[`docs/architecture/backend-address.md`](docs/architecture/backend-address.md).
 
 ---
 
@@ -63,8 +63,14 @@ $ webtrit_phone_tools configurator-generate
 
 ## Documentation
 
-- [Architecture & Orchestrator Pattern](.rules/architecture.rules.md)
-- [CLI Commands Conventions](.rules/commands.rules.md)
-- [Global Coding Standards](.rules/global.rules.md)
-- [Shared Makefile Reference](docs/shared_makefile_reference.md)
-- [Splash Asset Pipeline](docs/splash_asset_pipeline.md)
+[**docs/README.md**](docs/README.md) is the map: every page, one line each, and
+the routes through them - running the CLI, a build talking to the wrong
+backend, a splash screen that came out wrong.
+
+- [The commands](docs/reference/commands.md) - every command and its options
+- [The backend a build talks to](docs/architecture/backend-address.md) - and why the revision decides it
+- [Splash and launch icons](docs/reference/splash-assets.md) - what is downloaded and what is generated
+- [Running it](docs/guides/running-it.md) - from a checkout, and the checks a pull request runs
+
+The coding standards - imports, barrel files, error handling, the orchestrator
+pattern, the git flow - are in `AGENTS.md`.
