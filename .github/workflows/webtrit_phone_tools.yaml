@@ -11,6 +11,9 @@ on:
       - "bin/**"
       - "lib/**"
       - "test/**"
+      - "tool/**"
+      - "docs/**"
+      - "*.md"
       - "pubspec.yaml"
   push:
     branches:
@@ -25,6 +28,17 @@ on:
 jobs:
   semantic-pull-request:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
+
+  # The documentation is checked the way the code is: a link that no longer
+  # resolves, a page nothing leads to, or a path named in prose that is not
+  # there fails the pull request that introduced it.
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart run tool/docs_gate.dart
 
   # One path dependency survives: `webtrit_appearance_theme`, which the theme
   # step reads to decide light and dark. It lives in the phone repository,
