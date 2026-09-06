@@ -20,7 +20,7 @@ later commands read.
 | Option | Required | What it is |
 | --- | --- | --- |
 | `--applicationId` | yes | The configurator application id |
-| `--token` | yes | A signed-in token, or an administrator-minted build key (`wtc_...`) |
+| `--token` | yes | A signed-in token, or a `build` CLI token (`wtc_...`) minted on the configurator's CLI tokens screen by whoever will hold it |
 | `--keystores-path` | yes | The project's keystore folder |
 | `--cache-session-data-path` | no | Where the session data is cached between processes |
 
@@ -58,7 +58,7 @@ Writes the translation catalogue into the phone repository's ARB files.
 
 | Option | Required | What it is |
 | --- | --- | --- |
-| `--token` | no | A token for the configurator API. Falls back to `CONFIGURATOR_TOKEN` |
+| `--token` | no | A token for the configurator API - a signed-in token or a `wtc_` CLI token. Falls back to `CONFIGURATOR_TOKEN` |
 | `--output` | no | Where the ARB files are written, relative to `<directory>`. Defaults to `<phone>/lib/l10n/arb` |
 
 ## `update`
